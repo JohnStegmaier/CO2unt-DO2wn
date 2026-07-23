@@ -17,6 +17,20 @@ a little better than you found it.
 ## Workflow
 
 - Work on a feature branch; open a pull request into `master`.
+
+### Branch rules for `master`
+
+These are enforced by the repository — not just convention:
+
+- Direct pushes to `master` are blocked — all changes must go through a pull
+  request, with no exceptions for admins.
+- Every pull request needs **1 approving review** before it can merge.
+- Pushing new commits to a PR dismisses existing approvals — it must be
+  re-approved.
+- All four build checks must pass before merging: **Export Linux**,
+  **Export Windows**, **Export macOS**, and **Export Web**.
+- Force pushes to `master` are blocked.
+- `master` cannot be deleted.
 - CI must be green before merging. Every PR exports the game for Linux,
   Windows, macOS, and Web — if your change breaks an export, it isn't done.
 - Keep PRs small and focused. A reviewer should be able to hold the whole

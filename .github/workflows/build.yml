@@ -83,7 +83,7 @@ jobs:
 
   deploy-web:
     name: Deploy web build to GitHub Pages
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/master'
     needs: export
     runs-on: ubuntu-latest
     permissions:

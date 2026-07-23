@@ -17,6 +17,17 @@ a little better than you found it.
 ## Workflow
 
 - Work on a feature branch; open a pull request into `master`.
+- Name branches with a git-flow style prefix that says what kind of change
+  they carry:
+  - `feature/<short-description>` — new gameplay, content, or tooling
+    (e.g. `feature/double-jump`)
+  - `bugfix/<short-description>` — fixes for bugs found during development
+    (e.g. `bugfix/camera-jitter`)
+  - `hotfix/<short-description>` — urgent fixes for something already
+    released/broken on `master` (e.g. `hotfix/web-export-crash`)
+  - `docs/<short-description>` — documentation-only changes
+  - `chore/<short-description>` — CI, config, and housekeeping changes
+  - Use short, kebab-case descriptions after the prefix.
 
 ### Branch rules for `master`
 

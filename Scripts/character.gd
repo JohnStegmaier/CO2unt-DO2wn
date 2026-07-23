@@ -18,7 +18,6 @@ func _physics_process(_delta: float) -> void:
 		input_vector = input_vector.normalized()
 		
 		velocity = input_vector * WALK_SPEED
-		print (velocity)
 		update_animation(input_vector)
 		move_and_slide()
 

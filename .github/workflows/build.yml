@@ -67,11 +67,9 @@ jobs:
         run: echo "$HOME/godot-bin" >> "$GITHUB_PATH"
 
       - name: Import project resources
-        working-directory: count-down
         run: godot --headless --import
 
       - name: Export ${{ matrix.name }}
-        working-directory: count-down
         run: |
           mkdir -p "${{ matrix.dir }}"
           godot --headless --export-release "${{ matrix.preset }}" "${{ matrix.output }}"
@@ -80,7 +78,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Count-Down-${{ matrix.name }}
-          path: count-down/${{ matrix.dir }}
+          path: ${{ matrix.dir }}
           if-no-files-found: error
 
   deploy-web:

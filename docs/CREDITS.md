@@ -1,62 +1,75 @@
 # Credits & attribution
 
-Every third-party asset we ship — art, audio, fonts, models, shaders — is
-listed here with its creator, source, and license. This is how we honour the
-people whose royalty-free (and other) work we build on, and how we prove we
-have the right to use it.
+We credit the people and sources whose third-party work we ship — art, audio,
+fonts, models, shaders. This is how we honour the creators of the
+royalty-free (and other) work we build on, and how we show we have the right to
+use it.
+
+You don't need a row per file. Credit each **creator (or source)** once, note
+what kind of thing you used them for, and record the licence. That's enough for
+CC0 / public-domain / Pixabay-style assets, which are the bulk of what we use.
 
 ## How to add an entry
 
 When a pull request adds or replaces an asset that **you did not make
-yourself**, add a row to the matching table below **in the same PR**. Fill in
-every column:
+yourself**, make sure its creator is credited in the matching table below **in
+the same PR**. If they're already listed, you usually don't need to do anything
+— just widen the "Used for" note if it helps.
 
-- **Asset** — the repo path, e.g. `assets/sprites/environment/keep_entrance.png`.
+Each row:
+
 - **Author** — the creator's name or handle, exactly as they ask to be credited.
-- **Source** — a link to where you got it (the asset page, not just the site's
-  home page).
-- **License** — the licence name and version (e.g. `CC0`, `CC-BY 4.0`,
-  `CC-BY-SA 3.0`, `OGA-BY 3.0`, or a marketplace/standard-licence link).
-- **Notes** — anything the licence requires you to state (e.g. "modified",
-  "recoloured") or that a future maintainer needs to know.
+- **Source** — a link to the creator's page or where you got the asset(s).
+- **License** — the licence name (e.g. `CC0`, `Pixabay Content License`,
+  `CC-BY 4.0`, `OGA-BY 3.0`), ideally linked.
+- **Used for** — a short description of what we use their work for
+  (e.g. "background music", "UI sfx", "sky backgrounds"). No need to enumerate
+  every filename.
+- **Notes** — anything else worth recording (a Pixabay/asset ID, "modified",
+  "recoloured", etc.).
 
-If a licence requires attribution *in the shipped game* (many CC-BY assets do),
-make sure it also appears on an in-game credits screen — this file alone is not
-enough to satisfy CC-BY.
+> [!CAUTION]
+> ⛔ **One exception — stricter licences.** Some licences (most `CC-BY` and
+> `CC-BY-SA` assets) legally require you to identify the *specific work* used,
+> state any changes you made, and reproduce the attribution *in the shipped
+> game*. For those, name the actual asset in **Used for** or **Notes** and make
+> sure the credit also lands on an in-game credits screen — this file alone
+> doesn't satisfy CC-BY.
 
-Assets **you or a teammate created for this project** don't need a row here;
-they're covered by the repository [`LICENSE`](../LICENSE). If you like, note them
-under "Original assets" so it's clear they were a deliberate omission, not an
-oversight.
+Assets **you or a teammate created for this project** don't need crediting here;
+they're covered by the repository [`LICENSE`](../LICENSE). List them under
+"Original assets" if you want the audit to be explicit.
 
 ## Sprites & images
 
-| Asset | Author | Source | License | Notes |
-|-------|--------|--------|---------|-------|
-| _example_ `assets/sprites/environment/night_sky.png` | Jane Pixel | https://example.com/night-sky | CC-BY 4.0 | Cropped to 1920×1080 |
+| Author | Source | License | Used for | Notes |
+|--------|--------|---------|----------|-------|
+| Hans | https://pixabay.com/users/hans-2/ | Pixabay Content License | Starry sky background | Pixabay #1655503 |
 
 ## Audio (music, SFX, voice)
 
-| Asset | Author | Source | License | Notes |
-|-------|--------|--------|---------|-------|
-| | | | | |
+| Author | Source | License | Used for | Notes |
+|--------|--------|---------|----------|-------|
+| Hung Tran | https://pixabay.com/users/trangiahung159-2822485/ | Pixabay Content License | Music | Pixabay #536981 |
+| Jim Combs | https://pixabay.com/users/jim_combs-3407552/ | Pixabay Content License | Music | Pixabay #140306 |
+| DRAGON-STUDIO | https://pixabay.com/users/dragon-studio-38165424/ | Pixabay Content License | Clock / tick sound effects | Pixabay #467486 |
 
 ## Fonts
 
-| Asset | Author | Source | License | Notes |
-|-------|--------|--------|---------|-------|
+| Author | Source | License | Used for | Notes |
+|--------|--------|---------|----------|-------|
 | | | | | |
 
 ## Models
 
-| Asset | Author | Source | License | Notes |
-|-------|--------|--------|---------|-------|
+| Author | Source | License | Used for | Notes |
+|--------|--------|---------|----------|-------|
 | | | | | |
 
 ## Shaders
 
-| Asset | Author | Source | License | Notes |
-|-------|--------|--------|---------|-------|
+| Author | Source | License | Used for | Notes |
+|--------|--------|---------|----------|-------|
 | | | | | |
 
 ## Original assets
@@ -68,19 +81,3 @@ keeps the audit honest.
 | Asset | Author |
 |-------|--------|
 | | |
-
----
-
-### Assets that still need triage
-
-These assets are already in the repo and predate this file. Before the next
-release, each should either get a row above or be confirmed as original team
-work and moved to "Original assets":
-
-- `assets/audio/music/clockwork_pulse.mp3`
-- `assets/sprites/characters/player/idle_1.png` … `idle_4.png`, `main_char.png`
-- `assets/sprites/environment/hans_starry_sky_1655503.jpg`
-- `assets/sprites/environment/isaac_template_standard.png`
-- `assets/sprites/environment/keep_entrance.png`
-- `assets/sprites/ui/arrow.png`, `play.png`, `sprite_0008.png`, `title2.png`, `title_no_bg.png`
-- `assets/sprites/vfx/tv_test_patterns_02.png`

@@ -1,8 +1,9 @@
 [gd_scene format=3 uid="uid://cjnf0aq7acwnh"]
 
 [ext_resource type="PackedScene" uid="uid://bqy7nkxun1ewv" path="res://Scenes/Player.tscn" id="2_70rqm"]
-[ext_resource type="Script" uid="uid://ccalvfh5rit5y" path="res://Scenes/Camera_script_2.gd" id="2_xgxar"]
-[ext_resource type="Texture2D" uid="uid://dxit1pdjem41q" path="res://Images/Keep_Entrance.png" id="3_70rqm"]
+[ext_resource type="Script" uid="uid://ccalvfh5rit5y" path="res://Scripts/Camera_script_2.gd" id="2_xgxar"]
+[ext_resource type="Texture2D" uid="uid://dndxj5us5bnvi" path="res://Assets/Isaac_Template_Standard.png" id="3_xgxar"]
+[ext_resource type="PackedScene" uid="uid://3opvjgbns0rk" path="res://Scenes/UI.tscn" id="4_xgxar"]
 
 [node name="Stage" type="Node2D" unique_id=321140782]
 
@@ -24,6 +25,8 @@ script = ExtResource("2_xgxar")
 
 [node name="background" type="Sprite2D" parent="." unique_id=1127053464]
 z_index = -1
-texture = ExtResource("3_70rqm")
+texture = ExtResource("3_xgxar")
 centered = false
 metadata/_edit_lock_ = true
+
+[node name="Ui" parent="." unique_id=1505368263 instance=ExtResource("4_xgxar")]

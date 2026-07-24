@@ -14,6 +14,7 @@
 [ext_resource type="Texture2D" uid="uid://cx7p0kxr2xkby" path="res://assets/sprites/characters/player/Dodge_Forward/player_roll7.png" id="8_a31ob"]
 [ext_resource type="Texture2D" uid="uid://b7ckxabs1klhg" path="res://assets/sprites/characters/player/Dodge_Forward/player_roll8.png" id="9_5qgjf"]
 [ext_resource type="Texture2D" uid="uid://cqrhajinqihwu" path="res://assets/sprites/characters/player/Dodge_Forward/player_roll9.png" id="10_fjj3i"]
+[ext_resource type="Texture2D" uid="uid://cm4a87ahjb7tc" path="res://assets/sprites/items/BigGun_B_Transparent.png" id="15_lqdhu"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_5ixxa"]
 radius = 3.0
@@ -143,3 +144,11 @@ texture_filter = 1
 position = Vector2(0, -6)
 sprite_frames = SubResource("SpriteFrames_nn08x")
 animation = &"dodge_down"
+
+[node name="BigGunBTransparent" type="Sprite2D" parent="." unique_id=1371732958]
+modulate = Color(1.8764027, 1.111197, 1.5168338, 1)
+position = Vector2(1.1368684e-13, 3.9999998)
+scale = Vector2(0.1, 0.1)
+texture = ExtResource("15_lqdhu")
+offset = Vector2(120, 0)
+flip_h = true

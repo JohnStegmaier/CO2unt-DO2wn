@@ -1,5 +1,6 @@
 extends CharacterBody2D
 @onready var sprite = $AnimatedSprite2D
+@onready var gun: Sprite2D = $BigGunBTransparent
 const WALK_SPEED = 150
 const DODGE_SPEED = 200
 const DODGE_DURATION = 0.6  # total time the dodge burst lasts, in seconds
@@ -9,6 +10,20 @@ var can_move = true
 var is_dodging = false
 var dodge_direction := Vector2.ZERO
 var dodge_timer := 0.0
+var gun_default_position: Vector2
+var gun_default_scale: Vector2
+
+func _ready() -> void:
+	gun_default_position = gun.position
+	gun_default_scale = gun.scale
+
+func _process(_delta: float) -> void:
+	if is_dodging:
+		return
+	var mouse_pos: Vector2 = get_global_mouse_position()
+	var direction: Vector2 = mouse_pos - gun.global_position
+	gun.rotation = direction.angle()
+	gun.flip_v = direction.x < 0
 
 func _physics_process(delta: float) -> void:
 	if is_dodging:
@@ -40,9 +55,24 @@ func dodge_down() -> void:
 	dodge_direction = Vector2.DOWN
 	dodge_timer = 0.0
 	sprite.play("dodge_down")
+	
+	var pull_tween := create_tween()
+	pull_tween.set_parallel(true)
+	pull_tween.tween_property(gun, "position", Vector2.ZERO, 0.1).set_ease(Tween.EASE_OUT)
+	pull_tween.tween_property(gun, "scale", gun_default_scale * 0.2, 0.1).set_ease(Tween.EASE_OUT)
+	
+	return_gun()
+	
 	await sprite.animation_finished
 	is_dodging = false
 	can_move = true
+
+func return_gun() -> void:
+	await get_tree().create_timer(0.35).timeout
+	var return_tween := create_tween()
+	return_tween.set_parallel(true)
+	return_tween.tween_property(gun, "position", gun_default_position, 0.15).set_ease(Tween.EASE_OUT)
+	return_tween.tween_property(gun, "scale", gun_default_scale, 0.15).set_ease(Tween.EASE_OUT)
 
 func update_animation(_input_vector):
 	

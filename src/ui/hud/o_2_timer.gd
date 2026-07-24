@@ -12,6 +12,7 @@ var degrees = 90
 
 var borders_shown = false
 
+var border_slide_time = 8
 var top_border_start_pos: Vector2
 var top_border_end_pos: Vector2
 var bottom_border_start_pos: Vector2
@@ -56,7 +57,7 @@ func _process(delta: float) -> void:
 		update_label()
 		update_needle()
 		
-	if time_left <= 11.0 and not borders_shown:
+	if time_left <= border_slide_time and not borders_shown:
 		slide_in_borders()
 		borders_shown = true
 	
@@ -95,5 +96,5 @@ func flick_needle() -> void:
 func slide_in_borders() -> void:
 	var tween := create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(top_border, "position", top_border_end_pos, 0.5).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	tween.tween_property(bottom_border, "position", bottom_border_end_pos, 0.5).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	tween.tween_property(top_border, "position", top_border_end_pos, 1).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	tween.tween_property(bottom_border, "position", bottom_border_end_pos, 1).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)

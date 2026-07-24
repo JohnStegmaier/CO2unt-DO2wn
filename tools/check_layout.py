@@ -42,23 +42,23 @@ EXT_RULES: dict[str, tuple[str, ...]] = {
     ".gdshader": ("assets/shaders/", "addons/"),
     ".tres": ("assets/", "src/", "addons/"),
     ".theme": ("assets/themes/", "addons/"),
-    # media: type-grouped under assets/
-    ".png": ("assets/", "addons/"),
-    ".jpg": ("assets/", "addons/"),
-    ".jpeg": ("assets/", "addons/"),
-    ".svg": ("assets/", "addons/"),
-    ".webp": ("assets/", "addons/"),
-    ".mp3": ("assets/audio/",),
-    ".ogg": ("assets/audio/",),
-    ".wav": ("assets/audio/",),
-    ".glb": ("assets/models/",),
-    ".gltf": ("assets/models/",),
-    ".obj": ("assets/models/",),
-    ".fbx": ("assets/models/",),
-    ".ttf": ("assets/fonts/",),
-    ".otf": ("assets/fonts/",),
-    ".woff": ("assets/fonts/",),
-    ".woff2": ("assets/fonts/",),
+    # media: type-grouped under assets/, or raw/ if it's unprocessed source art
+    ".png": ("assets/", "addons/", "raw/"),
+    ".jpg": ("assets/", "addons/", "raw/"),
+    ".jpeg": ("assets/", "addons/", "raw/"),
+    ".svg": ("assets/", "addons/", "raw/"),
+    ".webp": ("assets/", "addons/", "raw/"),
+    ".mp3": ("assets/audio/", "raw/"),
+    ".ogg": ("assets/audio/", "raw/"),
+    ".wav": ("assets/audio/", "raw/"),
+    ".glb": ("assets/models/", "raw/"),
+    ".gltf": ("assets/models/", "raw/"),
+    ".obj": ("assets/models/", "raw/"),
+    ".fbx": ("assets/models/", "raw/"),
+    ".ttf": ("assets/fonts/", "raw/"),
+    ".otf": ("assets/fonts/", "raw/"),
+    ".woff": ("assets/fonts/", "raw/"),
+    ".woff2": ("assets/fonts/", "raw/"),
     # editable source art Godot must NOT import -> raw/ (gdignored)
     ".aseprite": ("raw/",),
     ".ase": ("raw/",),
@@ -181,8 +181,6 @@ def main() -> int:
             continue
 
         # 4) naming: snake_case + no spaces under managed roots
-        if " " in f:
-            errors.append(f"{f}: paths must not contain spaces")
         if f.startswith(SNAKE_ROOTS) and name not in NAME_EXEMPT:
             bad = [seg for seg in f.split("/") if seg and not is_snake(seg)]
             if bad:

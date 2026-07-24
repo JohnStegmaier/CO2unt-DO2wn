@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://ba53pyixmqet7"]
+
+[ext_resource type="Script" uid="uid://y1yxpti1yuu7" path="res://src/autoload/global_timer.gd" id="1_yg8i7"]
+
+[node name="GlobalTimer" type="Node2D" unique_id=64641657]
+script = ExtResource("1_yg8i7")
+
+[node name="Timer" type="Timer" parent="." unique_id=1826499712]
+autostart = true

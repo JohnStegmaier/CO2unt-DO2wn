@@ -14,6 +14,11 @@ config/name="CO₂unt DO₂wn"
 run/main_scene="uid://ccg25f35hhof6"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 
+[autoload]
+
+GlobalTimer="*uid://ba53pyixmqet7"
+AudioManager="*uid://dfyijpgqy6rei"
+
 [display]
 
 window/size/viewport_width=640

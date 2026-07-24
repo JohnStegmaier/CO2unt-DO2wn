@@ -23,7 +23,7 @@ extends Camera2D
 ## view past them — this clamps the final result instead.
 @export var clamp_to_bounds: bool = true
 @export var bounds_left: float = 0.0
-@export var bounds_top: float = 0.0
+@export var bounds_top: float = 90.0
 @export var bounds_right: float = 2000.0
 @export var bounds_bottom: float = 2000.0
 

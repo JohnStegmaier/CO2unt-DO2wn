@@ -31,6 +31,22 @@ script references. Run it before you push:
 python3 tools/check_layout.py
 ```
 
+### Crediting assets
+
+Third-party art, audio, fonts, models, and shaders must be credited in
+[`docs/CREDITS.md`](docs/CREDITS.md) — creator, source, and licence — in the
+same PR that adds them. Assets you made yourself need no entry; the repo
+[`LICENSE`](LICENSE) covers them.
+
+When a PR adds any asset file, the **Asset attribution** workflow
+(`.github/workflows/asset-attribution.yml`) opens two review threads — an
+**author sign-off** and a **reviewer sign-off** — each listing exactly which
+files. The pipeline stays green; it never fails on this. But both threads must
+be **resolved** before the PR can merge (see the branch rules below): the author
+resolves theirs once each file is credited in `docs/CREDITS.md` or confirmed as
+their own work, and a reviewer resolves theirs after checking. CI never guesses
+whether an asset needs attribution — that call is the humans'.
+
 ## Workflow
 
 - Work on a feature branch; open a pull request into `master`.
@@ -57,6 +73,9 @@ These are enforced by the repository — not just convention:
   re-approved.
 - All four build checks must pass before merging: **Export Linux**,
   **Export Windows**, **Export macOS**, and **Export Web**.
+- **Every review conversation must be resolved before merging** — including the
+  author and reviewer sign-off threads the **Asset attribution** workflow opens
+  when a PR adds art or audio (see [Crediting assets](#crediting-assets)).
 - Force pushes to `master` are blocked.
 - `master` cannot be deleted.
 - CI must be green before merging. Every PR exports the game for Linux,
@@ -135,4 +154,6 @@ judgment, not dogma. In practice:
 - [ ] You ran the game and exercised the thing you changed.
 - [ ] Commit messages follow the rules above (single author, single
       sentence, imperative).
+- [ ] Any third-party assets you added are credited in `docs/CREDITS.md`, and
+      the attribution sign-off threads (if any were posted) are resolved.
 - [ ] The diff contains only what the PR description says it does.

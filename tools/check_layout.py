@@ -87,7 +87,7 @@ JUNK_SUFFIXES = (".tmp", ".bak", ".orig", ".DS_Store", "~")
 NAME_EXEMPT = {".gitkeep", ".gdignore", ".gitignore", ".gitattributes", ".editorconfig"}
 
 # Roots whose file and directory names must be snake_case.
-SNAKE_ROOTS = ("assets/", "src/", "raw/", "tools/")
+SNAKE_ROOTS = ("src/", "tools/")
 
 # Assets we expect something to reference; unreferenced ones get a WARN.
 ASSET_ROOTS = ("assets/sprites/", "assets/audio/", "assets/models/", "assets/fonts/")

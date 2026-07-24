@@ -81,17 +81,3 @@ keeps the audit honest.
 | Asset | Author |
 |-------|--------|
 | | |
-
----
-
-### Assets that still need triage
-
-These assets are already in the repo and predate this file. Before the next
-release, each should either have its creator credited above or be confirmed as
-original team work and moved to "Original assets":
-
-- `assets/sprites/characters/player/idle_1.png` … `idle_4.png`, `main_char.png`
-- `assets/sprites/environment/isaac_template_standard.png`
-- `assets/sprites/environment/keep_entrance.png`
-- `assets/sprites/ui/arrow.png`, `play.png`, `sprite_0008.png`, `title2.png`, `title_no_bg.png`
-- `assets/sprites/vfx/tv_test_patterns_02.png`

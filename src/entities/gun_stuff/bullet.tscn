@@ -1,0 +1,13 @@
+[gd_scene format=3 uid="uid://ckinnty100svf"]
+
+[ext_resource type="Script" uid="uid://bp7pnwnhiuadt" path="res://src/entities/gun_stuff/bullet.gd" id="1_kid0w"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_nckmm"]
+
+[node name="Bullet" type="Area2D" unique_id=1315338816]
+script = ExtResource("1_kid0w")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1173223551]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=254706080]
+shape = SubResource("CircleShape2D_nckmm")

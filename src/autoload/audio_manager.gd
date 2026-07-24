@@ -1,7 +1,5 @@
 extends Node2D
 
-@onready var music_player = $MusicPlayer
-
 #add background music here
 var music = {
 	"main_menu": preload("res://assets/audio/music/clockwork_pulse.mp3"),

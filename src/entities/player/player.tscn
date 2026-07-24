@@ -1,10 +1,20 @@
 [gd_scene format=3 uid="uid://bqy7nkxun1ewv"]
 
 [ext_resource type="Script" uid="uid://bdiv4styvv2vm" path="res://src/entities/player/player.gd" id="1_lkv7d"]
+[ext_resource type="Texture2D" uid="uid://dvbkwi18togod" path="res://assets/sprites/characters/player/Dodge_Forward/player_roll1.png" id="2_p2qdy"]
+[ext_resource type="Texture2D" uid="uid://goqhekktgk42" path="res://assets/sprites/characters/player/Dodge_Forward/player_roll2.png" id="3_lqdhu"]
 [ext_resource type="Texture2D" uid="uid://d0x7pv43t3201" path="res://assets/sprites/characters/player/idle_1.png" id="3_nn08x"]
 [ext_resource type="Texture2D" uid="uid://bdsphebhrsqx3" path="res://assets/sprites/characters/player/idle_2.png" id="4_52ee3"]
+[ext_resource type="Texture2D" uid="uid://u2b3isfhcq6v" path="res://assets/sprites/characters/player/Dodge_Forward/player_roll3.png" id="4_t8d2k"]
 [ext_resource type="Texture2D" uid="uid://cguufqet4i570" path="res://assets/sprites/characters/player/idle_3.png" id="5_bhhdu"]
+[ext_resource type="Texture2D" uid="uid://bth5a3lqfw6fn" path="res://assets/sprites/characters/player/Dodge_Forward/player_roll4.png" id="5_yi0df"]
+[ext_resource type="Texture2D" uid="uid://dnbinuass21dx" path="res://assets/sprites/characters/player/Dodge_Forward/player_roll5.png" id="6_0tyfe"]
 [ext_resource type="Texture2D" uid="uid://b820a5dje08v7" path="res://assets/sprites/characters/player/idle_4.png" id="6_megsn"]
+[ext_resource type="Texture2D" uid="uid://biiqf5fq7tnvc" path="res://assets/sprites/characters/player/Dodge_Forward/player_roll6.png" id="7_ogtao"]
+[ext_resource type="Texture2D" uid="uid://cx7p0kxr2xkby" path="res://assets/sprites/characters/player/Dodge_Forward/player_roll7.png" id="8_a31ob"]
+[ext_resource type="Texture2D" uid="uid://b7ckxabs1klhg" path="res://assets/sprites/characters/player/Dodge_Forward/player_roll8.png" id="9_5qgjf"]
+[ext_resource type="Texture2D" uid="uid://cqrhajinqihwu" path="res://assets/sprites/characters/player/Dodge_Forward/player_roll9.png" id="10_fjj3i"]
+[ext_resource type="Texture2D" uid="uid://cm4a87ahjb7tc" path="res://assets/sprites/items/BigGun_B_Transparent.png" id="15_lqdhu"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_5ixxa"]
 radius = 3.0
@@ -28,6 +38,38 @@ region = Rect2(0, 0, 16, 32)
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_nn08x"]
 animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_p2qdy")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_lqdhu")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_t8d2k")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_yi0df")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_0tyfe")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_ogtao")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_a31ob")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_5qgjf")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_fjj3i")
+}],
+"loop": 0,
+"name": &"dodge_down",
+"speed": 17.0
+}, {
 "frames": [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_5ixxa")
@@ -101,4 +143,15 @@ shape = SubResource("CapsuleShape2D_5ixxa")
 texture_filter = 1
 position = Vector2(0, -6)
 sprite_frames = SubResource("SpriteFrames_nn08x")
-animation = &"idle_down"
+animation = &"dodge_down"
+
+[node name="BigGunBTransparent" type="Sprite2D" parent="." unique_id=1371732958]
+modulate = Color(1.8764027, 1.111197, 1.5168338, 1)
+position = Vector2(1.1368684e-13, 3.9999998)
+scale = Vector2(0.1, 0.1)
+texture = ExtResource("15_lqdhu")
+offset = Vector2(120, 0)
+flip_h = true
+
+[node name="Muzzle" type="Marker2D" parent="BigGunBTransparent" unique_id=1118717441]
+position = Vector2(223.74, -51.085)

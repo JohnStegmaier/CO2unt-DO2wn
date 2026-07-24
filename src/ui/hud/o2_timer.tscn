@@ -1,11 +1,61 @@
 [gd_scene format=3 uid="uid://dayrrci4olhln"]
 
 [ext_resource type="Texture2D" uid="uid://c7evkk3b5rly8" path="res://assets/sprites/ui/Clock.png" id="1_evb31"]
+[ext_resource type="Script" uid="uid://cuvfew0fmywft" path="res://src/ui/hud/o_2_timer.gd" id="1_xm303"]
+[ext_resource type="Texture2D" uid="uid://b8oknkk03wikf" path="res://assets/sprites/ui/Needle.png" id="3_rocwj"]
 
 [node name="O2Timer" type="Node2D" unique_id=1199483244]
+script = ExtResource("1_xm303")
 metadata/_edit_vertical_guides_ = [400.0, 240.0, 320.0]
-metadata/_edit_horizontal_guides_ = [60.0]
+metadata/_edit_horizontal_guides_ = [60.0, 260.0]
 
-[node name="Sprite2D" type="Sprite2D" parent="." unique_id=718267611]
+[node name="Top_Border" type="ColorRect" parent="." unique_id=1022232574]
+offset_left = -1.0
+offset_right = 639.0
+offset_bottom = 40.0
+offset_transform_enabled = true
+color = Color(0, 0, 0, 1)
+
+[node name="Bottom_Border" type="ColorRect" parent="." unique_id=881125741]
+offset_top = 260.0
+offset_right = 640.0
+offset_bottom = 300.0
+offset_transform_enabled = true
+color = Color(0, 0, 0, 1)
+
+[node name="Left_Border" type="ColorRect" parent="." unique_id=1350427947]
+offset_left = 40.0
+offset_top = -38.0
+offset_right = 680.0
+offset_bottom = 2.0
+rotation = 1.5707964
+offset_transform_enabled = true
+color = Color(0, 0, 0, 1)
+
+[node name="Right_Border" type="ColorRect" parent="." unique_id=1555722700]
+offset_left = 300.0
+offset_top = 212.0
+offset_right = 940.0
+offset_bottom = 252.0
+offset_transform_enabled = true
+offset_transform_rotation = 1.5707964
+color = Color(0, 0, 0, 1)
+
+[node name="O2 Sprite" type="Sprite2D" parent="." unique_id=718267611]
 position = Vector2(320, 30)
 texture = ExtResource("1_evb31")
+
+[node name="Label" type="Label" parent="." unique_id=5773688]
+modulate = Color(0.78231853, 0.7865782, 0.8927538, 1)
+offset_left = 297.0
+offset_top = 15.0
+offset_right = 358.06
+offset_bottom = 46.0
+theme_override_font_sizes/font_size = 22
+text = ":)"
+horizontal_alignment = 1
+
+[node name="Needle" type="Sprite2D" parent="." unique_id=684507258]
+position = Vector2(271, 29)
+texture = ExtResource("3_rocwj")
+offset = Vector2(-5.515, 0)

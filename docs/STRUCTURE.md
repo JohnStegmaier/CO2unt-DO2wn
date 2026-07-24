@@ -33,8 +33,11 @@ python3 tools/check_layout.py
 │   ├── screens/        full-screen scenes you navigate BETWEEN — main menu,
 │   │                   credits, game over. Reached by a scene swap.
 │   ├── levels/         playable gameplay spaces
-│   ├── systems/        engine-light game logic (scoring, state machines) —
-│   │                   the code we can unit-test without the scene tree
+│   ├── components/     reusable behaviors composed ONTO many nodes across many
+│   │                   scenes (health, hurtbox, state machine) — one-to-many
+│   ├── systems/        shared logic not attached to one node — game-rule
+│   │                   coordinators (scoring) AND pure helpers (math, easing).
+│   │                   Split a dedicated lib/ out once libraries proliferate.
 │   └── ui/             UI components instanced INTO screens/levels (HUD,
 │                       pause overlay, widgets) — not whole screens themselves
 ├── addons/             third-party Godot plugins. Never hand-edited.
@@ -69,6 +72,32 @@ navigate *to* it?**
 
 So the HUD lives in `ui/`, the main menu lives in `screens/`, and a gameplay
 level lives in `levels/` — three different jobs, three different homes.
+
+### Reusable code that isn't a scene
+
+A script that gives behavior to *many* nodes across *many* scenes has a home
+too. Ask **how many exist at once, and what does it attach to?**
+
+| It is… | Home | Example |
+| --- | --- | --- |
+| **one** instance, global, alive all game | `autoload/` | `AudioManager`, `EventBus` |
+| attached to **many** nodes for a per-node behavior | `components/` | `Health`, `Hurtbox`, `StateMachine` |
+| a **coordinator** of game rules, or a pure helper (no node) | `systems/` | `score_system`, `math_utils` |
+
+A **component** is the answer to "one script, many nodes, many scenes." Build
+it as a small self-contained scene plus a `class_name` script and *instance* it
+as a child wherever it's needed — composition, not inheritance:
+
+```
+src/components/health/
+├── health.tscn      # a node with the script attached; @export vars set in-editor
+└── health.gd        # class_name Health; signal died; @export var max_hp: int
+```
+
+`player.tscn`, `enemy.tscn`, and `breakable_crate.tscn` each add `health.tscn`
+as a child. The component emits `died` and each host decides what that means —
+signals up, calls down. A component knows nothing about the screens or levels
+that use it (dependencies point inward).
 
 ## The rules the checker enforces
 

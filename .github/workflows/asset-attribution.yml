@@ -115,36 +115,43 @@ jobs:
             const data = await github.graphql(query, { owner, repo, pr: pull_number });
             const threads = data.repository.pullRequest.reviewThreads.nodes;
 
-            const resolve = id => github.graphql(
-              `mutation($id:ID!){ resolveReviewThread(input:{threadId:$id}){ thread { id } } }`, { id });
-            const unresolve = id => github.graphql(
-              `mutation($id:ID!){ unresolveReviewThread(input:{threadId:$id}){ thread { id } } }`, { id });
+            // GITHUB_TOKEN can create/update review comments but can't resolve
+            // or unresolve threads (those GraphQL mutations return "Resource not
+            // accessible by integration"). So we never touch a thread's resolved
+            // state — a resolved-but-stale thread is replaced by a brand-new one.
+            const sigOf = t =>
+              (t.comments.nodes[0].body.match(/<!-- assets:(.*?) -->/) || [])[1];
 
             for (const role of roles) {
-              const mine = threads.find(
-                t => t.comments.nodes[0] && t.comments.nodes[0].body.includes(role.marker));
-              if (hasAssets) {
-                if (!mine) {
-                  // New file-level thread anchored to the first added file.
-                  await github.rest.pulls.createReviewComment({
-                    owner, repo, pull_number, commit_id,
-                    path: added[0], subject_type: 'file', body: role.body,
-                  });
-                } else {
-                  const currentSig =
-                    (mine.comments.nodes[0].body.match(/<!-- assets:(.*?) -->/) || [])[1];
-                  if (currentSig !== signature) {
-                    // Asset set changed — refresh the list and re-open for a
-                    // fresh sign-off.
-                    await github.rest.pulls.updateReviewComment({
-                      owner, repo, comment_id: mine.comments.nodes[0].databaseId, body: role.body,
-                    });
-                    if (mine.isResolved) await unresolve(mine.id);
-                  }
-                  // Same asset set: leave the thread exactly as the humans left it.
-                }
-              } else if (mine && !mine.isResolved) {
-                // No assets remain in the PR — stop blocking.
-                await resolve(mine.id);
+              if (!hasAssets) {
+                // No assets remain in the PR. We can't resolve the thread here,
+                // so a human resolves it once it's clearly moot.
+                continue;
               }
+
+              const matching = threads.filter(
+                t => t.comments.nodes[0] && t.comments.nodes[0].body.includes(role.marker));
+              const open = matching.find(t => !t.isResolved);
+
+              if (open) {
+                // A live thread is already blocking the merge. Keep its file list
+                // current if the asset set changed, but leave it open — never
+                // clobber how the humans left it.
+                if (sigOf(open) !== signature) {
+                  await github.rest.pulls.updateReviewComment({
+                    owner, repo,
+                    comment_id: open.comments.nodes[0].databaseId, body: role.body,
+                  });
+                }
+              } else if (!matching.some(t => sigOf(t) === signature)) {
+                // No open thread, and nobody has signed off on this exact asset
+                // set yet — first run, or every existing thread was resolved for a
+                // different set. Post a fresh thread instead of re-opening one.
+                await github.rest.pulls.createReviewComment({
+                  owner, repo, pull_number, commit_id,
+                  path: added[0], subject_type: 'file', body: role.body,
+                });
+              }
+              // else: a resolved thread already covers this exact set — leave it
+              // signed off.
             }

@@ -14,6 +14,23 @@ a little better than you found it.
    finish before making changes.
 3. Never commit the `.godot/` or `build/` directories (already gitignored).
 
+## Where files go
+
+The repository has an enforced layout — see
+[`docs/STRUCTURE.md`](docs/STRUCTURE.md). In short: game code and scenes live
+feature-grouped under `src/`, imported media lives type-grouped under
+`assets/`, editable source art (`.aseprite`, `.blend`, …) lives under `raw/`,
+and the root is a closed allowlist.
+
+`tools/check_layout.py` runs first in CI and **fails the build** if a file is
+misplaced, misnamed (everything is `snake_case`, no spaces), or is an orphaned
+sidecar. It also prints a loud, non-blocking warning for any asset no scene or
+script references. Run it before you push:
+
+```bash
+python3 tools/check_layout.py
+```
+
 ## Workflow
 
 - Work on a feature branch; open a pull request into `master`.

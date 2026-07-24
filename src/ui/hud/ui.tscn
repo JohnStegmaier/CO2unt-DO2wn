@@ -1,13 +1,17 @@
 [gd_scene format=3 uid="uid://3opvjgbns0rk"]
 
 [ext_resource type="Texture2D" uid="uid://bj2gpnuvb0hci" path="res://assets/sprites/ui/sprite_0008.png" id="1_w371h"]
+[ext_resource type="PackedScene" uid="uid://dayrrci4olhln" path="res://src/ui/hud/o2_timer.tscn" id="2_50hus"]
 
 [node name="Ui" type="Node2D" unique_id=1505368263]
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=66906038]
 
+[node name="O2Timer" parent="CanvasLayer" unique_id=1199483244 instance=ExtResource("2_50hus")]
+
 [node name="Timer" type="Timer" parent="CanvasLayer" unique_id=755193890]
 
 [node name="Sprite2D" type="Sprite2D" parent="CanvasLayer" unique_id=2061458106]
+visible = false
 position = Vector2(324, 328)
 texture = ExtResource("1_w371h")

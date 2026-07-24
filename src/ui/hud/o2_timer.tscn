@@ -1,0 +1,11 @@
+[gd_scene format=3 uid="uid://dayrrci4olhln"]
+
+[ext_resource type="Texture2D" uid="uid://c7evkk3b5rly8" path="res://assets/sprites/ui/Clock.png" id="1_evb31"]
+
+[node name="O2Timer" type="Node2D" unique_id=1199483244]
+metadata/_edit_vertical_guides_ = [400.0, 240.0, 320.0]
+metadata/_edit_horizontal_guides_ = [60.0]
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=718267611]
+position = Vector2(320, 30)
+texture = ExtResource("1_evb31")

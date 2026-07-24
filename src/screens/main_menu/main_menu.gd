@@ -24,3 +24,4 @@ func _on_global_tick() -> void:
 func _process(_delta: float) -> void:
 	if selection == 1 && Input.is_action_just_pressed("ui_accept"):
 		get_tree().change_scene_to_file("res://src/levels/stage/stage.tscn")
+		AudioManager.stop_music()

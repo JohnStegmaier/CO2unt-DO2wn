@@ -1,7 +1,6 @@
 <!--
-This checklist auto-populates every new pull request. Leave the sections in
-place and tick the boxes as they become true. The reviewer reads it before
-approving — an unticked attribution box is a reason to hold the review.
+This template auto-populates every new pull request. Fill in the summary and
+work through the checklist before requesting review.
 -->
 
 ## Summary
@@ -10,19 +9,14 @@ approving — an unticked attribution box is a reason to hold the review.
 
 ## Assets & attribution
 
-Check **one** of the first two boxes:
-
-- [ ] This PR adds **no** new third-party art, audio, fonts, models, or shaders.
-- [ ] This PR **does** add third-party assets, and every one of them has a row
-      in [`docs/CREDITS.md`](https://github.com/JohnStegmaier/CO2unt-DO2wn/blob/master/docs/CREDITS.md)
-      (author, source, license) added **in this same PR**.
-
-Then both people sign off:
-
-- [ ] **Author:** I attributed every third-party asset I added, and confirmed
-      each licence actually permits use in this project.
-- [ ] **Reviewer:** I looked at the `docs/CREDITS.md` diff against the assets
-      this PR adds, and the attribution is complete and correct.
+If this PR adds art, audio, fonts, models, or shaders, the **Asset attribution**
+bot posts a review thread listing exactly which files. For each one, confirm it
+is **either** credited in
+[`docs/CREDITS.md`](https://github.com/JohnStegmaier/CO2unt-DO2wn/blob/master/docs/CREDITS.md)
+(author, source, license) **or** original work that needs no attribution — then
+click **Resolve conversation**. Merge stays blocked until it's resolved, so this
+is a deliberate human sign-off, not an automatic pass. Adds no assets? The bot
+stays quiet and there's nothing to do.
 
 ## PR checklist
 

@@ -1,4 +1,9 @@
 extends CharacterBody2D
+
+@export var bullet_scene: PackedScene
+@export var muzzle_offset := 40.0  # distance from gun's pivot to barrel tip, tune to your sprite
+@export var fire_rate := 0.15
+
 @onready var sprite = $AnimatedSprite2D
 @onready var gun: Sprite2D = $BigGunBTransparent
 const WALK_SPEED = 150
@@ -13,6 +18,9 @@ var dodge_timer := 0.0
 var gun_default_position: Vector2
 var gun_default_scale: Vector2
 
+var can_shoot := true
+var gun_direction := Vector2.RIGHT  # cached each frame from _process
+
 func _ready() -> void:
 	gun_default_position = gun.position
 	gun_default_scale = gun.scale
@@ -24,6 +32,7 @@ func _process(_delta: float) -> void:
 	var direction: Vector2 = mouse_pos - gun.global_position
 	gun.rotation = direction.angle()
 	gun.flip_v = direction.x < 0
+	gun_direction = direction.normalized()
 
 func _physics_process(delta: float) -> void:
 	if is_dodging:
@@ -48,6 +57,21 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 		if can_move and velocity != Vector2.ZERO and last_direction == "down":
 			dodge_down()
+	
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		if can_shoot and not is_dodging:
+			shoot()
+
+func shoot() -> void:
+	can_shoot = false
+	
+	var bullet = bullet_scene.instantiate()
+	get_tree().current_scene.add_child(bullet)
+	bullet.global_position = gun.global_position + gun_direction * muzzle_offset
+	bullet.direction = gun_direction
+	
+	await get_tree().create_timer(fire_rate).timeout
+	can_shoot = true
 
 func dodge_down() -> void:
 	can_move = false

@@ -152,3 +152,6 @@ scale = Vector2(0.1, 0.1)
 texture = ExtResource("15_lqdhu")
 offset = Vector2(120, 0)
 flip_h = true
+
+[node name="Muzzle" type="Marker2D" parent="BigGunBTransparent" unique_id=1118717441]
+position = Vector2(223.74, -51.085)

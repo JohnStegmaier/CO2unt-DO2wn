@@ -1,0 +1,33 @@
+name: Assign PR author
+
+# Put the PR's author in the Assignees box automatically, so nobody has to click
+# "assign yourself" on their own PR. No-op if they're already assigned, or if the
+# author can't be assigned (e.g. a bot or a fork contributor without access).
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  assign:
+    name: Assign author
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assign the PR to its author
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const author = pr.user.login;
+            const already = (pr.assignees || []).some(a => a.login === author);
+            if (already) return;
+            await github.rest.issues.addAssignees({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              assignees: [author],
+            });

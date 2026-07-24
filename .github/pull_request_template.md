@@ -10,13 +10,12 @@ work through the checklist before requesting review.
 ## Assets & attribution
 
 If this PR adds art, audio, fonts, models, or shaders, the **Asset attribution**
-bot posts a review thread listing exactly which files. For each one, confirm it
-is **either** credited in
-[`docs/CREDITS.md`](https://github.com/JohnStegmaier/CO2unt-DO2wn/blob/master/docs/CREDITS.md)
-(author, source, license) **or** original work that needs no attribution — then
-click **Resolve conversation**. Merge stays blocked until it's resolved, so this
-is a deliberate human sign-off, not an automatic pass. Adds no assets? The bot
-stays quiet and there's nothing to do.
+bot opens two review threads — an **author sign-off** and a **reviewer
+sign-off** — listing the added files. Credit anything third-party in
+[`docs/CREDITS.md`](https://github.com/JohnStegmaier/CO2unt-DO2wn/blob/master/docs/CREDITS.md);
+assets you made yourself need no entry. The author resolves their thread once
+attribution is handled; a reviewer resolves theirs once they've checked. Both
+must be resolved before merge. No assets? The bot stays quiet.
 
 ## PR checklist
 

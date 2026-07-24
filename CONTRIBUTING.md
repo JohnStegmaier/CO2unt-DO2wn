@@ -39,13 +39,13 @@ same PR that adds them. Assets you made yourself need no entry; the repo
 [`LICENSE`](LICENSE) covers them.
 
 When a PR adds any asset file, the **Asset attribution** workflow
-(`.github/workflows/asset-attribution.yml`) posts a review thread listing
-exactly which files. The pipeline stays green — it never fails on this — but the
-thread must be **resolved** before the PR can merge (see the branch rules
-below). For each listed file, confirm it is either credited in
-`docs/CREDITS.md` or is your own original work, then click **Resolve
-conversation**. That click is a deliberate human sign-off: CI never guesses
-whether an asset needs attribution.
+(`.github/workflows/asset-attribution.yml`) opens two review threads — an
+**author sign-off** and a **reviewer sign-off** — each listing exactly which
+files. The pipeline stays green; it never fails on this. But both threads must
+be **resolved** before the PR can merge (see the branch rules below): the author
+resolves theirs once each file is credited in `docs/CREDITS.md` or confirmed as
+their own work, and a reviewer resolves theirs after checking. CI never guesses
+whether an asset needs attribution — that call is the humans'.
 
 ## Workflow
 
@@ -74,8 +74,8 @@ These are enforced by the repository — not just convention:
 - All four build checks must pass before merging: **Export Linux**,
   **Export Windows**, **Export macOS**, and **Export Web**.
 - **Every review conversation must be resolved before merging** — including the
-  thread the **Asset attribution** workflow opens when a PR adds art or audio
-  (see [Crediting assets](#crediting-assets)).
+  author and reviewer sign-off threads the **Asset attribution** workflow opens
+  when a PR adds art or audio (see [Crediting assets](#crediting-assets)).
 - Force pushes to `master` are blocked.
 - `master` cannot be deleted.
 - CI must be green before merging. Every PR exports the game for Linux,
@@ -155,5 +155,5 @@ judgment, not dogma. In practice:
 - [ ] Commit messages follow the rules above (single author, single
       sentence, imperative).
 - [ ] Any third-party assets you added are credited in `docs/CREDITS.md`, and
-      the attribution thread (if one was posted) is resolved.
+      the attribution sign-off threads (if any were posted) are resolved.
 - [ ] The diff contains only what the PR description says it does.

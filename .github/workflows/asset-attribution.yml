@@ -1,14 +1,15 @@
 name: Asset attribution
 
-# When a PR adds art/audio/font/model/shader files, post ONE resolvable review
-# thread listing them. The job always succeeds — it never turns the pipeline
-# red. Merging is gated by the branch-protection rule "Require conversation
-# resolution before merging": the thread stays open until a human clicks
-# "Resolve conversation", which is the deliberate attribution sign-off.
+# When a PR adds art/audio/font/model/shader files, open TWO resolvable review
+# threads — an author sign-off and a reviewer sign-off — each listing the added
+# files. The job always succeeds; it never turns the pipeline red. Merging is
+# gated by branch protection's "Require conversation resolution before merging":
+# both threads must be resolved before the PR can merge.
 #
-# It deliberately does NOT check whether docs/CREDITS.md changed. Some assets
-# are third-party (credit them), some are original work (no credit needed) —
-# that judgement belongs to the person who clicks Resolve, not to CI.
+# GitHub can't force a *specific* person to resolve a thread, so the two threads
+# are a labelled convention, backed by the required approving review (an author
+# can't approve their own PR). It never checks whether docs/CREDITS.md changed —
+# whether an asset needs crediting is a human call.
 
 on:
   pull_request:
@@ -54,14 +55,13 @@ jobs:
           [ -n "$added" ] && echo "has_assets=true" >> "$GITHUB_OUTPUT" \
                           || echo "has_assets=false" >> "$GITHUB_OUTPUT"
 
-      - name: Post or update the resolvable attribution thread
+      - name: Open or update the author + reviewer sign-off threads
         uses: actions/github-script@v7
         env:
           HAS_ASSETS: ${{ steps.scan.outputs.has_assets }}
           ADDED: ${{ steps.scan.outputs.added }}
         with:
           script: |
-            const marker = '<!-- asset-attribution-bot -->';
             const creditsUrl =
               'https://github.com/JohnStegmaier/CO2unt-DO2wn/blob/master/docs/CREDITS.md';
             const hasAssets = process.env.HAS_ASSETS === 'true';
@@ -71,25 +71,33 @@ jobs:
             const pull_number = context.payload.pull_request.number;
             const commit_id = context.payload.pull_request.head.sha;
 
-            // A signature of the current asset set, embedded (hidden) in the
-            // comment. Lets us tell a real change from a harmless re-run, so we
-            // never clobber a human's "Resolved" state without cause.
+            // A signature of the current asset set, hidden in each comment, so a
+            // real change is told apart from a harmless re-run — we never clobber
+            // a human's "Resolved" without cause.
             const signature = added.slice().sort().join('|');
+            const list = added.map(f => `- \`${f}\``).join('\n');
 
-            const buildBody = () => {
-              const list = added.map(f => `- \`${f}\``).join('\n');
-              return `${marker}\n<!-- assets:${signature} -->\n`
-                + `### Asset attribution — please confirm\n\n`
-                + `This PR adds the following asset file(s):\n\n${list}\n\n`
-                + `For each one, confirm it is **either** credited in `
-                + `[\`docs/CREDITS.md\`](${creditsUrl}) (author, source, license) `
-                + `**or** original work that needs no attribution — then click `
-                + `**Resolve conversation** to unblock the merge.\n\n`
-                + `_This is a human sign-off; the check never inspects the `
-                + `credits file and never fails the build._`;
-            };
+            const roles = [
+              {
+                marker: '<!-- asset-attribution-author -->',
+                body:
+                  `<!-- asset-attribution-author -->\n<!-- assets:${signature} -->\n`
+                  + `**Author sign-off** ✍️\n\n`
+                  + `This PR adds:\n\n${list}\n\n`
+                  + `Credit anything third-party in [\`docs/CREDITS.md\`](${creditsUrl}); `
+                  + `leave work you made yourself as-is. Resolve this conversation once it's handled.`,
+              },
+              {
+                marker: '<!-- asset-attribution-reviewer -->',
+                body:
+                  `<!-- asset-attribution-reviewer -->\n<!-- assets:${signature} -->\n`
+                  + `**Reviewer sign-off** 🔍\n\n`
+                  + `Whoever reviews this PR: check the files above against `
+                  + `[\`docs/CREDITS.md\`](${creditsUrl}) and resolve this once the attribution looks right.`,
+              },
+            ];
 
-            // Look up our existing review thread (if any) and its state.
+            // Fetch all review threads once, with each thread's first comment.
             const query = `
               query($owner:String!, $repo:String!, $pr:Int!) {
                 repository(owner:$owner, name:$repo) {
@@ -106,38 +114,37 @@ jobs:
               }`;
             const data = await github.graphql(query, { owner, repo, pr: pull_number });
             const threads = data.repository.pullRequest.reviewThreads.nodes;
-            const mine = threads.find(
-              t => t.comments.nodes[0] && t.comments.nodes[0].body.includes(marker));
 
             const resolve = id => github.graphql(
-              `mutation($id:ID!){ resolveReviewThread(input:{threadId:$id}){ thread { id } } }`,
-              { id });
+              `mutation($id:ID!){ resolveReviewThread(input:{threadId:$id}){ thread { id } } }`, { id });
             const unresolve = id => github.graphql(
-              `mutation($id:ID!){ unresolveReviewThread(input:{threadId:$id}){ thread { id } } }`,
-              { id });
-            const currentSig = mine
-              ? (mine.comments.nodes[0].body.match(/<!-- assets:(.*?) -->/) || [])[1]
-              : null;
+              `mutation($id:ID!){ unresolveReviewThread(input:{threadId:$id}){ thread { id } } }`, { id });
 
-            if (hasAssets) {
-              if (!mine) {
-                // New file-level thread anchored to the first added file.
-                await github.rest.pulls.createReviewComment({
-                  owner, repo, pull_number, commit_id,
-                  path: added[0], subject_type: 'file', body: buildBody(),
-                });
-              } else if (currentSig !== signature) {
-                // The asset set changed — refresh the list and re-open the
-                // thread so the new files get a fresh sign-off.
-                await github.rest.pulls.updateReviewComment({
-                  owner, repo, comment_id: mine.comments.nodes[0].databaseId,
-                  body: buildBody(),
-                });
-                if (mine.isResolved) await unresolve(mine.id);
+            for (const role of roles) {
+              const mine = threads.find(
+                t => t.comments.nodes[0] && t.comments.nodes[0].body.includes(role.marker));
+              if (hasAssets) {
+                if (!mine) {
+                  // New file-level thread anchored to the first added file.
+                  await github.rest.pulls.createReviewComment({
+                    owner, repo, pull_number, commit_id,
+                    path: added[0], subject_type: 'file', body: role.body,
+                  });
+                } else {
+                  const currentSig =
+                    (mine.comments.nodes[0].body.match(/<!-- assets:(.*?) -->/) || [])[1];
+                  if (currentSig !== signature) {
+                    // Asset set changed — refresh the list and re-open for a
+                    // fresh sign-off.
+                    await github.rest.pulls.updateReviewComment({
+                      owner, repo, comment_id: mine.comments.nodes[0].databaseId, body: role.body,
+                    });
+                    if (mine.isResolved) await unresolve(mine.id);
+                  }
+                  // Same asset set: leave the thread exactly as the humans left it.
+                }
+              } else if (mine && !mine.isResolved) {
+                // No assets remain in the PR — stop blocking.
+                await resolve(mine.id);
               }
-              // Same asset set as last run: leave the thread (and its
-              // resolved/unresolved state) exactly as the humans left it.
-            } else if (mine && !mine.isResolved) {
-              // No assets remain in the PR — stop blocking.
-              await resolve(mine.id);
             }

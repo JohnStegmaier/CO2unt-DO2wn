@@ -31,6 +31,22 @@ script references. Run it before you push:
 python3 tools/check_layout.py
 ```
 
+### Crediting assets
+
+Third-party art, audio, fonts, models, and shaders must be credited in
+[`docs/CREDITS.md`](docs/CREDITS.md) — creator, source, and licence — in the
+same PR that adds them. Assets you made yourself need no entry; the repo
+[`LICENSE`](LICENSE) covers them.
+
+When a PR adds any asset file, the **Asset attribution** workflow
+(`.github/workflows/asset-attribution.yml`) posts a review thread listing
+exactly which files. The pipeline stays green — it never fails on this — but the
+thread must be **resolved** before the PR can merge (see the branch rules
+below). For each listed file, confirm it is either credited in
+`docs/CREDITS.md` or is your own original work, then click **Resolve
+conversation**. That click is a deliberate human sign-off: CI never guesses
+whether an asset needs attribution.
+
 ## Workflow
 
 - Work on a feature branch; open a pull request into `master`.
@@ -57,6 +73,9 @@ These are enforced by the repository — not just convention:
   re-approved.
 - All four build checks must pass before merging: **Export Linux**,
   **Export Windows**, **Export macOS**, and **Export Web**.
+- **Every review conversation must be resolved before merging** — including the
+  thread the **Asset attribution** workflow opens when a PR adds art or audio
+  (see [Crediting assets](#crediting-assets)).
 - Force pushes to `master` are blocked.
 - `master` cannot be deleted.
 - CI must be green before merging. Every PR exports the game for Linux,
@@ -135,4 +154,6 @@ judgment, not dogma. In practice:
 - [ ] You ran the game and exercised the thing you changed.
 - [ ] Commit messages follow the rules above (single author, single
       sentence, imperative).
+- [ ] Any third-party assets you added are credited in `docs/CREDITS.md`, and
+      the attribution thread (if one was posted) is resolved.
 - [ ] The diff contains only what the PR description says it does.

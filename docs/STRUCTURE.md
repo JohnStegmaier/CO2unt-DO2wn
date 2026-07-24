@@ -30,10 +30,13 @@ python3 tools/check_layout.py
 │   │                   the scripts that drive it.
 │   ├── autoload/       singletons registered in project.godot (audio, timer)
 │   ├── entities/       player, enemies, pickups — one folder each
-│   ├── levels/         playable scenes
+│   ├── screens/        full-screen scenes you navigate BETWEEN — main menu,
+│   │                   credits, game over. Reached by a scene swap.
+│   ├── levels/         playable gameplay spaces
 │   ├── systems/        engine-light game logic (scoring, state machines) —
 │   │                   the code we can unit-test without the scene tree
-│   └── ui/             menus and HUD
+│   └── ui/             UI components instanced INTO screens/levels (HUD,
+│                       pause overlay, widgets) — not whole screens themselves
 ├── addons/             third-party Godot plugins. Never hand-edited.
 ├── raw/                source art Godot must NOT import (.aseprite, .blend,
 │                       .psd, .avif). A `.gdignore` makes the engine skip it,
@@ -51,6 +54,21 @@ python3 tools/check_layout.py
 - **`assets/` is grouped by type.** A composer dropping in a track shouldn't
   need to know which feature will use it, and Godot's import settings are
   per-type.
+
+### Screens vs. UI components
+
+A common trap: filing whole screens (the main menu) next to UI components (the
+HUD). Use this test — **is the scene instanced *into* another scene, or do you
+navigate *to* it?**
+
+- Instanced into a scene (`UI.tscn` is a child of `stage.tscn`) → it's a
+  component → `src/ui/`.
+- A whole-screen destination reached by a scene swap (the main menu is the
+  `main_scene` and `change_scene_to_file`s to the stage) → it's a screen →
+  `src/screens/`.
+
+So the HUD lives in `ui/`, the main menu lives in `screens/`, and a gameplay
+level lives in `levels/` — three different jobs, three different homes.
 
 ## The rules the checker enforces
 

@@ -209,26 +209,14 @@ func update_animation(_input_vector):
 	if velocity == Vector2.ZERO:
 		sprite.play("idle_" + last_direction)
 		return
-	if Input.is_action_pressed('ui_up') and Input.is_action_pressed('ui_right'):
-		last_direction = "up_right"
-		sprite.flip_h = false
-	elif Input.is_action_pressed('ui_up') and Input.is_action_pressed('ui_left'):
-		last_direction = "up_right"
-		sprite.flip_h = true
-	elif Input.is_action_pressed('ui_up'):
-		last_direction = "up"
-	elif Input.is_action_pressed('ui_down') and Input.is_action_pressed('ui_right'):
-		last_direction = "down_right"
-		sprite.flip_h = false
-	elif Input.is_action_pressed('ui_down') and Input.is_action_pressed('ui_left'):
-		last_direction = "down_right"
-		sprite.flip_h = true
-	elif Input.is_action_pressed('ui_down'):
-		last_direction = "down"
-	elif Input.is_action_pressed('ui_right'):
+	if Input.is_action_pressed('ui_right'):
 		last_direction = "right"
 		sprite.flip_h = false
 	elif Input.is_action_pressed('ui_left'):
 		last_direction = "right"
 		sprite.flip_h = true
+	elif Input.is_action_pressed('ui_up'):
+		last_direction = "up"
+	elif Input.is_action_pressed('ui_down'):
+		last_direction = "down"
 	sprite.play("walk_" + last_direction)

@@ -40,7 +40,7 @@ var _transitioning: bool = false
 
 func _ready() -> void:
 	GlobalTimer.tick.connect(_on_global_tick)
-	_start_music()
+	GlobalTimer.tick.connect(_start_music)
 
 	# The player reports hits upward and the O2 timer decides what they cost.
 	# Game is the only node holding both ends, so the wiring belongs here.

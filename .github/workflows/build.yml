@@ -91,6 +91,12 @@ jobs:
           name: Count-Down-${{ matrix.name }}
           path: ${{ matrix.dir }}
           if-no-files-found: error
+          # Artifacts are only a handoff between jobs in this run. The newest
+          # build is kept permanently as the "latest" release below, so nothing
+          # here needs to outlive the run that produced it by more than a day or
+          # two. The default is 90 days, which accumulates fast at four
+          # platforms per push.
+          retention-days: 2
 
   deploy-web:
     name: Deploy web build to GitHub Pages
@@ -124,7 +130,11 @@ jobs:
 
   release:
     name: Attach builds to GitHub Release
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    # Tags cut a real release. Pushes to master refresh a single rolling
+    # "latest" prerelease, which is what keeps the newest build after its
+    # artifacts expire — release assets never expire and do not count towards
+    # Actions storage.
+    if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/master')
     needs: export
     runs-on: ubuntu-latest
     permissions:
@@ -149,4 +159,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: artifacts/*.zip
-          generate_release_notes: true
+          generate_release_notes: ${{ startsWith(github.ref, 'refs/tags/v') }}
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'latest' }}
+          name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'Latest master build' }}
+          prerelease: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+          # Replace the rolling release's assets rather than erroring on re-run.
+          make_latest: ${{ startsWith(github.ref, 'refs/tags/v') }}

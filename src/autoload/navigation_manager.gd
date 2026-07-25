@@ -1,22 +1,12 @@
 extends Node
 
-signal on_trigger_player_spawn(position: Vector2, direction: String)
+## Screen-level navigation: menu to game, game to game over.
+##
+## Room-to-room movement is NOT here. Rooms are swapped inside the Game scene
+## without a scene change, so nothing has to be carried across one.
 
-var _spawn_door_tag := ""
-
-func go_to_level(scene_path: String, destination_tag: String):
+func go_to_screen(scene_path: String) -> void:
 	if scene_path.is_empty():
-		push_warning("NavigationManager: door has no destination_scene set")
+		push_warning("NavigationManager: empty scene path")
 		return
-	_spawn_door_tag = destination_tag
 	get_tree().change_scene_to_file(scene_path)
-
-## Returns the door tag the player arrived through, then clears it.
-## Returns "" when the level was opened directly rather than through a door.
-func consume_spawn_door_tag() -> String:
-	var tag := _spawn_door_tag
-	_spawn_door_tag = ""
-	return tag
-
-func trigger_player_spawn(position: Vector2, direction: String):
-	on_trigger_player_spawn.emit(position, direction)

@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://bqy7nkxun1ewv"]
 
 [ext_resource type="Script" uid="uid://bdiv4styvv2vm" path="res://src/entities/player/player.gd" id="1_lkv7d"]
+[ext_resource type="Script" uid="uid://ccalvfh5rit5y" path="res://src/entities/player/player_camera.gd" id="1_pcam0"]
 [ext_resource type="Texture2D" uid="uid://dvbkwi18togod" path="res://assets/sprites/characters/player/Dodge_Forward/player_roll1.png" id="2_p2qdy"]
 [ext_resource type="PackedScene" uid="uid://ckinnty100svf" path="res://src/entities/gun_stuff/bullet.tscn" id="2_t8d2k"]
 [ext_resource type="Texture2D" uid="uid://goqhekktgk42" path="res://assets/sprites/characters/player/Dodge_Forward/player_roll2.png" id="3_lqdhu"]
@@ -158,3 +159,11 @@ flip_h = true
 
 [node name="Muzzle" type="Marker2D" parent="BigGunBTransparent" unique_id=1118717441]
 position = Vector2(223.74, -51.085)
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1449007135]
+zoom = Vector2(1.5, 1.5)
+drag_left_margin = 0.0
+drag_top_margin = 0.0
+drag_right_margin = 0.0
+drag_bottom_margin = 0.0
+script = ExtResource("1_pcam0")

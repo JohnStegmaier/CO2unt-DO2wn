@@ -30,7 +30,6 @@ var gun_direction := Vector2.RIGHT
 func _ready() -> void:
 	gun_default_position = gun.position
 	gun_default_scale = gun.scale
-	NavigationManager.on_trigger_player_spawn.connect(_on_spawn)
 
 
 func _process(_delta: float) -> void:
@@ -69,10 +68,12 @@ func _physics_process(delta: float) -> void:
 		shoot()
 
 
-func _on_spawn(position: Vector2, direction: String):
-	global_position = position
-	# animation_player.play("move_" + direction)
-	# animation_player.stop() # presumably this is how you'd animate the scene change?
+## Move instantly, without the renderer drawing the trip. Physics interpolation
+## is on project-wide, so without the reset a warp between rooms smears across
+## a frame.
+func warp_to(target: Vector2) -> void:
+	global_position = target
+	reset_physics_interpolation()
 
 
 func shoot() -> void:

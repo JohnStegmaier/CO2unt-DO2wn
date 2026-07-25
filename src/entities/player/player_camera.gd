@@ -31,6 +31,15 @@ var _movement_offset: Vector2 = Vector2.ZERO
 var _mouse_offset: Vector2 = Vector2.ZERO
 
 
+## Clamp the view to a room. Called on every room change, because the camera
+## outlives the room it is looking at.
+func set_bounds(rect: Rect2) -> void:
+	bounds_left = rect.position.x
+	bounds_top = rect.position.y
+	bounds_right = rect.end.x
+	bounds_bottom = rect.end.y
+
+
 func _ready() -> void:
 	if player == null:
 		player = get_parent() as CharacterBody2D

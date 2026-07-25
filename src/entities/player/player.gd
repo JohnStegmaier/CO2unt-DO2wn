@@ -30,6 +30,7 @@ var gun_direction := Vector2.RIGHT
 func _ready() -> void:
 	gun_default_position = gun.position
 	gun_default_scale = gun.scale
+	NavigationManager.on_trigger_player_spawn.connect(_on_spawn)
 
 
 func _process(_delta: float) -> void:
@@ -66,6 +67,12 @@ func _physics_process(delta: float) -> void:
 
 	if Input.is_action_just_pressed("shoot") and can_shoot and not is_dodging:
 		shoot()
+
+
+func _on_spawn(position: Vector2, direction: String):
+	global_position = position
+	# animation_player.play("move_" + direction)
+	# animation_player.stop() # presumably this is how you'd animate the scene change?
 
 
 func shoot() -> void:

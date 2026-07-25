@@ -14,7 +14,14 @@ func setup() -> void:
 func _ready() -> void:
 	GlobalTimer.tick.connect(setup)
 	GlobalTimer.tick.connect(_on_global_tick)
-  
+	if NavigationManager.spawn_door_tag != null:
+		_on_level_spawn(NavigationManager.spawn_door_tag)
+
 func _on_global_tick() -> void:
 	print(global_timer.tickflip)
 	AudioManager.play_sfx("tick_trim",1,0,0)
+
+func _on_level_spawn(destination_tag: String):
+	var door_path = "Doors/door_" + destination_tag
+	var door = get_node(door_path) as LevelDoor
+	NavigationManager.trigger_player_spawn(door.spawn.global_position, door.spawn_direction)

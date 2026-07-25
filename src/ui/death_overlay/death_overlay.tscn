@@ -1,0 +1,36 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://src/ui/death_overlay/death_overlay.gd" id="1_overlay"]
+[ext_resource type="Shader" path="res://assets/shaders/death_vignette.gdshader" id="2_vignette"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
+resource_local_to_scene = true
+shader = ExtResource("2_vignette")
+shader_parameter/progress = 0.0
+shader_parameter/softness = 0.35
+shader_parameter/vignette_color = Color(0, 0, 0, 1)
+shader_parameter/aspect = 1.7777778
+
+[node name="DeathOverlay" type="Node2D"]
+script = ExtResource("1_overlay")
+
+[node name="Vignette" type="ColorRect" parent="."]
+z_index = 50
+z_as_relative = false
+material = SubResource("ShaderMaterial_vignette")
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 2
+color = Color(1, 1, 1, 1)
+
+[node name="Blackout" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="Rect" type="ColorRect" parent="Blackout"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)

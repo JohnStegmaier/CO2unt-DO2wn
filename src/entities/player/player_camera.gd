@@ -97,11 +97,22 @@ func _clamp_offset_to_bounds(desired_offset: Vector2) -> Vector2:
 	var world_center: Vector2 = player.global_position + desired_offset
 
 	var clamped_center := Vector2(
-		clamp(world_center.x, bounds_left + half_view.x, bounds_right - half_view.x),
-		clamp(world_center.y, bounds_top + half_view.y, bounds_bottom - half_view.y)
+		_clamp_axis(world_center.x, bounds_left, bounds_right, half_view.x),
+		_clamp_axis(world_center.y, bounds_top, bounds_bottom, half_view.y)
 	)
 
 	return clamped_center - player.global_position
+
+
+## Clamp one axis so the screen edge stops at the wall.
+##
+## When the view is larger than the room there is no valid range — the minimum
+## overruns the maximum and clamp() degenerates, pinning the camera to a corner
+## and showing the void past the room. Centre on the room instead.
+func _clamp_axis(value: float, low: float, high: float, half_view: float) -> float:
+	if low + half_view > high - half_view:
+		return (low + high) * 0.5
+	return clamp(value, low + half_view, high - half_view)
 
 
 func _update_movement_lead(delta: float) -> void:

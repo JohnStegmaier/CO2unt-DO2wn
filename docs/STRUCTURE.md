@@ -29,6 +29,10 @@ python3 tools/check_layout.py
 ├── src/                the game itself. Feature-grouped: a scene lives with
 │   │                   the scripts that drive it.
 │   ├── autoload/       singletons registered in project.godot (audio, timer)
+│   ├── config/         tuning data the game reads at runtime, not code —
+│   │                   profiles/ holds the debug-only .cfg overrides picked by
+│   │                   the editor toolbar dropdown. Lives with the autoload
+│   │                   that consumes it rather than in a new root directory.
 │   ├── entities/       player, enemies, pickups — one folder each
 │   ├── screens/        full-screen scenes you navigate BETWEEN — main menu,
 │   │                   credits, game over. Reached by a scene swap.
@@ -40,7 +44,10 @@ python3 tools/check_layout.py
 │   │                   Split a dedicated lib/ out once libraries proliferate.
 │   └── ui/             UI components instanced INTO screens/levels (HUD,
 │                       pause overlay, widgets) — not whole screens themselves
-├── addons/             third-party Godot plugins. Never hand-edited.
+├── addons/             Godot plugins. Third-party ones are never hand-edited;
+│                       our own editor tooling lives here too, because Godot
+│                       only scans addons/ for plugin.cfg and gives a first-party
+│                       EditorPlugin nowhere else to go.
 ├── raw/                source art Godot must NOT import (.aseprite, .blend,
 │                       .psd, .avif). A `.gdignore` makes the engine skip it,
 │                       so it never bloats .godot/ or an export.

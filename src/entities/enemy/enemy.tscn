@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://c8qw3nvx2mkta"]
 
-[ext_resource type="Script" path="res://src/entities/enemy/enemy.gd" id="1_enemy"]
+[ext_resource type="Script" uid="uid://bly27ll6d67sc" path="res://src/entities/enemy/enemy.gd" id="1_enemy"]
 [ext_resource type="Texture2D" uid="uid://dwickjareycf3" path="res://assets/sprites/characters/bad_guy/bad_guy_placeholder.png" id="2_sprite"]
 [ext_resource type="PackedScene" uid="uid://bh7kx2mqvn4ea" path="res://src/components/health/health.tscn" id="3_health"]
 [ext_resource type="PackedScene" uid="uid://ckinnty100svf" path="res://src/entities/gun_stuff/bullet.tscn" id="4_bullet"]
@@ -12,27 +12,26 @@ height = 14.0
 [sub_resource type="CircleShape2D" id="CircleShape2D_dodge"]
 radius = 40.0
 
-[node name="Enemy" type="CharacterBody2D"]
+[node name="Enemy" type="CharacterBody2D" unique_id=586325233]
 collision_layer = 4
 collision_mask = 7
 script = ExtResource("1_enemy")
 bullet_scene = ExtResource("4_bullet")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=540105131]
 shape = SubResource("CapsuleShape2D_enemy")
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=367973653]
 texture_filter = 1
 position = Vector2(0, -5)
 texture = ExtResource("2_sprite")
 
-[node name="Health" parent="." instance=ExtResource("3_health")]
-max_hp = 30
+[node name="Health" parent="." unique_id=878235951 instance=ExtResource("3_health")]
 
-[node name="DodgeSensor" type="Area2D" parent="."]
+[node name="DodgeSensor" type="Area2D" parent="." unique_id=1794610208]
 collision_layer = 0
 collision_mask = 8
 monitoring = false
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="DodgeSensor"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DodgeSensor" unique_id=469821721]
 shape = SubResource("CircleShape2D_dodge")

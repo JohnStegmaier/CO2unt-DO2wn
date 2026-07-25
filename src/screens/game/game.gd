@@ -51,6 +51,7 @@ var _rng := RandomNumberGenerator.new()
 ## CanvasItem, so hiding its Node2D parent leaves the HUD on screen.
 @onready var _hud: CanvasLayer = $Ui/CanvasLayer
 @onready var _o2_timer: O2Timer = $Ui/CanvasLayer/O2Timer
+@onready var _ammo_counter: AmmoCounter = $Ui/CanvasLayer/AmmoCounter
 ## Deliberately under the camera rather than beside the HUD: the vignette is
 ## world content so the player can out-rank it on z_index and stay lit inside the
 ## closing dark. See death_overlay.gd.
@@ -82,6 +83,9 @@ func _ready() -> void:
 	_o2_timer.air_critical_changed.connect(_on_air_critical_changed)
 	_o2_timer.suffocation_changed.connect(_death_overlay.set_vignette_progress)
 	_o2_timer.suffocated.connect(_on_player_died)
+
+	_player.ammo_changed.connect(_ammo_counter.set_ammo)
+	_ammo_counter.set_ammo(_player.ammo, _player.magazine_size)
 
 	_rng.randomize()
 	if run_seed == 0:

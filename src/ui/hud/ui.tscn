@@ -8,10 +8,10 @@
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=66906038]
 
 [node name="O2Timer" parent="CanvasLayer" unique_id=1199483244 instance=ExtResource("2_50hus")]
-position = Vector2(-60, 0)
+position = Vector2(-61, -2)
 scale = Vector2(1.2, 1.2)
 
-[node name="AmmoCounter" parent="CanvasLayer" instance=ExtResource("3_ammo")]
+[node name="AmmoCounter" parent="CanvasLayer" unique_id=164052633 instance=ExtResource("3_ammo")]
 position = Vector2(600, 330)
 
 [node name="Timer" type="Timer" parent="CanvasLayer" unique_id=755193890]

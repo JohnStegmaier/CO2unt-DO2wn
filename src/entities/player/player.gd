@@ -155,8 +155,17 @@ func _physics_process(delta: float) -> void:
 ## Invulnerability is measured against the wall clock rather than counted down in
 ## _physics_process, because _physics_process returns early while is_warping and
 ## a countdown there would freeze mid-transition.
+## True while a hit should have no effect at all. A dodge roll is meant to feel
+## like passing through an attack rather than merely surviving it — bullets
+## check this and skip themselves entirely instead of just being told to deal
+## no damage, which is why this is its own method rather than folded into
+## take_damage.
+func is_intangible() -> bool:
+	return is_dodging
+
+
 func take_damage(amount: int, type: int = Damage.Type.BLUNT) -> void:
-	if is_warping or _is_dead:
+	if is_warping or is_dodging or _is_dead:
 		return
 	if Time.get_ticks_msec() < _invulnerable_until_msec:
 		return

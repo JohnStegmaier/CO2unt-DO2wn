@@ -44,6 +44,9 @@ func _physics_process(delta: float) -> void:
 
 
 func _on_body_entered(body: Node2D) -> void:
+	# A dodging player is passed through rather than hit — see Player.is_intangible.
+	if body.has_method("is_intangible") and body.is_intangible():
+		return
 	if body.has_method("take_damage"):
 		body.take_damage(damage, damage_type)
 	queue_free()

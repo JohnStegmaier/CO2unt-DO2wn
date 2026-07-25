@@ -1,0 +1,42 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/ui/minimap/minimap.gd" id="1_minimap"]
+[ext_resource type="Script" path="res://src/ui/minimap/minimap_style.gd" id="2_style"]
+
+[sub_resource type="Resource" id="Resource_minimap_style"]
+script = ExtResource("2_style")
+cell_size = Vector2(11, 7)
+cell_gap = 2.0
+window_cells = Vector2i(13, 13)
+padding = 4.0
+outline_width = 1.0
+panel_color = Color(0.03, 0.06, 0.05, 0.3)
+panel_border_color = Color(0.25, 0.55, 0.35, 0.3)
+door_color = Color(0.4, 0.88, 0.52, 0.75)
+door_width = 1.0
+door_overhang = 1.0
+current_color = Color(0.3, 0.95, 0.45, 1)
+current_alpha_min = 0.55
+current_alpha_max = 0.95
+blink_period = 1.4
+blink_steps = 12
+visited_fill_color = Color(0.24, 0.68, 0.36, 0.22)
+visited_outline_color = Color(0.34, 0.8, 0.46, 0.65)
+discovered_fill_color = Color(0.12, 0.34, 0.2, 0.1)
+discovered_outline_color = Color(0.2, 0.5, 0.3, 0.4)
+dash_length = 2.0
+kind_colors = Array[Color]([Color(0, 0, 0, 0), Color(0, 0, 0, 0), Color(0.92, 0.26, 0.28, 1), Color(0.98, 0.8, 0.3, 1), Color(0.42, 0.68, 0.98, 1), Color(0.4, 0.98, 0.62, 1)])
+kind_glyphs = Array[String](["", "", "B", "$", "T", "X"])
+marker_font_size = 7
+marker_alpha = 0.95
+critical_alpha = 0.0
+critical_fade_time = 0.6
+
+[node name="Minimap" type="Control"]
+clip_contents = true
+mouse_filter = 2
+script = ExtResource("1_minimap")
+corner = 1
+margin = Vector2(8, 8)
+style = SubResource("Resource_minimap_style")
+reveal_all = false

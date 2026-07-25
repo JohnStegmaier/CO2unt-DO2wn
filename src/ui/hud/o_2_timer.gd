@@ -27,9 +27,9 @@ const FLICK_DEGREES := 15.0  # how far the flick swings past the current positio
 const FLICK_DURATION := 0.10  # seconds for the flick out, same again for return
 
 func _ready() -> void:
+	GlobalTimer.tick.connect(_setup)
 	needle.rotation_degrees = degrees
 	GlobalTimer.tick.connect(flick_needle)
-	_setup()
 
 	top_border_end_pos = top_border.position
 	top_border_start_pos = top_border_end_pos + Vector2(0, -top_border.size.y)
@@ -41,6 +41,8 @@ func _ready() -> void:
 
 
 func _setup() -> void:
+	if setup_done:
+		return
 	await get_tree().create_timer(0.3).timeout
 	time_left = total_time
 	update_label()

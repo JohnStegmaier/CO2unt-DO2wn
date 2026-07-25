@@ -8,6 +8,7 @@ extends Node2D
 ## rooms are instanced into RoomContainer instead of loaded with change_scene.
 
 const ROOM_SCENE := preload("res://src/levels/room/room.tscn")
+const ELEVATOR_ROOM_SCENE := preload("res://src/levels/elevator_room/elevator_room.tscn")
 const ENEMY_SCENE := preload("res://src/entities/enemy/enemy.tscn")
 const GAME_OVER_SCENE := "res://src/screens/game_over/game_over.tscn"
 
@@ -156,7 +157,14 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 	var data := _plan.get_room(coord)
 	data.visited = true
 
-	_current_room = ROOM_SCENE.instantiate()
+	# The floor's exit is a belt-scroll elevator lobby rather than a top-down cell.
+	# It is a Room, and it reports boarding through the same elevator_entered signal
+	# an ordinary exit room does, so every line below this block is unchanged and
+	# the ride does not care which kind of elevator it was called from.
+	if data.kind == RoomData.Kind.EXIT:
+		_current_room = ELEVATOR_ROOM_SCENE.instantiate()
+	else:
+		_current_room = ROOM_SCENE.instantiate()
 	# Rooms sit at their true grid position rather than all at the origin, so
 	# world space and map space never disagree — which is also what makes the
 	# slide below a plain camera pan instead of a compositing trick.

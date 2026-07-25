@@ -1,0 +1,259 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/levels/elevator_room/elevator_room.gd" id="1_lobby"]
+[ext_resource type="PackedScene" path="res://src/components/level_door.tscn" id="2_door"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_side"]
+size = Vector2(28, 286)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_back"]
+size = Vector2(173, 104)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_car_back"]
+size = Vector2(96, 32)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_near"]
+size = Vector2(198, 28)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_leaf"]
+size = Vector2(48, 36)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_approach"]
+size = Vector2(144, 152)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_car_trigger"]
+size = Vector2(88, 44)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_lobby"]
+size = Vector2(442, 286)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_plug"]
+size = Vector2(46, 28)
+
+[node name="ElevatorRoom" type="Node2D"]
+script = ExtResource("1_lobby")
+
+[node name="Art" type="Node2D" parent="."]
+
+[node name="floor" type="ColorRect" parent="Art"]
+z_index = -1
+offset_top = 104.0
+offset_right = 442.0
+offset_bottom = 286.0
+color = Color(0.28, 0.3, 0.34, 1)
+mouse_filter = 2
+
+[node name="ceiling" type="ColorRect" parent="Art"]
+offset_right = 442.0
+offset_bottom = 16.0
+color = Color(0.13, 0.15, 0.19, 1)
+mouse_filter = 2
+
+[node name="back_wall" type="ColorRect" parent="Art"]
+offset_top = 16.0
+offset_right = 442.0
+offset_bottom = 104.0
+color = Color(0.2, 0.23, 0.29, 1)
+mouse_filter = 2
+
+[node name="wall_left" type="ColorRect" parent="Art"]
+offset_top = 104.0
+offset_right = 49.0
+offset_bottom = 286.0
+color = Color(0.16, 0.18, 0.23, 1)
+mouse_filter = 2
+
+[node name="wall_right" type="ColorRect" parent="Art"]
+offset_left = 392.0
+offset_top = 104.0
+offset_right = 442.0
+offset_bottom = 286.0
+color = Color(0.16, 0.18, 0.23, 1)
+mouse_filter = 2
+
+[node name="wall_near_left" type="ColorRect" parent="Art"]
+offset_top = 236.0
+offset_right = 198.0
+offset_bottom = 286.0
+color = Color(0.1, 0.11, 0.14, 1)
+mouse_filter = 2
+
+[node name="wall_near_right" type="ColorRect" parent="Art"]
+offset_left = 244.0
+offset_top = 236.0
+offset_right = 442.0
+offset_bottom = 286.0
+color = Color(0.1, 0.11, 0.14, 1)
+mouse_filter = 2
+
+[node name="near_doorway" type="ColorRect" parent="Art"]
+offset_left = 198.0
+offset_top = 236.0
+offset_right = 244.0
+offset_bottom = 264.0
+color = Color(0.03, 0.04, 0.06, 1)
+mouse_filter = 2
+
+[node name="Elevator" type="Node2D" parent="."]
+
+[node name="car_interior" type="ColorRect" parent="Elevator"]
+z_index = 1
+offset_left = 173.0
+offset_top = 32.0
+offset_right = 269.0
+offset_bottom = 104.0
+color = Color(0.05, 0.06, 0.09, 1)
+mouse_filter = 2
+
+[node name="LeftLeaf" type="Node2D" parent="Elevator"]
+z_index = 2
+position = Vector2(197, 86)
+
+[node name="panel" type="ColorRect" parent="Elevator/LeftLeaf"]
+offset_left = -24.0
+offset_top = -46.0
+offset_right = 24.0
+offset_bottom = 18.0
+color = Color(0.55, 0.6, 0.66, 1)
+mouse_filter = 2
+
+[node name="body" type="StaticBody2D" parent="Elevator/LeftLeaf"]
+collision_mask = 0
+
+[node name="shape" type="CollisionShape2D" parent="Elevator/LeftLeaf/body"]
+shape = SubResource("RectangleShape2D_leaf")
+
+[node name="RightLeaf" type="Node2D" parent="Elevator"]
+z_index = 2
+position = Vector2(245, 86)
+
+[node name="panel" type="ColorRect" parent="Elevator/RightLeaf"]
+offset_left = -24.0
+offset_top = -46.0
+offset_right = 24.0
+offset_bottom = 18.0
+color = Color(0.55, 0.6, 0.66, 1)
+mouse_filter = 2
+
+[node name="body" type="StaticBody2D" parent="Elevator/RightLeaf"]
+collision_mask = 0
+
+[node name="shape" type="CollisionShape2D" parent="Elevator/RightLeaf/body"]
+shape = SubResource("RectangleShape2D_leaf")
+
+[node name="left_pillar" type="ColorRect" parent="Elevator"]
+z_index = 3
+offset_left = 125.0
+offset_top = 32.0
+offset_right = 173.0
+offset_bottom = 104.0
+color = Color(0.38, 0.41, 0.47, 1)
+mouse_filter = 2
+
+[node name="right_pillar" type="ColorRect" parent="Elevator"]
+z_index = 3
+offset_left = 269.0
+offset_top = 32.0
+offset_right = 317.0
+offset_bottom = 104.0
+color = Color(0.38, 0.41, 0.47, 1)
+mouse_filter = 2
+
+[node name="ApproachZone" type="Area2D" parent="Elevator"]
+position = Vector2(221, 108)
+collision_layer = 0
+collision_mask = 2
+
+[node name="shape" type="CollisionShape2D" parent="Elevator/ApproachZone"]
+shape = SubResource("RectangleShape2D_approach")
+debug_color = Color(0.2, 0.7, 0.4, 0.2)
+
+[node name="CarTrigger" type="Area2D" parent="Elevator"]
+position = Vector2(221, 54)
+collision_layer = 0
+collision_mask = 2
+
+[node name="shape" type="CollisionShape2D" parent="Elevator/CarTrigger"]
+shape = SubResource("RectangleShape2D_car_trigger")
+debug_color = Color(0.9, 0.6, 0.2, 0.25)
+
+[node name="CarMarker" type="Marker2D" parent="Elevator"]
+position = Vector2(221, 52)
+
+[node name="LobbyZone" type="Area2D" parent="."]
+position = Vector2(221, 143)
+collision_layer = 0
+collision_mask = 2
+
+[node name="shape" type="CollisionShape2D" parent="LobbyZone"]
+shape = SubResource("RectangleShape2D_lobby")
+debug_color = Color(0.4, 0.4, 0.9, 0.1)
+
+[node name="Walls" type="Node2D" parent="."]
+
+[node name="WallBody" type="StaticBody2D" parent="Walls"]
+collision_mask = 0
+
+[node name="wall_left" type="CollisionShape2D" parent="Walls/WallBody"]
+position = Vector2(35, 143)
+shape = SubResource("RectangleShape2D_wall_side")
+
+[node name="wall_right" type="CollisionShape2D" parent="Walls/WallBody"]
+position = Vector2(406, 143)
+shape = SubResource("RectangleShape2D_wall_side")
+
+[node name="back_left" type="CollisionShape2D" parent="Walls/WallBody"]
+position = Vector2(86.5, 52)
+shape = SubResource("RectangleShape2D_wall_back")
+
+[node name="back_right" type="CollisionShape2D" parent="Walls/WallBody"]
+position = Vector2(355.5, 52)
+shape = SubResource("RectangleShape2D_wall_back")
+
+[node name="car_back" type="CollisionShape2D" parent="Walls/WallBody"]
+position = Vector2(221, 16)
+shape = SubResource("RectangleShape2D_car_back")
+
+[node name="near_left" type="CollisionShape2D" parent="Walls/WallBody"]
+position = Vector2(99, 250)
+shape = SubResource("RectangleShape2D_wall_near")
+
+[node name="near_right" type="CollisionShape2D" parent="Walls/WallBody"]
+position = Vector2(343, 250)
+shape = SubResource("RectangleShape2D_wall_near")
+
+[node name="Plugs" type="Node2D" parent="Walls"]
+
+[node name="plug_near" type="StaticBody2D" parent="Walls/Plugs"]
+visible = false
+collision_mask = 0
+position = Vector2(221, 250)
+
+[node name="shape" type="CollisionShape2D" parent="Walls/Plugs/plug_near"]
+shape = SubResource("RectangleShape2D_plug")
+
+[node name="seal" type="ColorRect" parent="Walls/Plugs/plug_near"]
+offset_left = -23.0
+offset_top = -14.0
+offset_right = 23.0
+offset_bottom = 14.0
+color = Color(0.1, 0.11, 0.14, 1)
+mouse_filter = 2
+
+[node name="Entities" type="Node2D" parent="."]
+z_index = 2
+
+[node name="Doors" type="Node2D" parent="."]
+
+[node name="door_near" parent="Doors" instance=ExtResource("2_door")]
+position = Vector2(221, 250)
+side = 2
+
+[node name="Cutscene" type="CanvasLayer" parent="."]
+layer = 2
+
+[connection signal="body_entered" from="Elevator/ApproachZone" to="." method="_on_approach_entered"]
+[connection signal="body_exited" from="Elevator/ApproachZone" to="." method="_on_approach_exited"]
+[connection signal="body_entered" from="Elevator/CarTrigger" to="." method="_on_car_entered"]
+[connection signal="body_entered" from="LobbyZone" to="." method="_on_lobby_entered"]
+[connection signal="body_exited" from="LobbyZone" to="." method="_on_lobby_exited"]

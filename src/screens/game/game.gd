@@ -8,6 +8,7 @@ extends Node2D
 ## rooms are instanced into RoomContainer instead of loaded with change_scene.
 
 const ROOM_SCENE := preload("res://src/levels/room/room.tscn")
+const ENEMY_SCENE := preload("res://src/entities/enemy/enemy.tscn")
 
 @export_group("Room Transition")
 ## Seconds to slide from one room to the next.
@@ -17,10 +18,19 @@ const ROOM_SCENE := preload("res://src/levels/room/room.tscn")
 @export var transition_trans: Tween.TransitionType = Tween.TRANS_QUAD
 @export var transition_ease: Tween.EaseType = Tween.EASE_OUT
 
+@export_group("Enemies")
+@export var enemies_min: int = 1
+@export var enemies_max: int = 6
+## Roughly one in ten hangs back and snipes. Deliberately lopsided — a room of
+## all skirmishers is a shooting gallery, a room of all chasers is a scrum.
+@export_range(0.0, 1.0) var skirmisher_chance: float = 0.1
+
+var _rng := RandomNumberGenerator.new()
+
 @onready var _room_container: Node2D = $RoomContainer
 @onready var _player: Player = $Player
 @onready var _camera: Camera2D = $Player/Camera2D
-@onready var _o2_timer: Node2D = $Ui/CanvasLayer/O2Timer
+@onready var _o2_timer: O2Timer = $Ui/CanvasLayer/O2Timer
 
 var _plan: FloorPlan
 var _current_room: Room
@@ -31,6 +41,15 @@ var _transitioning: bool = false
 func _ready() -> void:
 	GlobalTimer.tick.connect(_on_global_tick)
 	_start_music()
+
+	# The player reports hits upward and the O2 timer decides what they cost.
+	# Game is the only node holding both ends, so the wiring belongs here.
+	_player.damaged.connect(_o2_timer.apply_damage)
+	_o2_timer.depleted.connect(_on_player_died)
+
+	# Placement will seed from the floor seed once the generator exists; until
+	# then a fresh arrangement per run is what we want.
+	_rng.randomize()
 
 	_plan = _build_debug_plan()
 	print(_plan.to_ascii())
@@ -111,6 +130,11 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 		previous_room.queue_free()
 
 	await get_tree().physics_frame
+	# After the physics frame, so six collision-shaped bodies cannot be added
+	# mid-flush — the same hazard that forces _enter_room itself to be deferred.
+	# After the slide, so enemies never get a free shot at a player who is still
+	# a tween puppet with physics disabled.
+	_populate(data)
 	_transitioning = false
 
 
@@ -120,6 +144,12 @@ func _slide_to(landing: Vector2, previous_room: Room) -> void:
 	_player.is_warping = true
 	_player.velocity = Vector2.ZERO
 	_camera.set_lead_enabled(false)
+
+	# The room we are leaving stops acting the instant the slide starts. For the
+	# next transition_time seconds the player is a tween puppet whose physics is
+	# disabled, so anything still chasing or shooting is working a target that
+	# cannot move, dodge, or shoot back.
+	previous_room.process_mode = Node.PROCESS_MODE_DISABLED
 
 	var from_rect := previous_room.interior_rect()
 	var to_rect := _current_room.interior_rect()
@@ -154,6 +184,45 @@ func _pan_camera_between(t: float, from_rect: Rect2, to_rect: Rect2) -> void:
 ## room is still a visual stub — but this is where O2 policy is applied.
 func _on_floor_advanced() -> void:
 	_o2_timer.refill()
+
+
+## Out of air. This is the seam a game over screen hangs off; for now it just
+## says so, which is enough to prove the damage pipeline reaches the end.
+func _on_player_died() -> void:
+	print("Game: out of oxygen")
+
+
+## Stock a room with its bad guys. Only ordinary rooms fight, and a room whose
+## count has reached zero stays quiet forever.
+func _populate(data: RoomData) -> void:
+	if data.kind != RoomData.Kind.NORMAL or data.enemies_remaining == 0:
+		return
+	if data.enemies_remaining < 0:
+		data.enemies_remaining = _rng.randi_range(enemies_min, enemies_max)
+
+	var player_local: Vector2 = _current_room.to_local(_player.global_position)
+	var spots := EnemyPlacement.points(Room.FLOOR, data.enemies_remaining,
+			player_local, _current_room.open_door_landings(), _rng)
+
+	for spot in spots:
+		var enemy: Enemy = ENEMY_SCENE.instantiate()
+		# Set before it enters the tree, so _ready() sees the finished article —
+		# the dodge sensor is only armed for skirmishers.
+		enemy.behaviour = Enemy.Behaviour.SKIRMISHER if _rng.randf() < skirmisher_chance \
+				else Enemy.Behaviour.CHASER
+		enemy.set_target(_player)
+		enemy.died.connect(_on_enemy_died.bind(data))
+		_current_room.add_entity(enemy, spot)
+
+	# No way out until the room is quiet. The clock does not stop, which is the
+	# point.
+	_current_room.set_locked(true)
+
+
+func _on_enemy_died(data: RoomData) -> void:
+	data.enemies_remaining -= 1
+	if data.enemies_remaining <= 0 and _current_room != null:
+		_current_room.set_locked(false)
 
 
 ## Hand-authored stand-in for the generator. Spawn has all four exits, with a

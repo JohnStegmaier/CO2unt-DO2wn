@@ -6,6 +6,8 @@
 [sub_resource type="CircleShape2D" id="CircleShape2D_nckmm"]
 
 [node name="Bullet" type="Area2D" unique_id=1315338816]
+collision_layer = 8
+collision_mask = 5
 script = ExtResource("1_kid0w")
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1173223551]

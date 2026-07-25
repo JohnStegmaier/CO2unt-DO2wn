@@ -65,6 +65,7 @@ region_rect = Rect2(193.82161, 260.3779, 52.72165, 25.772905)
 [node name="Walls" type="Node2D" parent="." unique_id=1847111286]
 
 [node name="WallBody" type="StaticBody2D" parent="Walls" unique_id=658248139]
+collision_mask = 0
 
 [node name="wall_north_west" type="CollisionShape2D" parent="Walls/WallBody" unique_id=262429740]
 visible = false
@@ -102,6 +103,7 @@ shape = SubResource("RectangleShape2D_wall_v")
 [node name="Plugs" type="Node2D" parent="Walls" unique_id=376354447]
 
 [node name="plug_north" type="StaticBody2D" parent="Walls/Plugs" unique_id=245918299]
+collision_mask = 0
 position = Vector2(221, 35)
 
 [node name="shape" type="CollisionShape2D" parent="Walls/Plugs/plug_north" unique_id=1451501582]
@@ -115,6 +117,7 @@ offset_bottom = 13.0
 color = Color(0.2196078, 0.3294118, 0.4, 1)
 
 [node name="plug_east" type="StaticBody2D" parent="Walls/Plugs" unique_id=2122978407]
+collision_mask = 0
 position = Vector2(406, 143)
 
 [node name="shape" type="CollisionShape2D" parent="Walls/Plugs/plug_east" unique_id=241522331]
@@ -128,6 +131,7 @@ offset_bottom = 23.0
 color = Color(0.2196078, 0.3294118, 0.4, 1)
 
 [node name="plug_south" type="StaticBody2D" parent="Walls/Plugs" unique_id=768755542]
+collision_mask = 0
 position = Vector2(221, 250)
 
 [node name="shape" type="CollisionShape2D" parent="Walls/Plugs/plug_south" unique_id=1565406216]
@@ -141,6 +145,7 @@ offset_bottom = 15.0
 color = Color(0.2196078, 0.3294118, 0.4, 1)
 
 [node name="plug_west" type="StaticBody2D" parent="Walls/Plugs" unique_id=1398777208]
+collision_mask = 0
 position = Vector2(35, 143)
 
 [node name="shape" type="CollisionShape2D" parent="Walls/Plugs/plug_west" unique_id=861018635]
@@ -152,6 +157,9 @@ offset_top = -24.0
 offset_right = 13.0
 offset_bottom = 22.0
 color = Color(0.2196078, 0.3294118, 0.4, 1)
+
+[node name="Entities" type="Node2D" parent="." unique_id=1902334471]
+z_index = 2
 
 [node name="Doors" type="Node2D" parent="." unique_id=1801665672]
 

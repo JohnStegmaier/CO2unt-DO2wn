@@ -1,7 +1,27 @@
+class_name O2Timer
 extends Node2D
+
+## The countdown, and the player's health bar — they are the same thing. Damage
+## does not come off a hit point pool, it comes off the clock, so this script
+## owns the conversion from a hit to a cost in air.
+
+## Out of oxygen. Fires once.
+signal depleted
 
 @export var total_time: float = 90 # starting time in seconds
 var time_left: float
+
+## How fast air is spent, as a multiplier on real time. Piercing damage tears the
+## suit and raises it; it eases back toward normal so a tear is a crisis rather
+## than a death sentence.
+var drain_rate: float = 1.0
+
+const SECONDS_PER_BLUNT_POINT := 0.5
+const DRAIN_PER_PIERCING_POINT := 0.05
+const MAX_DRAIN_RATE := 3.0
+const DRAIN_RECOVERY_PER_SECOND := 0.1
+
+var _depleted_emitted := false
 @onready var label: Label = $Label
 @onready var needle: Sprite2D = $Needle
 @onready var top_border: ColorRect = $Top_Border
@@ -53,6 +73,8 @@ func _setup() -> void:
 ## instead of resetting, change it here and nowhere else.
 func refill() -> void:
 	time_left = total_time
+	drain_rate = 1.0
+	_depleted_emitted = false
 	borders_shown = false
 	top_border.position = top_border_start_pos
 	bottom_border.position = bottom_border_start_pos
@@ -60,18 +82,50 @@ func refill() -> void:
 	update_needle()
 
 
+## The one place a hit becomes a cost in air.
+##
+## Ignored until the countdown has actually started: _setup() waits for the first
+## GlobalTimer tick plus 0.3s before assigning time_left, and anything spent
+## before that would be silently overwritten.
+func apply_damage(amount: int, type: int) -> void:
+	if not setup_done:
+		return
+	if type == Damage.Type.PIERCING:
+		add_drain(amount * DRAIN_PER_PIERCING_POINT)
+	else:
+		spend_seconds(amount * SECONDS_PER_BLUNT_POINT)
+
+
+func spend_seconds(seconds: float) -> void:
+	time_left = maxf(time_left - seconds, 0.0)
+	update_label()
+	update_needle()
+
+
+func add_drain(amount: float) -> void:
+	drain_rate = minf(drain_rate + amount, MAX_DRAIN_RATE)
+
+
 func _process(delta: float) -> void:
 	if not setup_done:
 		return
 	if time_left > 0:
-		time_left -= delta
+		time_left -= delta * drain_rate
 		time_left = max(time_left, 0)
 		update_label()
 		update_needle()
-		
+
+	# A torn suit seals itself slowly, so piercing hits stack into a spike that
+	# then subsides rather than a permanent sentence.
+	drain_rate = maxf(1.0, drain_rate - DRAIN_RECOVERY_PER_SECOND * delta)
+
 	if time_left <= border_slide_time and not borders_shown:
 		slide_in_borders()
 		borders_shown = true
+
+	if time_left <= 0.0 and not _depleted_emitted:
+		_depleted_emitted = true
+		depleted.emit()
 	
 	
 func update_label() -> void:

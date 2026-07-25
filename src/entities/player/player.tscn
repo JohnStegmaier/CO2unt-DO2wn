@@ -136,6 +136,8 @@ animations = [{
 }]
 
 [node name="Player" type="CharacterBody2D" unique_id=1612937390]
+collision_layer = 2
+collision_mask = 5
 disable_mode = 1
 script = ExtResource("1_lkv7d")
 bullet_scene = ExtResource("2_t8d2k")

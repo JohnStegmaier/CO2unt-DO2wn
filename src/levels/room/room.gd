@@ -30,14 +30,17 @@ func configure(doors: int) -> void:
 	for side in GridDirection.SIDES:
 		var is_open: bool = (doors & GridDirection.bit(side)) != 0
 		var door := door_for(side)
-		# Deferred because configure() runs right after the room enters the tree,
-		# which can land inside a physics callback.
+		# Deferred defensively: the physics server rejects these changes if it is
+		# mid-flush, which is easy to hit when rooms are built in response to a
+		# collision. Game defers room construction for the same reason.
 		door.set_deferred("monitoring", is_open)
 
 		var plug := _plug_for(side)
+		# visible is not physics state, so it can be set straight away.
 		plug.visible = not is_open
-		# Hiding a body does not stop it colliding, so clear the layer too.
-		plug.collision_layer = 0 if is_open else 1
+		# Hiding a body does not stop it colliding, so clear the layer too —
+		# deferred for the same reason as monitoring above.
+		plug.set_deferred("collision_layer", 0 if is_open else 1)
 
 
 func door_for(side: int) -> LevelDoor:

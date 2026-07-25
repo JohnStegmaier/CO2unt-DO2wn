@@ -11,7 +11,8 @@ enum Kind { NORMAL, SPAWN, BOSS, SHOP, TREASURE, EXIT }
 const KIND_GLYPHS: Array[String] = [".", "S", "B", "$", "T", "X"]
 
 var coord: Vector2i
-var kind: Kind = Kind.NORMAL
+## A Kind, typed int for the same reason sides are — see grid_direction.gd.
+var kind: int = Kind.NORMAL
 var doors: int = 0
 ## Rooms travelled from spawn. Spawn is 0. In a tree this is the only distance.
 var depth: int = 0

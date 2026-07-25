@@ -24,6 +24,10 @@ enum Behaviour { CHASER, SKIRMISHER }
 @export var bullet_scene: PackedScene
 @export var bullet_damage: int = 8
 @export_enum("blunt", "piercing") var bullet_damage_type: int = 0
+## How fast their shots travel. The single biggest lever on whether a shot is
+## dodgeable, and independent of the player's — both sides fire the same scene,
+## so this has to live on the shooter to be tunable separately.
+@export var bullet_speed := 400.0
 ## Blunt cost of being walked into. Rate-limited by the player's own mercy
 ## window, so this needs no timer of its own.
 @export var contact_damage: int = 6
@@ -116,7 +120,8 @@ func _shoot(aim: Vector2) -> void:
 
 	var bullet = bullet_scene.instantiate()
 	bullet.arm(direction, CollisionLayers.ENEMY_BULLET,
-			CollisionLayers.WORLD | CollisionLayers.PLAYER, bullet_damage, bullet_damage_type)
+			CollisionLayers.WORLD | CollisionLayers.PLAYER, bullet_damage, bullet_damage_type,
+			bullet_speed)
 	# Parented to the run container exactly as the player's shots are, so the
 	# Game's projectiles sweep stays the single owner of bullet lifetime.
 	get_tree().current_scene.add_child(bullet)

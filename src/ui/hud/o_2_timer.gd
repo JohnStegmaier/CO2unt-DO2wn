@@ -9,6 +9,7 @@ extends Node2D
 ## still playing, on whatever is left in their lungs. Fires once.
 signal depleted
 
+@onready var heartbeat = $UIMain/heartbeat
 ## Air came back after the tank had read zero. The counterpart to depleted, so a
 ## run that gets a second wind can undo whatever depleted set in motion.
 signal air_restored
@@ -27,7 +28,8 @@ signal suffocation_changed(progress: float)
 signal suffocated
 
 @export var total_time: float = 90 # starting time in seconds
-var time_left: float
+#var time_left = total_time
+var time_left = total_time
 
 ## How fast air is spent, as a multiplier on real time. Piercing damage tears the
 ## suit and raises it; it eases back toward normal so a tear is a crisis rather
@@ -114,9 +116,9 @@ const FLICK_DEGREES := 15.0  # how far the flick swings past the current positio
 const FLICK_DURATION := 0.10  # seconds for the flick out, same again for return
 
 func _ready() -> void:
+	print("ready!")
 	GlobalTimer.tick.connect(_setup)
 	needle.rotation_degrees = degrees
-	GlobalTimer.tick.connect(flick_needle)
 
 	top_border_end_pos = top_border.position
 	top_border_start_pos = top_border_end_pos + Vector2(0, -top_border.size.y)
@@ -126,10 +128,19 @@ func _ready() -> void:
 	bottom_border_start_pos = bottom_border_end_pos + Vector2(0, bottom_border.size.y)
 	bottom_border.position = bottom_border_start_pos
 
-
+#anything called in here will run begin on the first tick sound of the level
 func _setup() -> void:
 	if setup_done:
 		return
+	else:
+		print("setting up again!")
+		GlobalTimer.tick.connect(flick_needle)
+		#delay for timer sync
+		#await get_tree().create_timer(0.3).timeout
+		time_left = total_time
+		update_label()
+		setup_done = true
+		heartbeat.play()
 	# process_always false: this wait rides the same GlobalTimer beat grid the
 	# music does, and both have to stop dead when the tree pauses or the clock
 	# and the track come back out of phase with each other.
@@ -162,8 +173,6 @@ func refill() -> void:
 ## GlobalTimer tick plus 0.3s before assigning time_left, and anything spent
 ## before that would be silently overwritten.
 func apply_damage(amount: int, type: int) -> void:
-	if not setup_done:
-		return
 	if type == Damage.Type.PIERCING:
 		add_drain(amount * drain_per_piercing_point)
 	else:

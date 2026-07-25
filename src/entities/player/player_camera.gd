@@ -1,5 +1,12 @@
 extends Camera2D
 
+@export_group("HUD")
+## Shifts the view down so the HUD at the top of the screen doesn't cover
+## the player. This is a fixed offset, not something that lerps or eases
+## like the lead offsets — it's just where "centered" means for this game.
+@export var hud_offset_y: float = 40
+
+
 ## Attach this to a Camera2D that is a CHILD of the player node.
 ## It reads the player's velocity for movement-lead and where they are aiming
 ## for aim-lead, then smoothly blends both into an offset.
@@ -77,10 +84,12 @@ func _process(delta: float) -> void:
 
 	# Combine both leads. Mouse lead dominates because it has a larger
 	# amount and higher smoothing responsiveness by default.
-	var combined_offset: Vector2 = _movement_offset + _aim_offset
+	var combined_offset: Vector2 = _movement_offset + _aim_offset + Vector2(0, hud_offset_y)
 
 	if clamp_to_bounds:
 		combined_offset = _clamp_offset_to_bounds(combined_offset)
+
+	position = combined_offset
 
 	# Setting local `position` directly (instead of the `offset` property)
 	# means the camera's rendered position is EXACTLY player.global_position

@@ -234,19 +234,21 @@ animation = &"walk_down"
 
 [node name="BigGunBTransparent" type="Sprite2D" parent="." unique_id=1371732958]
 modulate = Color(1.8764027, 1.111197, 1.5168338, 1)
-position = Vector2(1.1368684e-13, 3.9999998)
-scale = Vector2(0.1, 0.1)
+position = Vector2(5.9604645e-08, 4.999999)
+scale = Vector2(0.05, 0.05)
 texture = ExtResource("15_lqdhu")
-offset = Vector2(120, 0)
+offset = Vector2(222.865, 0)
 flip_h = true
 
 [node name="Muzzle" type="Marker2D" parent="BigGunBTransparent" unique_id=1118717441]
 position = Vector2(223.74, -51.085)
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1449007135]
+position = Vector2(0, 50)
 zoom = Vector2(1.5, 1.5)
 drag_left_margin = 0.0
 drag_top_margin = 0.0
 drag_right_margin = 0.0
 drag_bottom_margin = 0.0
 script = ExtResource("1_pcam0")
+clamp_to_bounds = false

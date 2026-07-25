@@ -48,6 +48,8 @@ texture_filter = 1
 position = Vector2(167.75, 45.25)
 scale = Vector2(0.5, 0.5)
 texture = ExtResource("2_rocwj")
+region_enabled = true
+region_rect = Rect2(0, 0, 467, 173)
 
 [node name="Light1" type="Sprite2D" parent="UIMain" unique_id=475850424]
 self_modulate = Color(1, 0.5254902, 0.3647059, 1)
@@ -92,12 +94,15 @@ scale = Vector2(1.102938, 1.1029398)
 texture = ExtResource("4_w10os")
 
 [node name="StatContainers" type="Sprite2D" parent="UIMain" unique_id=2102348708]
+visible = false
 
 [node name="FireRate1" type="Sprite2D" parent="UIMain/StatContainers" unique_id=504416609]
+visible = false
 position = Vector2(-195.5, 29.5)
 texture = ExtResource("4_awvvu")
 
 [node name="Strength1" type="Sprite2D" parent="UIMain/StatContainers" unique_id=1138869507]
+visible = false
 position = Vector2(-195.5, 49.5)
 texture = ExtResource("4_awvvu")
 
@@ -196,3 +201,10 @@ offset = Vector2(-5.515, 0)
 
 [node name="Marker2D" type="Marker2D" parent="." unique_id=1840076982]
 position = Vector2(198, 217)
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=1136633534]
+offset_left = 282.0
+offset_top = 2.0
+offset_right = 649.0
+offset_bottom = 53.0
+color = Color(0.2116521, 0.31202248, 0.29536694, 1)

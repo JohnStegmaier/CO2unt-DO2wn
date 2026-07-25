@@ -3,9 +3,9 @@ extends CharacterBody2D
 class_name Player
 
 @export var bullet_scene: PackedScene
-@export var muzzle_offset := 25.0
-@export var muzzle_y_offset := 6.0
-@export var fire_rate := 0.05
+@export var muzzle_offset := 20.0
+@export var muzzle_y_offset := 2
+@export var fire_rate := 0.1
 @export var bullet_damage := 10
 
 @onready var sprite = $AnimatedSprite2D

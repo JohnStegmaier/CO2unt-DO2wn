@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bdnrmihv1accb"
-path="res://.godot/imported/needle2.png-2e3551158bc032b25790c05d8eed09ff.ctex"
+uid="uid://8kkju5hqbde2"
+path="res://.godot/imported/ekg17.png-797903935e16343150b70dca10dc64b7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/ui/needle2.png"
-dest_files=["res://.godot/imported/needle2.png-2e3551158bc032b25790c05d8eed09ff.ctex"]
+source_file="res://assets/sprites/ui/ekg/ekg17.png"
+dest_files=["res://.godot/imported/ekg17.png-797903935e16343150b70dca10dc64b7.ctex"]
 
 [params]
 

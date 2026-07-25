@@ -7,6 +7,9 @@ class_name Player
 @export var muzzle_y_offset := 2
 @export var fire_rate := 0.1
 @export var bullet_damage := 10
+## How fast our shots travel. Lives here rather than on the bullet because the
+## enemies fire the same scene and need their own number — see enemy.gd.
+@export var bullet_speed := 400.0
 
 @onready var sprite = $AnimatedSprite2D
 @onready var gun: Sprite2D = $BigGunBTransparent
@@ -210,7 +213,8 @@ func shoot() -> void:
 	# Armed before it enters the tree, so its layers are settled by the time the
 	# physics server sees it.
 	bullet.arm(gun_direction, CollisionLayers.PLAYER_BULLET,
-			CollisionLayers.WORLD | CollisionLayers.ENEMY, bullet_damage, Damage.Type.BLUNT)
+			CollisionLayers.WORLD | CollisionLayers.ENEMY, bullet_damage, Damage.Type.BLUNT,
+			bullet_speed)
 	get_tree().current_scene.add_child(bullet)
 	AudioManager.play_sfx("laser_gun_01")
 	bullet.global_position = gun.global_position + spawn_offset

@@ -27,21 +27,21 @@ enum Behaviour { CHASER, SKIRMISHER }
 ## How fast their shots travel. The single biggest lever on whether a shot is
 ## dodgeable, and independent of the player's — both sides fire the same scene,
 ## so this has to live on the shooter to be tunable separately.
-@export var bullet_speed := 400.0
+@export var bullet_speed := 180.0
 ## Blunt cost of being walked into. Rate-limited by the player's own mercy
 ## window, so this needs no timer of its own.
 @export var contact_damage: int = 6
 @export var fire_interval := 1.6
 @export var fire_range := 220.0
 ## Radians. They are bad guys, not marksmen.
-@export var aim_spread := 0.12
+@export var aim_spread := 0.2
 ## No volley on the frame you walk through the door.
 @export var spawn_grace := 0.8
 
 @export_group("Movement")
 ## Deliberately slower than the player's 150, so you can kite them but not
 ## ignore them.
-@export var chase_speed := 70.0
+@export var chase_speed := 60.0
 ## Exponential smoothing rate, matching player_camera.gd's idiom so acceleration
 ## is frame-rate independent.
 @export var chase_acceleration := 6.0
@@ -125,6 +125,9 @@ func _shoot(aim: Vector2) -> void:
 	# Parented to the run container exactly as the player's shots are, so the
 	# Game's projectiles sweep stays the single owner of bullet lifetime.
 	get_tree().current_scene.add_child(bullet)
+	# Same shot sound as the player's gun, pitched and dimmed down so enemy fire
+	# reads as duller and doesn't compete with the player's own shots.
+	AudioManager.play_sfx("laser_gun_01", 0.7, -6.0)
 	bullet.global_position = global_position + direction * MUZZLE_OFFSET
 	bullet.reset_physics_interpolation()
 

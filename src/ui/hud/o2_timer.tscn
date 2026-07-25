@@ -418,3 +418,10 @@ offset = Vector2(-5.515, 0)
 
 [node name="Marker2D" type="Marker2D" parent="." unique_id=1840076982]
 position = Vector2(198, 217)
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=1662172607]
+modulate = Color(0.87096035, 0.8363601, 1.540184e-06, 1)
+offset_left = 89.375
+offset_top = 28.745
+offset_right = 90.775
+offset_bottom = 30.135

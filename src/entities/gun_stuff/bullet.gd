@@ -32,6 +32,8 @@ func _ready() -> void:
 	# the player into the next room. The Game clears this group on every swap.
 	add_to_group("projectiles")
 	rotation = direction.angle()
+	if collision_layer & CollisionLayers.ENEMY_BULLET:
+		modulate = Color.RED
 	body_entered.connect(_on_body_entered)
 	$VisibleOnScreenNotifier2D.screen_exited.connect(queue_free)
 	get_tree().create_timer(5.0).timeout.connect(queue_free)  # safety net
@@ -42,6 +44,9 @@ func _physics_process(delta: float) -> void:
 
 
 func _on_body_entered(body: Node2D) -> void:
+	# A dodging player is passed through rather than hit — see Player.is_intangible.
+	if body.has_method("is_intangible") and body.is_intangible():
+		return
 	if body.has_method("take_damage"):
 		body.take_damage(damage, damage_type)
 	queue_free()

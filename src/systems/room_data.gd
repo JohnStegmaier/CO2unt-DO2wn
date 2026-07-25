@@ -19,6 +19,15 @@ var depth: int = 0
 ## Set by the runtime once the player has been here; drives minimap fog.
 var visited: bool = false
 
+## Enemies still standing. -1 until the room is first entered and a count is
+## rolled; 0 means cleared, which is why walking back through ground you already
+## fought over stays quiet.
+##
+## An int rather than a `cleared` flag because it also survives a retreat: leave
+## with three of six dead and the survivors are freed with the room without ever
+## emitting died, so the count is exactly what comes back.
+var enemies_remaining: int = -1
+
 
 ## kind is a Kind, and side arguments are a GridDirection.Side, but both are
 ## typed int here — see the note in grid_direction.gd on enums across scripts.

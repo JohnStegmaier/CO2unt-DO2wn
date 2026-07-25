@@ -2,8 +2,23 @@ extends Area2D
 
 @export var speed := 400.0
 @export var damage := 10
+## A Damage.Type. Set per shot by arm(), because one bullet scene serves both the
+## player and the enemies.
+@export_enum("blunt", "piercing") var damage_type: int = 0
 
 var direction := Vector2.RIGHT
+
+
+## Set up a bullet for whoever fired it, so no caller has to remember four
+## properties. Call this BEFORE add_child: layers on a node that is not yet in
+## the tree cannot be rejected by the physics server the way an in-tree change
+## can, so this needs none of the set_deferred care room.gd takes.
+func arm(p_direction: Vector2, layer: int, mask: int, p_damage: int, p_damage_type: int) -> void:
+	direction = p_direction
+	collision_layer = layer
+	collision_mask = mask
+	damage = p_damage
+	damage_type = p_damage_type
 
 
 func _ready() -> void:
@@ -22,5 +37,5 @@ func _physics_process(delta: float) -> void:
 
 func _on_body_entered(body: Node2D) -> void:
 	if body.has_method("take_damage"):
-		body.take_damage(damage)
+		body.take_damage(damage, damage_type)
 	queue_free()

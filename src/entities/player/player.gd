@@ -6,6 +6,7 @@ class_name Player
 @export var muzzle_offset := 25.0
 @export var muzzle_y_offset := 6.0
 @export var fire_rate := 0.05
+@export var bullet_damage := 10
 
 @onready var sprite = $AnimatedSprite2D
 @onready var gun: Sprite2D = $BigGunBTransparent
@@ -43,6 +44,17 @@ var aiming_with_gamepad := false
 ## transition for the duration — a dodge finishing mid-slide would otherwise
 ## re-enable can_move and fight the tween for control of our position.
 var is_warping := false
+
+## Something landed a hit. We deliberately hold no health of our own — the O2
+## countdown is the health bar — so this reports upward and lets the run decide
+## what a hit costs. Signals up, calls down: the player never touches the HUD.
+signal damaged(amount: int, type: int)
+
+## Seconds of mercy after a hit. Without it a stream of bullets lands several
+## times a second and a roomful of enemies empties the tank in moments.
+@export var invulnerable_time := 0.6
+
+var _invulnerable_until_msec: int = 0
 
 
 func _ready() -> void:
@@ -112,6 +124,30 @@ func _physics_process(delta: float) -> void:
 		shoot()
 
 
+## Take a hit. Damage type is passed straight through — what blunt and piercing
+## actually cost is the O2 timer's business, not ours.
+##
+## Invulnerability is measured against the wall clock rather than counted down in
+## _physics_process, because _physics_process returns early while is_warping and
+## a countdown there would freeze mid-transition.
+func take_damage(amount: int, type: int = Damage.Type.BLUNT) -> void:
+	if is_warping:
+		return
+	if Time.get_ticks_msec() < _invulnerable_until_msec:
+		return
+	_invulnerable_until_msec = Time.get_ticks_msec() + int(invulnerable_time * 1000.0)
+	damaged.emit(amount, type)
+	_flash_hit()
+
+
+## Brief red flash, so a hit reads even when the only feedback is a number in the
+## corner ticking down faster.
+func _flash_hit() -> void:
+	var flash := create_tween()
+	flash.tween_property(sprite, "modulate", Color(1.0, 0.4, 0.4), 0.05)
+	flash.tween_property(sprite, "modulate", Color.WHITE, invulnerable_time - 0.05)
+
+
 ## Move instantly, without the renderer drawing the trip. Physics interpolation
 ## is on project-wide, so without the reset a warp between rooms smears across
 ## a frame.
@@ -129,7 +165,10 @@ func shoot() -> void:
 	var flip_sign := -1.0 if gun_direction.x < 0 else 1.0
 	var spawn_offset := gun_direction * muzzle_offset + perpendicular * muzzle_y_offset * flip_sign
 
-	bullet.direction = gun_direction
+	# Armed before it enters the tree, so its layers are settled by the time the
+	# physics server sees it.
+	bullet.arm(gun_direction, CollisionLayers.PLAYER_BULLET,
+			CollisionLayers.WORLD | CollisionLayers.ENEMY, bullet_damage, Damage.Type.BLUNT)
 	get_tree().current_scene.add_child(bullet)
 	AudioManager.play_sfx("laser_gun_01")
 	bullet.global_position = gun.global_position + spawn_offset

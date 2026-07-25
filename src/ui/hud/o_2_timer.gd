@@ -26,7 +26,7 @@ signal suffocation_changed(progress: float)
 ## The last breath is gone. THIS is death — not depleted.
 signal suffocated
 
-@export var total_time: float = 90 # starting time in seconds
+@export var total_time: float = 15 # starting time in seconds
 var time_left: float
 
 ## How fast air is spent, as a multiplier on real time. Piercing damage tears the

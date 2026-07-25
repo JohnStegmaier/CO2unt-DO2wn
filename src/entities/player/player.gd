@@ -23,8 +23,21 @@ var dodge_timer := 0.0
 var gun_default_position: Vector2
 var gun_default_scale: Vector2
 
+## Right-stick deflection below this counts as the stick being at rest. Also the
+## threshold for believing a joypad event means the player actually picked a pad
+## up — sticks emit a constant trickle of noise even untouched.
+const AIM_DEADZONE := 0.25
+
 var can_shoot := true
+## World-space aim, whichever device supplied it. Bullets and the gun sprite
+## both read this, so neither has to know how the player is aiming.
 var gun_direction := Vector2.RIGHT
+## How hard the right stick is pushed, 0..1. Zero while aiming with a mouse —
+## the camera derives its own strength from cursor distance in that case.
+var aim_deflection := 0.0
+## Which device last supplied aim. Both can be plugged in, so the most recent
+## one wins and the player can swap mid-run without touching a settings screen.
+var aiming_with_gamepad := false
 
 ## True while the Game is moving us between rooms. Physics is handed over to the
 ## transition for the duration — a dodge finishing mid-slide would otherwise
@@ -37,14 +50,37 @@ func _ready() -> void:
 	gun_default_scale = gun.scale
 
 
+## Last device to speak wins. Joypad motion is filtered by deadzone because an
+## untouched stick still emits events — without the filter a pad sitting on the
+## desk would take aim back from the mouse every frame.
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion:
+		aiming_with_gamepad = false
+	elif event is InputEventJoypadButton:
+		aiming_with_gamepad = true
+	elif event is InputEventJoypadMotion and absf(event.axis_value) > AIM_DEADZONE:
+		aiming_with_gamepad = true
+
+
 func _process(_delta: float) -> void:
 	if is_dodging:
 		return
-	var mouse_pos: Vector2 = get_global_mouse_position()
-	var direction: Vector2 = mouse_pos - gun.global_position
-	gun.rotation = direction.angle()
-	gun.flip_v = direction.x < 0
-	gun_direction = direction.normalized()
+
+	if aiming_with_gamepad:
+		var stick := Input.get_vector("aim_left", "aim_right", "aim_up", "aim_down")
+		aim_deflection = minf(stick.length(), 1.0)
+		# Releasing the stick holds the last aim rather than snapping the gun to
+		# some default the player never chose.
+		if aim_deflection > 0.0:
+			gun_direction = stick / stick.length()
+	else:
+		aim_deflection = 0.0
+		var to_cursor: Vector2 = get_global_mouse_position() - gun.global_position
+		if not to_cursor.is_zero_approx():
+			gun_direction = to_cursor.normalized()
+
+	gun.rotation = gun_direction.angle()
+	gun.flip_v = gun_direction.x < 0
 
 
 func _physics_process(delta: float) -> void:

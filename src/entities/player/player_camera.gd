@@ -1,20 +1,20 @@
 extends Camera2D
 
 ## Attach this to a Camera2D that is a CHILD of the player node.
-## It reads the player's velocity for movement-lead and the mouse
-## position for mouse-lead, then smoothly blends both into an offset.
+## It reads the player's velocity for movement-lead and where they are aiming
+## for aim-lead, then smoothly blends both into an offset.
 
 @export_group("Target")
-@export var player: CharacterBody2D  ## Assign in inspector, or it auto-finds get_parent()
+@export var player: Player  ## Assign in inspector, or it auto-finds get_parent()
 
 @export_group("Movement Lead")
 @export var movement_lead_amount: float = 20.0      ## Max pixels the camera shifts toward movement direction
 @export var movement_lead_smoothing: float = 2.0    ## Higher = snappier response to velocity changes
 
-@export_group("Mouse Lead")
-@export var mouse_lead_amount: float = 90.0          ## Max pixels the camera shifts toward the mouse
-@export var mouse_lead_deadzone: float = 40.0        ## Pixels from screen center before mouse-lead starts
-@export var mouse_lead_smoothing: float = 3.5        ## Higher = snappier response to mouse movement
+@export_group("Aim Lead")
+@export var aim_lead_amount: float = 90.0            ## Max pixels the camera shifts toward where you aim
+@export var aim_lead_deadzone: float = 40.0          ## Pixels from screen center before mouse aim-lead starts
+@export var aim_lead_smoothing: float = 3.5          ## Higher = snappier response to aim changes
 
 @export_group("Level Bounds")
 ## Set these to match your level (e.g. TileMap.get_used_rect() * cell size).
@@ -28,11 +28,11 @@ extends Camera2D
 @export var bounds_bottom: float = 2000.0
 
 var _movement_offset: Vector2 = Vector2.ZERO
-var _mouse_offset: Vector2 = Vector2.ZERO
+var _aim_offset: Vector2 = Vector2.ZERO
 var _lead_enabled: bool = true
 
 
-## Suppress movement and mouse lead, so a room transition reads as a clean slide
+## Suppress movement and aim lead, so a room transition reads as a clean slide
 ## rather than a slide with a wandering offset riding on top of it.
 func set_lead_enabled(enabled: bool) -> void:
 	_lead_enabled = enabled
@@ -49,7 +49,7 @@ func set_bounds(rect: Rect2) -> void:
 
 func _ready() -> void:
 	if player == null:
-		player = get_parent() as CharacterBody2D
+		player = get_parent() as Player
 
 	# We do our own exponential smoothing on the lead offsets below, so the
 	# built-in smoothing is turned OFF. Leaving it on adds a second, separate
@@ -68,16 +68,16 @@ func _process(delta: float) -> void:
 
 	if _lead_enabled:
 		_update_movement_lead(delta)
-		_update_mouse_lead(delta)
+		_update_aim_lead(delta)
 	else:
 		# Ease the lead out instead of zeroing it. Snapping a 90px offset to
 		# zero would be exactly the jolt the transition is meant to avoid.
 		_movement_offset = _movement_offset.lerp(Vector2.ZERO, 1.0 - exp(-movement_lead_smoothing * delta))
-		_mouse_offset = _mouse_offset.lerp(Vector2.ZERO, 1.0 - exp(-mouse_lead_smoothing * delta))
+		_aim_offset = _aim_offset.lerp(Vector2.ZERO, 1.0 - exp(-aim_lead_smoothing * delta))
 
 	# Combine both leads. Mouse lead dominates because it has a larger
 	# amount and higher smoothing responsiveness by default.
-	var combined_offset: Vector2 = _movement_offset + _mouse_offset
+	var combined_offset: Vector2 = _movement_offset + _aim_offset
 
 	if clamp_to_bounds:
 		combined_offset = _clamp_offset_to_bounds(combined_offset)
@@ -117,21 +117,32 @@ func _update_movement_lead(delta: float) -> void:
 	)
 
 
-func _update_mouse_lead(delta: float) -> void:
+func _update_aim_lead(delta: float) -> void:
+	# Each device needs its own strength curve. A cursor's strength is how far it
+	# sits from the centre of the screen; a stick's is how hard it is pushed.
+	# Reading the cursor on a gamepad would peg the lead to wherever the pointer
+	# was abandoned and never move it again.
+	var target_offset: Vector2 = _gamepad_lead() if player.aiming_with_gamepad else _mouse_lead()
+
+	_aim_offset = _aim_offset.lerp(
+		target_offset,
+		1.0 - exp(-aim_lead_smoothing * delta)
+	)
+
+
+func _gamepad_lead() -> Vector2:
+	return player.gun_direction * player.aim_deflection * aim_lead_amount
+
+
+func _mouse_lead() -> Vector2:
 	var viewport := get_viewport()
 	var screen_center: Vector2 = viewport.get_visible_rect().size * 0.5
-	var mouse_pos: Vector2 = viewport.get_mouse_position()
-
-	var mouse_delta: Vector2 = mouse_pos - screen_center
+	var mouse_delta: Vector2 = viewport.get_mouse_position() - screen_center
 	var dist: float = mouse_delta.length()
 
-	var target_offset := Vector2.ZERO
-	if dist > mouse_lead_deadzone:
-		# Remap so the deadzone doesn't cause a sudden jump at the threshold.
-		var strength: float = clamp((dist - mouse_lead_deadzone) / (screen_center.length() - mouse_lead_deadzone), 0.0, 1.0)
-		target_offset = mouse_delta.normalized() * strength * mouse_lead_amount
+	if dist <= aim_lead_deadzone:
+		return Vector2.ZERO
 
-	_mouse_offset = _mouse_offset.lerp(
-		target_offset,
-		1.0 - exp(-mouse_lead_smoothing * delta)
-	)
+	# Remap so the deadzone doesn't cause a sudden jump at the threshold.
+	var strength: float = clamp((dist - aim_lead_deadzone) / (screen_center.length() - aim_lead_deadzone), 0.0, 1.0)
+	return mouse_delta.normalized() * strength * aim_lead_amount

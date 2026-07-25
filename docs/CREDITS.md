@@ -53,7 +53,7 @@ they're covered by the repository [`LICENSE`](../LICENSE). List them under
 | Hung Tran | https://pixabay.com/users/trangiahung159-2822485/ | Pixabay Content License | Music | Pixabay #536981 |
 | Jim Combs | https://pixabay.com/users/jim_combs-3407552/ | Pixabay Content License | Music | Pixabay #140306 |
 | DRAGON-STUDIO | https://pixabay.com/users/dragon-studio-38165424/ | Pixabay Content License | Clock / tick sound effects | Pixabay #467486 |
-
+laser sound - Sound Effect by <a href="https://pixabay.com/users/freesound_community-46691455/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=81720">freesound_community</a> from <a href="https://pixabay.com/sound-effects//?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=81720">Pixabay</a>
 ## Fonts
 
 | Author | Source | License | Used for | Notes |

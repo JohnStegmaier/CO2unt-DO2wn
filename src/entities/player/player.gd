@@ -117,8 +117,10 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 
 	if Input.is_action_just_pressed("dodge"):
-		if can_move and velocity != Vector2.ZERO and last_direction == "down":
-			dodge_down()
+		if can_move and velocity != Vector2.ZERO:
+			var dodge_dir := get_dodge_direction(input_vector)
+			if dodge_dir != Vector2.ZERO:
+				dodge(dodge_dir)
 
 	if Input.is_action_just_pressed("shoot") and can_shoot and not is_dodging:
 		shoot()
@@ -178,12 +180,40 @@ func shoot() -> void:
 	can_shoot = true
 
 
-func dodge_down() -> void:
+## Maps current movement input to one of the dodge directions we have
+## animations for. Pure up, up-right, and up-left aren't supported yet, so
+## those return Vector2.ZERO and the dodge input is simply ignored.
+func get_dodge_direction(v: Vector2) -> Vector2:
+	if v.y > 0:
+		if v.x > 0:
+			return Vector2(1, 1).normalized()   # down-right
+		elif v.x < 0:
+			return Vector2(-1, 1).normalized()  # down-left
+		return Vector2.DOWN
+	elif v.y == 0:
+		if v.x > 0:
+			return Vector2.RIGHT
+		elif v.x < 0:
+			return Vector2.LEFT
+	return Vector2.ZERO
+
+
+## Dodge in the given direction. "dodge_right" covers right and down-right,
+## mirrored via flip_h for left and down-left; straight down gets its own
+## animation since it isn't just a mirror of anything.
+func dodge(direction: Vector2) -> void:
 	can_move = false
 	is_dodging = true
-	dodge_direction = Vector2.DOWN
+	dodge_direction = direction
 	dodge_timer = 0.0
-	sprite.play("dodge_down")
+
+	if direction == Vector2.DOWN:
+		last_direction = "down"
+		sprite.play("dodge_down")
+	else:
+		last_direction = "right"
+		sprite.flip_h = direction.x < 0
+		sprite.play("dodge_right")
 
 	var pull_tween := create_tween()
 	pull_tween.set_parallel(true)

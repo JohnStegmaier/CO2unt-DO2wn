@@ -55,7 +55,13 @@ func _on_door_entered(side: int) -> void:
 	if not _plan.has_room(target):
 		push_warning("Game: %s door leads nowhere from %v" % [GridDirection.side_name(side), _current_coord])
 		return
-	_enter_room(target, GridDirection.opposite(side))
+
+	# Claim the transition now, but build the room outside this callback. We are
+	# inside the door's body_entered, which the physics server emits while it is
+	# flushing queries — and adding a node full of collision shapes to the tree
+	# is rejected outright at that moment. Deferring runs it after the flush.
+	_transitioning = true
+	_enter_room.call_deferred(target, GridDirection.opposite(side))
 
 
 ## arrive_side is the side of the NEW room the player walks in through.

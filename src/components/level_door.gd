@@ -41,7 +41,10 @@ func _ready() -> void:
 		shape.size = Vector2(TRIGGER_DEPTH, TRIGGER_WIDTH)
 	else:
 		shape.size = Vector2(TRIGGER_WIDTH, TRIGGER_DEPTH)
-	_trigger.shape = shape
+	# Deferred defensively: a door is cheap to spawn in response to a collision,
+	# and the physics server rejects shape changes made while it is flushing
+	# queries. The door is not monitoring yet, so a frame's delay costs nothing.
+	_trigger.set_deferred("shape", shape)
 
 
 ## Where a player arriving through this door should be placed. Inward is always

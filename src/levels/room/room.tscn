@@ -1,8 +1,14 @@
 [gd_scene format=3 uid="uid://cjnf0aq7acwnh"]
 
-[ext_resource type="Script" path="res://src/levels/room/room.gd" id="1_room"]
+[ext_resource type="Script" uid="uid://dff0ryoaalsux" path="res://src/levels/room/room.gd" id="1_room"]
 [ext_resource type="Texture2D" uid="uid://dndxj5us5bnvi" path="res://assets/sprites/environment/isaac_template_standard.png" id="2_bg"]
 [ext_resource type="PackedScene" uid="uid://c1g6yvd4ortv1" path="res://src/components/level_door.tscn" id="3_door"]
+
+[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_wf81e"]
+load_path = "res://.godot/imported/isaac_template_standard.png-387ec9706ca26b574271ef296a230183.ctex"
+
+[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_lksmk"]
+load_path = "res://.godot/imported/isaac_template_standard.png-387ec9706ca26b574271ef296a230183.ctex"
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_h"]
 size = Vector2(176, 28)
@@ -16,118 +22,150 @@ size = Vector2(50, 28)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_plug_v"]
 size = Vector2(28, 50)
 
-[node name="Room" type="Node2D"]
+[node name="Room" type="Node2D" unique_id=1808165109]
 script = ExtResource("1_room")
 
-[node name="background" type="Sprite2D" parent="."]
+[node name="background" type="Sprite2D" parent="." unique_id=1431768455]
 z_index = -1
 texture = ExtResource("2_bg")
 centered = false
 
-[node name="Walls" type="Node2D" parent="."]
+[node name="background2" type="Sprite2D" parent="." unique_id=1163069282]
+z_index = 1
+position = Vector2(0, 111)
+texture = ExtResource("2_bg")
+centered = false
+region_enabled = true
+region_rect = Rect2(0, 110.87772, 25.963879, 59.355965)
 
-[node name="WallBody" type="StaticBody2D" parent="Walls"]
+[node name="background3" type="Sprite2D" parent="." unique_id=1416418679]
+z_index = 1
+position = Vector2(416, 113)
+texture = SubResource("CompressedTexture2D_wf81e")
+centered = false
+region_enabled = true
+region_rect = Rect2(416.13782, 112.869835, 25.963879, 59.355965)
 
-[node name="wall_north_west" type="CollisionShape2D" parent="Walls/WallBody"]
+[node name="background4" type="Sprite2D" parent="." unique_id=2133699843]
+z_index = 1
+position = Vector2(196, 0)
+texture = SubResource("CompressedTexture2D_lksmk")
+centered = false
+region_enabled = true
+region_rect = Rect2(196.07303, 0.15426254, 52.72165, 25.772905)
+
+[node name="background5" type="Sprite2D" parent="." unique_id=665944089]
+z_index = 1
+position = Vector2(194, 260)
+texture = SubResource("CompressedTexture2D_lksmk")
+centered = false
+region_enabled = true
+region_rect = Rect2(193.82161, 260.3779, 52.72165, 25.772905)
+
+[node name="Walls" type="Node2D" parent="." unique_id=1847111286]
+
+[node name="WallBody" type="StaticBody2D" parent="Walls" unique_id=658248139]
+
+[node name="wall_north_west" type="CollisionShape2D" parent="Walls/WallBody" unique_id=262429740]
+visible = false
 position = Vector2(109, 35)
 shape = SubResource("RectangleShape2D_wall_h")
 
-[node name="wall_north_east" type="CollisionShape2D" parent="Walls/WallBody"]
+[node name="wall_north_east" type="CollisionShape2D" parent="Walls/WallBody" unique_id=541482655]
 position = Vector2(332, 35)
 shape = SubResource("RectangleShape2D_wall_h")
 
-[node name="wall_south_west" type="CollisionShape2D" parent="Walls/WallBody"]
+[node name="wall_south_west" type="CollisionShape2D" parent="Walls/WallBody" unique_id=655154354]
 position = Vector2(109, 250)
 shape = SubResource("RectangleShape2D_wall_h")
 
-[node name="wall_south_east" type="CollisionShape2D" parent="Walls/WallBody"]
+[node name="wall_south_east" type="CollisionShape2D" parent="Walls/WallBody" unique_id=613139368]
 position = Vector2(332, 250)
 shape = SubResource("RectangleShape2D_wall_h")
 
-[node name="wall_west_north" type="CollisionShape2D" parent="Walls/WallBody"]
+[node name="wall_west_north" type="CollisionShape2D" parent="Walls/WallBody" unique_id=887127018]
 position = Vector2(35, 70.5)
 shape = SubResource("RectangleShape2D_wall_v")
 
-[node name="wall_west_south" type="CollisionShape2D" parent="Walls/WallBody"]
+[node name="wall_west_south" type="CollisionShape2D" parent="Walls/WallBody" unique_id=1113308421]
 position = Vector2(35, 215.5)
 shape = SubResource("RectangleShape2D_wall_v")
 
-[node name="wall_east_north" type="CollisionShape2D" parent="Walls/WallBody"]
+[node name="wall_east_north" type="CollisionShape2D" parent="Walls/WallBody" unique_id=763636652]
 position = Vector2(406, 70.5)
 shape = SubResource("RectangleShape2D_wall_v")
 
-[node name="wall_east_south" type="CollisionShape2D" parent="Walls/WallBody"]
+[node name="wall_east_south" type="CollisionShape2D" parent="Walls/WallBody" unique_id=214677477]
 position = Vector2(406, 215.5)
 shape = SubResource("RectangleShape2D_wall_v")
 
-[node name="Plugs" type="Node2D" parent="Walls"]
+[node name="Plugs" type="Node2D" parent="Walls" unique_id=376354447]
 
-[node name="plug_north" type="StaticBody2D" parent="Walls/Plugs"]
+[node name="plug_north" type="StaticBody2D" parent="Walls/Plugs" unique_id=245918299]
 position = Vector2(221, 35)
 
-[node name="shape" type="CollisionShape2D" parent="Walls/Plugs/plug_north"]
+[node name="shape" type="CollisionShape2D" parent="Walls/Plugs/plug_north" unique_id=1451501582]
 shape = SubResource("RectangleShape2D_plug_h")
 
-[node name="seal" type="ColorRect" parent="Walls/Plugs/plug_north"]
+[node name="seal" type="ColorRect" parent="Walls/Plugs/plug_north" unique_id=1776458012]
 offset_left = -23.0
 offset_top = -15.0
 offset_right = 23.0
 offset_bottom = 13.0
 color = Color(0.2196078, 0.3294118, 0.4, 1)
 
-[node name="plug_east" type="StaticBody2D" parent="Walls/Plugs"]
+[node name="plug_east" type="StaticBody2D" parent="Walls/Plugs" unique_id=2122978407]
 position = Vector2(406, 143)
 
-[node name="shape" type="CollisionShape2D" parent="Walls/Plugs/plug_east"]
+[node name="shape" type="CollisionShape2D" parent="Walls/Plugs/plug_east" unique_id=241522331]
 shape = SubResource("RectangleShape2D_plug_v")
 
-[node name="seal" type="ColorRect" parent="Walls/Plugs/plug_east"]
+[node name="seal" type="ColorRect" parent="Walls/Plugs/plug_east" unique_id=42931806]
 offset_left = -13.0
 offset_top = -23.0
 offset_right = 15.0
 offset_bottom = 23.0
 color = Color(0.2196078, 0.3294118, 0.4, 1)
 
-[node name="plug_south" type="StaticBody2D" parent="Walls/Plugs"]
+[node name="plug_south" type="StaticBody2D" parent="Walls/Plugs" unique_id=768755542]
 position = Vector2(221, 250)
 
-[node name="shape" type="CollisionShape2D" parent="Walls/Plugs/plug_south"]
+[node name="shape" type="CollisionShape2D" parent="Walls/Plugs/plug_south" unique_id=1565406216]
 shape = SubResource("RectangleShape2D_plug_h")
 
-[node name="seal" type="ColorRect" parent="Walls/Plugs/plug_south"]
+[node name="seal" type="ColorRect" parent="Walls/Plugs/plug_south" unique_id=1927891321]
 offset_left = -24.0
 offset_top = -13.0
 offset_right = 22.0
 offset_bottom = 15.0
 color = Color(0.2196078, 0.3294118, 0.4, 1)
 
-[node name="plug_west" type="StaticBody2D" parent="Walls/Plugs"]
+[node name="plug_west" type="StaticBody2D" parent="Walls/Plugs" unique_id=1398777208]
 position = Vector2(35, 143)
 
-[node name="shape" type="CollisionShape2D" parent="Walls/Plugs/plug_west"]
+[node name="shape" type="CollisionShape2D" parent="Walls/Plugs/plug_west" unique_id=861018635]
 shape = SubResource("RectangleShape2D_plug_v")
 
-[node name="seal" type="ColorRect" parent="Walls/Plugs/plug_west"]
+[node name="seal" type="ColorRect" parent="Walls/Plugs/plug_west" unique_id=1982391467]
 offset_left = -15.0
 offset_top = -24.0
 offset_right = 13.0
 offset_bottom = 22.0
 color = Color(0.2196078, 0.3294118, 0.4, 1)
 
-[node name="Doors" type="Node2D" parent="."]
+[node name="Doors" type="Node2D" parent="." unique_id=1801665672]
 
-[node name="door_north" parent="Doors" instance=ExtResource("3_door")]
+[node name="door_north" parent="Doors" unique_id=478506567 instance=ExtResource("3_door")]
 position = Vector2(221, 35)
-side = 0
 
-[node name="door_east" parent="Doors" instance=ExtResource("3_door")]
+[node name="door_east" parent="Doors" unique_id=1576405422 instance=ExtResource("3_door")]
 position = Vector2(406, 143)
 side = 1
 
-[node name="door_south" parent="Doors" instance=ExtResource("3_door")]
+[node name="door_south" parent="Doors" unique_id=1856126186 instance=ExtResource("3_door")]
 position = Vector2(221, 250)
 side = 2
 
-[node name="door_west" parent="Doors" instance=ExtResource("3_door")]
+[node name="door_west" parent="Doors" unique_id=1305475667 instance=ExtResource("3_door")]
 position = Vector2(35, 143)
 side = 3

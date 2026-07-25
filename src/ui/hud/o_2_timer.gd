@@ -33,6 +33,8 @@ var _depleted_emitted := false
 @onready var needle: Sprite2D = $Needle
 @onready var top_border: ColorRect = $Top_Border
 @onready var bottom_border: ColorRect = $Bottom_Border
+@onready var lights_odd: Array[Sprite2D] = [$UIMain/Light1, $UIMain/Light3, $UIMain/Light5]
+@onready var lights_even: Array[Sprite2D] = [$UIMain/Light2, $UIMain/Light4, $UIMain/Light6]
 
 var setup_done = false
 
@@ -47,7 +49,12 @@ var bottom_border_end_pos: Vector2
 
 const LOW_TIME := Color(1.0, 0.0, 0.055, 1.0)
 const MED_TIME := Color(1.0, 0.451, 0.0, 1.0)
-const HIGH_TIME := Color(0.667, 0.947, 1.003, 1.0)
+const HIGH_TIME := Color(0.588, 1.003, 0.676, 1.0)
+
+const LIGHT_ON_COLOR := Color(1, 0.5254902, 0.3647059, 1)
+const LIGHT_OFF_COLOR := Color(1, 0.5254902, 0.3647059, 0.25)
+
+var _lights_alternate := false
 
 const NEEDLE_MAX_TIME := 180.0  # 3 minutes, in seconds
 const FLICK_DEGREES := 15.0  # how far the flick swings past the current position
@@ -137,14 +144,31 @@ func _process(delta: float) -> void:
 	
 func update_label() -> void:
 	update_label_color()
+	var new_text: String
 	if time_left < 10:
 		var seconds: float = time_left
-		label.text = "%05.2f" % seconds
+		new_text = "%05.2f" % seconds
 	else:
 		var minutes := int(time_left) / 60
 		var seconds := int(time_left) % 60
-		label.text = "%d:%02d" % [minutes, seconds]
-		
+		new_text = "%d:%02d" % [minutes, seconds]
+
+	if new_text != label.text:
+		label.text = new_text
+		_alternate_lights()
+
+## Flips which trio of warning lights is lit, in step with the label ticking
+## over. Keeps the two groups (1/3/5 and 2/4/6) in lockstep opposition rather
+## than tracking three independent blink states.
+func _alternate_lights() -> void:
+	_lights_alternate = not _lights_alternate
+	var odd_color := LIGHT_ON_COLOR if _lights_alternate else LIGHT_OFF_COLOR
+	var even_color := LIGHT_OFF_COLOR if _lights_alternate else LIGHT_ON_COLOR
+	for light in lights_odd:
+		light.self_modulate = odd_color
+	for light in lights_even:
+		light.self_modulate = even_color
+
 func update_label_color():
 	if time_left < 10:
 		label.modulate = LOW_TIME

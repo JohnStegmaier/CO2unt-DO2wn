@@ -14,8 +14,8 @@ script = ExtResource("1_game")
 [node name="Player" parent="." instance=ExtResource("2_player")]
 position = Vector2(221, 143)
 
-[node name="Ui" parent="." instance=ExtResource("3_ui")]
+[node name="DeathOverlay" parent="Player/Camera2D" instance=ExtResource("4_death")]
 
-[node name="DeathOverlay" parent="." instance=ExtResource("4_death")]
+[node name="Ui" parent="." instance=ExtResource("3_ui")]
 
 [node name="PauseMenu" parent="." instance=ExtResource("5_pause")]

@@ -39,8 +39,14 @@ var _rng := RandomNumberGenerator.new()
 @onready var _room_container: Node2D = $RoomContainer
 @onready var _player: Player = $Player
 @onready var _camera: Camera2D = $Player/Camera2D
+## The CanvasLayer itself, not the Node2D wrapping it: a CanvasLayer is not a
+## CanvasItem, so hiding its Node2D parent leaves the HUD on screen.
+@onready var _hud: CanvasLayer = $Ui/CanvasLayer
 @onready var _o2_timer: O2Timer = $Ui/CanvasLayer/O2Timer
-@onready var _death_overlay: DeathOverlay = $DeathOverlay
+## Deliberately under the camera rather than beside the HUD: the vignette is
+## world content so the player can out-rank it on z_index and stay lit inside the
+## closing dark. See death_overlay.gd.
+@onready var _death_overlay: DeathOverlay = $Player/Camera2D/DeathOverlay
 @onready var _pause_menu: PauseMenu = $PauseMenu
 
 var _plan: FloorPlan
@@ -59,8 +65,11 @@ func _ready() -> void:
 	# The player reports hits upward and the O2 timer decides what they cost.
 	# Game is the only node holding both ends, so the wiring belongs here.
 	_player.damaged.connect(_o2_timer.apply_damage)
-	_o2_timer.depleted.connect(_on_player_died)
-	_o2_timer.air_critical.connect(_on_air_critical)
+	_o2_timer.depleted.connect(_on_air_depleted)
+	_o2_timer.air_restored.connect(_on_air_restored)
+	_o2_timer.air_critical_changed.connect(_on_air_critical_changed)
+	_o2_timer.suffocation_changed.connect(_death_overlay.set_vignette_progress)
+	_o2_timer.suffocated.connect(_on_player_died)
 
 	# Placement will seed from the floor seed once the generator exists; until
 	# then a fresh arrangement per run is what we want.
@@ -90,10 +99,13 @@ func _on_global_tick() -> void:
 
 
 ## The walls are closing in and the player can hear their own pulse. Fired by the
-## O2 timer at the same instant the letterbox starts sliding, so the sound and
-## the picture are one event and cannot be tuned apart by accident.
-func _on_air_critical() -> void:
-	AudioManager.start_heartbeat(heartbeat_fade_in)
+## O2 timer as the letterbox crosses its threshold — in both directions, so a run
+## that claws air back gets its silence back with the open frame.
+func _on_air_critical_changed(critical: bool) -> void:
+	if critical:
+		AudioManager.start_heartbeat(heartbeat_fade_in)
+	else:
+		AudioManager.stop_heartbeat()
 
 
 func _on_door_entered(side: int) -> void:
@@ -215,27 +227,49 @@ func _on_floor_advanced() -> void:
 	_o2_timer.refill()
 
 
-## Out of air. The suit powers down, the ticking stops, and the only thing left
-## is the player's own pulse under a closing darkness.
+## The tank read zero. The suit powers down and the ticking stops, leaving only
+## the heartbeat — but the player is NOT dead and keeps full control. They have
+## whatever is in their lungs, and the dark closing in is the clock on that.
 ##
-## The tree is deliberately NOT paused here — the vignette, the death animation
-## and the wipe all have to play, and a tree pause would freeze the very tweens
-## carrying us to the game over screen. The world is stilled piece by piece
-## instead: the room stops processing, the bullets go, the player hands over
-## control.
+## Nothing is frozen and nothing is torn down here, because this is a state the
+## player can still get out of. See _on_air_restored.
+func _on_air_depleted() -> void:
+	GlobalTimer.tick.disconnect(_on_global_tick)
+	GlobalTimer.tick.disconnect(_start_music)
+	AudioManager.play_sfx("power_down", 1, 0, 0)
+	AudioManager.stop_music()
+	# Lift the player over the closing dark so they stay lit inside it. Set from
+	# here rather than from either end, because Game is the only node holding
+	# both the player and the overlay.
+	_player.z_index = DeathOverlay.VIGNETTE_Z_INDEX + 1
+
+
+## Air came back before the lungs ran out. Put the clock and the track back the
+## way they were.
+##
+## Reconnecting _start_music is all the re-arming the music needs: it fires on
+## the GlobalTimer beat and play_music claims a free player, so the track comes
+## back on the grid exactly the way it does at the start of a run. The sync hack
+## is untouched — this only reconnects the same signals it already relies on.
+func _on_air_restored() -> void:
+	if _dying:
+		return
+	GlobalTimer.tick.connect(_on_global_tick)
+	GlobalTimer.tick.connect(_start_music)
+	# Back into the ordinary draw order, so the player goes behind the room's
+	# walls and trim again instead of standing in front of them.
+	_player.z_index = 0
+
+
+## Out of lungs. THIS is death — the vignette has shut and the player is done.
+##
+## The tree is deliberately NOT paused here — the death animation and the wipe
+## both have to play, and a tree pause would freeze the very tweens carrying us
+## to the game over screen. The world is stilled piece by piece instead.
 func _on_player_died() -> void:
 	if _dying:
 		return
 	_dying = true
-
-	# The clock is dead, so the sound of the clock stops. Disconnecting the music
-	# re-arm matters just as much: it fires on every tick and would otherwise
-	# start the track again the moment stop_music frees a player up.
-	GlobalTimer.tick.disconnect(_on_global_tick)
-	GlobalTimer.tick.disconnect(_start_music)
-
-	AudioManager.play_sfx("power_down", 1, 0, 0)
-	AudioManager.stop_music()
 
 	# A paused death sequence is a soft lock with no way out.
 	_pause_menu.set_pause_allowed(false)
@@ -244,13 +278,25 @@ func _on_player_died() -> void:
 		_current_room.process_mode = Node.PROCESS_MODE_DISABLED
 	get_tree().call_group("projectiles", "queue_free")
 
-	_player.die()
-	await _death_overlay.close_vignette()
+	# Stop the camera chasing the cursor over a body that cannot move. Without
+	# this the corpse keeps sliding around the screen after it is dead, and the
+	# frame we are about to keep would be of a moving target.
+	_camera.set_lead_enabled(false)
+
+	await _player.die()
+	# The suit's readout dies with the suit — and the frame we keep should be the
+	# body in the dark, not a gauge reading zero over the top of it.
+	_hud.visible = false
 	await get_tree().create_timer(death_hold, false).timeout
+
+	# Grabbed before the wipe: the closed vignette with the body still lit inside
+	# it. The game over screen shows this, which is how the corpse stays exactly
+	# where the player left it on screen.
+	var last_frame: Texture2D = await _death_overlay.capture_screen()
 
 	AudioManager.stop_heartbeat()
 	await _death_overlay.fade_to_black()
-	NavigationManager.go_to_screen(GAME_OVER_SCENE)
+	NavigationManager.go_to_screen(GAME_OVER_SCENE, last_frame)
 
 
 ## Stock a room with its bad guys. Only ordinary rooms fight, and a room whose

@@ -16,6 +16,8 @@ const UNSELECTED := Color(0.667, 0.947, 1.0, 1.0)
 const CAPTIONS := ["REPLAY", "MAIN MENU"]
 
 @onready var _options: Array[Label] = [$CanvasLayer/Replay, $CanvasLayer/MainMenu]
+@onready var _last_frame: TextureRect = $CanvasLayer/LastFrame
+@onready var _scrim: ColorRect = $CanvasLayer/Scrim
 
 var _selection := 0
 ## Set once we have navigated away, so a second Enter during the scene change
@@ -29,7 +31,18 @@ func _ready() -> void:
 	# running the scene directly, so make no assumptions.
 	get_tree().paused = false
 	AudioManager.stop_music()
+	_show_last_frame(NavigationManager.take_payload())
 	_update_options()
+
+
+## The frame the player died on, so the body stays exactly where they left it on
+## screen. Null when this screen is reached any other way — run straight from the
+## editor, say — in which case the plain background is all there is.
+func _show_last_frame(payload: Variant) -> void:
+	var frame := payload as Texture2D
+	_last_frame.texture = frame
+	_last_frame.visible = frame != null
+	_scrim.visible = frame != null
 
 
 func _process(_delta: float) -> void:

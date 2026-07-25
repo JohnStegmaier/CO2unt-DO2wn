@@ -34,6 +34,12 @@
 [ext_resource type="Texture2D" uid="uid://bktpfpdeun28b" path="res://assets/sprites/characters/player/Walk/Player_Walk_Right4.png" id="19_ngh1c"]
 [ext_resource type="Texture2D" uid="uid://0w872j0efybp" path="res://assets/sprites/characters/player/Walk/Player_Walk_Right5.png" id="20_amj0e"]
 [ext_resource type="Texture2D" uid="uid://docg4st27eaqn" path="res://assets/sprites/characters/player/Walk/Player_Walk_Right6.png" id="21_33dyk"]
+[ext_resource type="Texture2D" uid="uid://d1cp0iic1gbng" path="res://assets/sprites/characters/player/Walk/walk_down/Walk_down1.png" id="27_i78gy"]
+[ext_resource type="Texture2D" uid="uid://cehfgfktfao8y" path="res://assets/sprites/characters/player/Walk/walk_down/Walk_down2.png" id="28_ts1rd"]
+[ext_resource type="Texture2D" uid="uid://d2dwvn0vrvu13" path="res://assets/sprites/characters/player/Walk/walk_down/Walk_down3.png" id="29_2a6xp"]
+[ext_resource type="Texture2D" uid="uid://4p30h6kjavrh" path="res://assets/sprites/characters/player/Walk/walk_down/Walk_down4.png" id="30_pg6a0"]
+[ext_resource type="Texture2D" uid="uid://dgb72xum31oci" path="res://assets/sprites/characters/player/Walk/walk_down/Walk_down5.png" id="31_y8r58"]
+[ext_resource type="Texture2D" uid="uid://de7p70gt7nrnk" path="res://assets/sprites/characters/player/Walk/walk_down/Walk_down6.png" id="32_8dxlo"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_5ixxa"]
 radius = 3.0
@@ -148,10 +154,28 @@ animations = [{
 "name": &"idle_up_right",
 "speed": 5.0
 }, {
-"frames": [],
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("27_i78gy")
+}, {
+"duration": 1.0,
+"texture": ExtResource("28_ts1rd")
+}, {
+"duration": 1.0,
+"texture": ExtResource("29_2a6xp")
+}, {
+"duration": 1.0,
+"texture": ExtResource("30_pg6a0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("31_y8r58")
+}, {
+"duration": 1.0,
+"texture": ExtResource("32_8dxlo")
+}],
 "loop": 1,
 "name": &"walk_down",
-"speed": 5.0
+"speed": 9.0
 }, {
 "frames": [],
 "loop": 1,
@@ -206,7 +230,7 @@ shape = SubResource("CapsuleShape2D_5ixxa")
 texture_filter = 1
 position = Vector2(0, -6)
 sprite_frames = SubResource("SpriteFrames_nn08x")
-animation = &"dodge_right"
+animation = &"walk_down"
 
 [node name="BigGunBTransparent" type="Sprite2D" parent="." unique_id=1371732958]
 modulate = Color(1.8764027, 1.111197, 1.5168338, 1)

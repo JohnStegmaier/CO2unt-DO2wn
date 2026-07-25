@@ -30,7 +30,7 @@ var _transitioning: bool = false
 
 func _ready() -> void:
 	GlobalTimer.tick.connect(_on_global_tick)
-	_start_music()
+	GlobalTimer.tick.connect(_start_music)
 
 	_plan = _build_debug_plan()
 	print(_plan.to_ascii())

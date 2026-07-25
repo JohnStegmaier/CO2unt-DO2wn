@@ -8,6 +8,11 @@ extends Node2D
 ## Out of oxygen. Fires once.
 signal depleted
 
+## The air is nearly gone and the walls are closing in. Fires once, at the same
+## instant the letterbox starts sliding, so whatever the run hangs off this —
+## today a heartbeat — can never drift away from what the player is seeing.
+signal air_critical
+
 @export var total_time: float = 90 # starting time in seconds
 var time_left: float
 
@@ -28,6 +33,12 @@ var drain_rate: float = 1.0
 ## How quickly a tear seals itself again.
 @export var drain_recovery_per_second := 0.1
 
+@export_group("Endgame")
+## Seconds left when the letterbox closes in and the heartbeat comes up. This is
+## the whole "you are running out" beat — raise it to give the player longer to
+## panic, lower it to make the end arrive without warning.
+@export var border_slide_time: float = 8.0
+
 var _depleted_emitted := false
 @onready var label: Label = $Label
 @onready var needle: Sprite2D = $Needle
@@ -37,7 +48,6 @@ var _depleted_emitted := false
 var setup_done = false
 
 var degrees: float = 90.0
-var border_slide_time: float = 8.0
 var borders_shown = false
 
 var top_border_start_pos: Vector2
@@ -70,7 +80,10 @@ func _ready() -> void:
 func _setup() -> void:
 	if setup_done:
 		return
-	await get_tree().create_timer(0.3).timeout
+	# process_always false: this wait rides the same GlobalTimer beat grid the
+	# music does, and both have to stop dead when the tree pauses or the clock
+	# and the track come back out of phase with each other.
+	await get_tree().create_timer(0.3, false).timeout
 	time_left = total_time
 	update_label()
 	setup_done = true
@@ -127,8 +140,9 @@ func _process(delta: float) -> void:
 	drain_rate = maxf(1.0, drain_rate - drain_recovery_per_second * delta)
 
 	if time_left <= border_slide_time and not borders_shown:
-		slide_in_borders()
 		borders_shown = true
+		slide_in_borders()
+		air_critical.emit()
 
 	if time_left <= 0.0 and not _depleted_emitted:
 		_depleted_emitted = true
@@ -159,8 +173,14 @@ func update_needle() -> void:
 	degrees = remap(clamped_time, 0.0, NEEDLE_MAX_TIME, 0.0, 180.0)
 	needle.rotation_degrees = degrees
 	
+## The needle stops twitching once the tank is empty — a dead gauge should read
+## as dead, not as a clock that is still running.
 func flick_needle() -> void:
-	await get_tree().create_timer(0.3).timeout
+	if _depleted_emitted:
+		return
+	await get_tree().create_timer(0.3, false).timeout
+	if _depleted_emitted:
+		return
 	var base_degrees := needle.rotation_degrees
 	var tween := create_tween()
 	tween.tween_property(needle, "rotation_degrees", base_degrees + FLICK_DEGREES, FLICK_DURATION)

@@ -9,6 +9,7 @@ extends Node2D
 
 const ROOM_SCENE := preload("res://src/levels/room/room.tscn")
 const ENEMY_SCENE := preload("res://src/entities/enemy/enemy.tscn")
+const GAME_OVER_SCENE := "res://src/screens/game_over/game_over.tscn"
 
 @export_group("Room Transition")
 ## Seconds to slide from one room to the next.
@@ -25,17 +26,30 @@ const ENEMY_SCENE := preload("res://src/entities/enemy/enemy.tscn")
 ## all skirmishers is a shooting gallery, a room of all chasers is a scrum.
 @export_range(0.0, 1.0) var skirmisher_chance: float = 0.1
 
+@export_group("Death")
+## Seconds for the heartbeat to swell up once the air goes critical. Runs
+## alongside the letterbox slide, so keep it in the same ballpark.
+@export var heartbeat_fade_in: float = 2.0
+## Seconds the corpse is held under the closed vignette before the wipe. Just
+## long enough to register that the body stopped moving.
+@export var death_hold: float = 0.6
+
 var _rng := RandomNumberGenerator.new()
 
 @onready var _room_container: Node2D = $RoomContainer
 @onready var _player: Player = $Player
 @onready var _camera: Camera2D = $Player/Camera2D
 @onready var _o2_timer: O2Timer = $Ui/CanvasLayer/O2Timer
+@onready var _death_overlay: DeathOverlay = $DeathOverlay
+@onready var _pause_menu: PauseMenu = $PauseMenu
 
 var _plan: FloorPlan
 var _current_room: Room
 var _current_coord: Vector2i
 var _transitioning: bool = false
+## Fires-once guard on the death sequence, and the flag that tells the music
+## re-arm on GlobalTimer.tick to stay down.
+var _dying: bool = false
 
 
 func _ready() -> void:
@@ -46,6 +60,7 @@ func _ready() -> void:
 	# Game is the only node holding both ends, so the wiring belongs here.
 	_player.damaged.connect(_o2_timer.apply_damage)
 	_o2_timer.depleted.connect(_on_player_died)
+	_o2_timer.air_critical.connect(_on_air_critical)
 
 	# Placement will seed from the floor seed once the generator exists; until
 	# then a fresh arrangement per run is what we want.
@@ -58,13 +73,27 @@ func _ready() -> void:
 
 ## Called once per run, not once per room — the old per-level version restarted
 ## the track every doorway and could layer a second copy over the first.
+##
+## The 0.25s is the offset that puts the track a quarter-beat off the tick grid.
+## process_always is false so a pause freezes this wait along with the grid —
+## the default true would let the wait finish behind a pause menu and land the
+## downbeat at the wrong offset for the rest of the run.
 func _start_music() -> void:
-	await get_tree().create_timer(0.25).timeout
+	await get_tree().create_timer(0.25, false).timeout
+	if _dying:
+		return
 	AudioManager.play_music("60000 light years", 1, 0, 0)
 
 
 func _on_global_tick() -> void:
 	AudioManager.play_sfx("tick_trim", 1, 0, 0)
+
+
+## The walls are closing in and the player can hear their own pulse. Fired by the
+## O2 timer at the same instant the letterbox starts sliding, so the sound and
+## the picture are one event and cannot be tuned apart by accident.
+func _on_air_critical() -> void:
+	AudioManager.start_heartbeat(heartbeat_fade_in)
 
 
 func _on_door_entered(side: int) -> void:
@@ -186,10 +215,42 @@ func _on_floor_advanced() -> void:
 	_o2_timer.refill()
 
 
-## Out of air. This is the seam a game over screen hangs off; for now it just
-## says so, which is enough to prove the damage pipeline reaches the end.
+## Out of air. The suit powers down, the ticking stops, and the only thing left
+## is the player's own pulse under a closing darkness.
+##
+## The tree is deliberately NOT paused here — the vignette, the death animation
+## and the wipe all have to play, and a tree pause would freeze the very tweens
+## carrying us to the game over screen. The world is stilled piece by piece
+## instead: the room stops processing, the bullets go, the player hands over
+## control.
 func _on_player_died() -> void:
-	print("Game: out of oxygen")
+	if _dying:
+		return
+	_dying = true
+
+	# The clock is dead, so the sound of the clock stops. Disconnecting the music
+	# re-arm matters just as much: it fires on every tick and would otherwise
+	# start the track again the moment stop_music frees a player up.
+	GlobalTimer.tick.disconnect(_on_global_tick)
+	GlobalTimer.tick.disconnect(_start_music)
+
+	AudioManager.play_sfx("power_down", 1, 0, 0)
+	AudioManager.stop_music()
+
+	# A paused death sequence is a soft lock with no way out.
+	_pause_menu.set_pause_allowed(false)
+
+	if _current_room != null:
+		_current_room.process_mode = Node.PROCESS_MODE_DISABLED
+	get_tree().call_group("projectiles", "queue_free")
+
+	_player.die()
+	await _death_overlay.close_vignette()
+	await get_tree().create_timer(death_hold, false).timeout
+
+	AudioManager.stop_heartbeat()
+	await _death_overlay.fade_to_black()
+	NavigationManager.go_to_screen(GAME_OVER_SCENE)
 
 
 ## Stock a room with its bad guys. Only ordinary rooms fight, and a room whose

@@ -52,7 +52,7 @@ signal damaged(amount: int, type: int)
 
 ## Seconds of mercy after a hit. Without it a stream of bullets lands several
 ## times a second and a roomful of enemies empties the tank in moments.
-const INVULNERABLE_TIME := 0.6
+@export var invulnerable_time := 0.6
 
 var _invulnerable_until_msec: int = 0
 
@@ -135,7 +135,7 @@ func take_damage(amount: int, type: int = Damage.Type.BLUNT) -> void:
 		return
 	if Time.get_ticks_msec() < _invulnerable_until_msec:
 		return
-	_invulnerable_until_msec = Time.get_ticks_msec() + int(INVULNERABLE_TIME * 1000.0)
+	_invulnerable_until_msec = Time.get_ticks_msec() + int(invulnerable_time * 1000.0)
 	damaged.emit(amount, type)
 	_flash_hit()
 
@@ -145,7 +145,7 @@ func take_damage(amount: int, type: int = Damage.Type.BLUNT) -> void:
 func _flash_hit() -> void:
 	var flash := create_tween()
 	flash.tween_property(sprite, "modulate", Color(1.0, 0.4, 0.4), 0.05)
-	flash.tween_property(sprite, "modulate", Color.WHITE, INVULNERABLE_TIME - 0.05)
+	flash.tween_property(sprite, "modulate", Color.WHITE, invulnerable_time - 0.05)
 
 
 ## Move instantly, without the renderer drawing the trip. Physics interpolation

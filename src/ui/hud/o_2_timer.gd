@@ -16,10 +16,17 @@ var time_left: float
 ## than a death sentence.
 var drain_rate: float = 1.0
 
-const SECONDS_PER_BLUNT_POINT := 0.5
-const DRAIN_PER_PIERCING_POINT := 0.05
-const MAX_DRAIN_RATE := 3.0
-const DRAIN_RECOVERY_PER_SECOND := 0.1
+@export_group("Damage")
+## Seconds of air a point of blunt damage costs. This single number sets the
+## lethality of every fight in the game.
+@export var seconds_per_blunt_point := 0.5
+## How much a point of piercing damage raises the drain rate. 0.05 means a
+## 10-damage hit spends air 50% faster.
+@export var drain_per_piercing_point := 0.05
+## However torn the suit gets, air never leaves faster than this.
+@export var max_drain_rate := 3.0
+## How quickly a tear seals itself again.
+@export var drain_recovery_per_second := 0.1
 
 var _depleted_emitted := false
 @onready var label: Label = $Label
@@ -91,9 +98,9 @@ func apply_damage(amount: int, type: int) -> void:
 	if not setup_done:
 		return
 	if type == Damage.Type.PIERCING:
-		add_drain(amount * DRAIN_PER_PIERCING_POINT)
+		add_drain(amount * drain_per_piercing_point)
 	else:
-		spend_seconds(amount * SECONDS_PER_BLUNT_POINT)
+		spend_seconds(amount * seconds_per_blunt_point)
 
 
 func spend_seconds(seconds: float) -> void:
@@ -103,7 +110,7 @@ func spend_seconds(seconds: float) -> void:
 
 
 func add_drain(amount: float) -> void:
-	drain_rate = minf(drain_rate + amount, MAX_DRAIN_RATE)
+	drain_rate = minf(drain_rate + amount, max_drain_rate)
 
 
 func _process(delta: float) -> void:
@@ -117,7 +124,7 @@ func _process(delta: float) -> void:
 
 	# A torn suit seals itself slowly, so piercing hits stack into a spike that
 	# then subsides rather than a permanent sentence.
-	drain_rate = maxf(1.0, drain_rate - DRAIN_RECOVERY_PER_SECOND * delta)
+	drain_rate = maxf(1.0, drain_rate - drain_recovery_per_second * delta)
 
 	if time_left <= border_slide_time and not borders_shown:
 		slide_in_borders()

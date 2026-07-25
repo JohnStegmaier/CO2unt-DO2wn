@@ -7,6 +7,9 @@ class_name Player
 @export var muzzle_y_offset := 6.0
 @export var fire_rate := 0.05
 @export var bullet_damage := 10
+## How fast our shots travel. Lives here rather than on the bullet because the
+## enemies fire the same scene and need their own number — see enemy.gd.
+@export var bullet_speed := 400.0
 
 @onready var sprite = $AnimatedSprite2D
 @onready var gun: Sprite2D = $BigGunBTransparent
@@ -50,11 +53,19 @@ var is_warping := false
 ## what a hit costs. Signals up, calls down: the player never touches the HUD.
 signal damaged(amount: int, type: int)
 
+## The body has finished dying. Emitted after the animation, so a listener can
+## hold the camera on us before the screen goes anywhere. The decision that we
+## died is not ours — the O2 timer makes it and the run calls die().
+signal died
+
 ## Seconds of mercy after a hit. Without it a stream of bullets lands several
 ## times a second and a roomful of enemies empties the tank in moments.
 @export var invulnerable_time := 0.6
 
 var _invulnerable_until_msec: int = 0
+
+## Fires-once guard on die(), so a death sequence cannot be started twice.
+var _is_dead := false
 
 
 func _ready() -> void:
@@ -75,7 +86,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _process(_delta: float) -> void:
-	if is_dodging:
+	if is_dodging or _is_dead:
 		return
 
 	if aiming_with_gamepad:
@@ -96,7 +107,7 @@ func _process(_delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	if is_warping:
+	if is_warping or _is_dead:
 		return
 
 	if is_dodging:
@@ -117,8 +128,10 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 
 	if Input.is_action_just_pressed("dodge"):
-		if can_move and velocity != Vector2.ZERO and last_direction == "down":
-			dodge_down()
+		if can_move and velocity != Vector2.ZERO:
+			var dodge_dir := get_dodge_direction(input_vector)
+			if dodge_dir != Vector2.ZERO:
+				dodge(dodge_dir)
 
 	if Input.is_action_just_pressed("shoot") and can_shoot and not is_dodging:
 		shoot()
@@ -131,13 +144,45 @@ func _physics_process(delta: float) -> void:
 ## _physics_process, because _physics_process returns early while is_warping and
 ## a countdown there would freeze mid-transition.
 func take_damage(amount: int, type: int = Damage.Type.BLUNT) -> void:
-	if is_warping:
+	if is_warping or _is_dead:
 		return
 	if Time.get_ticks_msec() < _invulnerable_until_msec:
 		return
 	_invulnerable_until_msec = Time.get_ticks_msec() + int(invulnerable_time * 1000.0)
 	damaged.emit(amount, type)
 	_flash_hit()
+
+
+## Out of air. Hand over control and play out.
+##
+## PLACEHOLDER ANIMATION: a squash-and-fade, borrowed from the enemy death at
+## enemy.gd:_on_health_died, because no death frames exist yet. When they land,
+## replace the tween with sprite.play("death") and await animation_finished —
+## everything around this stays as it is.
+##
+## Unlike an enemy we do NOT queue_free: the body has to stay on screen for the
+## vignette to close over it.
+func die() -> void:
+	if _is_dead:
+		return
+	_is_dead = true
+	can_move = false
+	can_shoot = false
+	is_dodging = false
+	velocity = Vector2.ZERO
+
+	# Stop interacting the instant we die, so a stray bullet or a still-moving
+	# enemy cannot shove the corpse around under the vignette.
+	set_deferred("collision_layer", 0)
+	set_deferred("collision_mask", 0)
+
+	var death := create_tween()
+	death.set_parallel(true)
+	death.tween_property(sprite, "scale", Vector2(1.4, 0.5), 0.35).set_ease(Tween.EASE_OUT)
+	death.tween_property(sprite, "modulate", Color(0.6, 0.7, 0.9, 0.65), 0.35)
+	death.tween_property(gun, "modulate:a", 0.0, 0.2)
+	await death.finished
+	died.emit()
 
 
 ## Brief red flash, so a hit reads even when the only feedback is a number in the
@@ -168,22 +213,51 @@ func shoot() -> void:
 	# Armed before it enters the tree, so its layers are settled by the time the
 	# physics server sees it.
 	bullet.arm(gun_direction, CollisionLayers.PLAYER_BULLET,
-			CollisionLayers.WORLD | CollisionLayers.ENEMY, bullet_damage, Damage.Type.BLUNT)
+			CollisionLayers.WORLD | CollisionLayers.ENEMY, bullet_damage, Damage.Type.BLUNT,
+			bullet_speed)
 	get_tree().current_scene.add_child(bullet)
 	AudioManager.play_sfx("laser_gun_01")
 	bullet.global_position = gun.global_position + spawn_offset
 	bullet.reset_physics_interpolation()
 
-	await get_tree().create_timer(fire_rate).timeout
+	await get_tree().create_timer(fire_rate, false).timeout
 	can_shoot = true
 
 
-func dodge_down() -> void:
+## Maps current movement input to one of the dodge directions we have
+## animations for. Pure up, up-right, and up-left aren't supported yet, so
+## those return Vector2.ZERO and the dodge input is simply ignored.
+func get_dodge_direction(v: Vector2) -> Vector2:
+	if v.y > 0:
+		if v.x > 0:
+			return Vector2(1, 1).normalized()   # down-right
+		elif v.x < 0:
+			return Vector2(-1, 1).normalized()  # down-left
+		return Vector2.DOWN
+	elif v.y == 0:
+		if v.x > 0:
+			return Vector2.RIGHT
+		elif v.x < 0:
+			return Vector2.LEFT
+	return Vector2.ZERO
+
+
+## Dodge in the given direction. "dodge_right" covers right and down-right,
+## mirrored via flip_h for left and down-left; straight down gets its own
+## animation since it isn't just a mirror of anything.
+func dodge(direction: Vector2) -> void:
 	can_move = false
 	is_dodging = true
-	dodge_direction = Vector2.DOWN
+	dodge_direction = direction
 	dodge_timer = 0.0
-	sprite.play("dodge_down")
+
+	if direction == Vector2.DOWN:
+		last_direction = "down"
+		sprite.play("dodge_down")
+	else:
+		last_direction = "right"
+		sprite.flip_h = direction.x < 0
+		sprite.play("dodge_right")
 
 	var pull_tween := create_tween()
 	pull_tween.set_parallel(true)
@@ -198,7 +272,7 @@ func dodge_down() -> void:
 
 
 func return_gun() -> void:
-	await get_tree().create_timer(0.35).timeout
+	await get_tree().create_timer(0.35, false).timeout
 	var return_tween := create_tween()
 	return_tween.set_parallel(true)
 	return_tween.tween_property(gun, "position", gun_default_position, 0.15).set_ease(Tween.EASE_OUT)

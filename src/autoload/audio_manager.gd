@@ -9,7 +9,8 @@ var music = {
 #add sound effects here
 var sounds = {
 	"clock_tick": preload("res://assets/audio/sfx/clock_tick_01.mp3"),
-	"tick_trim": preload("res://assets/audio/sfx/tick_trim.mp3")
+	"tick_trim": preload("res://assets/audio/sfx/tick_trim.mp3"),
+	"laser_gun_01": preload("res://assets/audio/sfx/laser_gun_01.mp3")
 	
 }
 

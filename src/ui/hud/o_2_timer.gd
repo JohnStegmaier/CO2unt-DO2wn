@@ -1,6 +1,6 @@
 extends Node2D
 
-@export var total_time: float = 15 # starting time in seconds
+@export var total_time: float = 90 # starting time in seconds
 var time_left: float
 @onready var label: Label = $Label
 @onready var needle: Sprite2D = $Needle
@@ -8,45 +8,43 @@ var time_left: float
 @onready var bottom_border: ColorRect = $Bottom_Border
 
 var setup_done = false
-var degrees = 90
 
+var degrees: float = 90.0
+var border_slide_time: float = 8.0
 var borders_shown = false
 
-var border_slide_time = 8
 var top_border_start_pos: Vector2
 var top_border_end_pos: Vector2
 var bottom_border_start_pos: Vector2
 var bottom_border_end_pos: Vector2
 
-var low_time = Color(1.0, 0.0, 0.055, 1.0)
-var med_time = Color(1.0, 0.451, 0.0, 1.0)
-var high_time = Color(0.667, 0.947, 1.003, 1.0)
+const LOW_TIME := Color(1.0, 0.0, 0.055, 1.0)
+const MED_TIME := Color(1.0, 0.451, 0.0, 1.0)
+const HIGH_TIME := Color(0.667, 0.947, 1.003, 1.0)
 
 const NEEDLE_MAX_TIME := 180.0  # 3 minutes, in seconds
 const FLICK_DEGREES := 15.0  # how far the flick swings past the current position
 const FLICK_DURATION := 0.10  # seconds for the flick out, same again for return
 
-func setup():
-	if setup_done:
-		return
+func _ready() -> void:
+	needle.rotation_degrees = degrees
+	GlobalTimer.tick.connect(flick_needle)
+	_setup()
+
+	top_border_end_pos = top_border.position
+	top_border_start_pos = top_border_end_pos + Vector2(0, -top_border.size.y)
+	top_border.position = top_border_start_pos
+
+	bottom_border_end_pos = bottom_border.position
+	bottom_border_start_pos = bottom_border_end_pos + Vector2(0, bottom_border.size.y)
+	bottom_border.position = bottom_border_start_pos
+
+
+func _setup() -> void:
 	await get_tree().create_timer(0.3).timeout
 	time_left = total_time
 	update_label()
 	setup_done = true
-
-func _ready() -> void:
-		needle.rotation_degrees = degrees
-		GlobalTimer.tick.connect(setup)
-		GlobalTimer.tick.connect(flick_needle)
-		
-	
-		top_border_end_pos = top_border.position
-		top_border_start_pos = top_border_end_pos + Vector2(0, -top_border.size.y)
-		top_border.position = top_border_start_pos
-		
-		bottom_border_end_pos = bottom_border.position
-		bottom_border_start_pos = bottom_border_end_pos + Vector2(0, bottom_border.size.y)
-		bottom_border.position = bottom_border_start_pos
 	
 func _process(delta: float) -> void:
 	if not setup_done:
@@ -74,12 +72,12 @@ func update_label() -> void:
 		
 func update_label_color():
 	if time_left < 10:
-		label.modulate = low_time
+		label.modulate = LOW_TIME
 	elif time_left < 31:
 		var t: float = (time_left - 10.0) / 20.0
-		label.modulate = low_time.lerp(med_time,t)
+		label.modulate = LOW_TIME.lerp(MED_TIME,t)
 	else:
-		label.modulate = high_time
+		label.modulate = HIGH_TIME
 		
 func update_needle() -> void:
 	var clamped_time: float = clamp(time_left, 0.0, NEEDLE_MAX_TIME)

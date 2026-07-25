@@ -1,17 +1,21 @@
 extends Area2D
 
-var speed := 800.0
+@export var speed := 400.0
+@export var damage := 10
+
 var direction := Vector2.RIGHT
-var damage := 10
+
 
 func _ready() -> void:
 	rotation = direction.angle()
 	body_entered.connect(_on_body_entered)
-	# Requires a VisibleOnScreenNotifier2D child, signal connected below
 	$VisibleOnScreenNotifier2D.screen_exited.connect(queue_free)
+	get_tree().create_timer(5.0).timeout.connect(queue_free)  # safety net
+
 
 func _physics_process(delta: float) -> void:
-	position += direction * speed * delta
+	global_position += direction * speed * delta
+
 
 func _on_body_entered(body: Node2D) -> void:
 	if body.has_method("take_damage"):

@@ -64,6 +64,16 @@ const LOBBY_FLOOR := Rect2(49, 104, 343, 132)
 ## a top-down frame and reads as broken side-on, and there is nothing in here to
 ## shoot. Off would mean shipping the odd-looking version, so it defaults on.
 @export var hide_player_gun: bool = true
+## Draw the player bigger near the camera and smaller toward the elevator. The
+## only cue in the room that the far end is far rather than merely up — without
+## it, walking into depth reads as walking up a wall.
+@export var depth_scale_enabled: bool = true
+## Size at the near edge of the walkable band, where the player is closest.
+@export_range(0.5, 2.0) var depth_scale_near: float = 1.15
+## Size at the elevator threshold, where they are furthest. The gap between the
+## two is the whole effect: too small and it is invisible, too large and the
+## player appears to change size rather than distance.
+@export_range(0.5, 2.0) var depth_scale_far: float = 0.82
 
 @onready var _leaf_left: Node2D = $Alcove/LeftLeaf
 @onready var _leaf_right: Node2D = $Alcove/RightLeaf
@@ -90,6 +100,11 @@ var _boarding: bool = false
 ## who the player is rather than us reaching up the tree for them.
 var _player: Player
 var _gun_was_visible: bool = true
+## The player's own sprite transform, captured on the way in and put back on the
+## way out. Held rather than assumed, because the room does not own the player and
+## must leave them exactly as it found them.
+var _sprite_scale: Vector2 = Vector2.ONE
+var _sprite_offset: Vector2 = Vector2.ZERO
 
 @onready var _leaf_home_left: Vector2 = _leaf_left.position
 @onready var _leaf_home_right: Vector2 = _leaf_right.position
@@ -202,6 +217,8 @@ func _on_lobby_entered(body: Node2D) -> void:
 	if player == null:
 		return
 	_player = player
+	_sprite_scale = player.sprite.scale
+	_sprite_offset = player.sprite.position
 	if hide_player_gun:
 		_gun_was_visible = player.gun.visible
 		player.gun.visible = false
@@ -215,9 +232,44 @@ func _on_lobby_exited(body: Node2D) -> void:
 func _restore_player() -> void:
 	if _player == null:
 		return
-	if hide_player_gun and is_instance_valid(_player):
-		_player.gun.visible = _gun_was_visible
+	if is_instance_valid(_player):
+		if hide_player_gun:
+			_player.gun.visible = _gun_was_visible
+		# Put the sprite back even if the scaling was never applied — the export can
+		# be turned off mid-run, and a player left shrunk would stay that way.
+		#
+		# Not for a corpse, though. Dying in here frees the room on the way to the
+		# game over screen, and restoring then would stand the flattened body back up
+		# for the frame the death shot is captured on.
+		if not _player._is_dead:
+			_player.sprite.scale = _sprite_scale
+			_player.sprite.position = _sprite_offset
 	_player = null
+
+
+## Size the player by how far down the room they are standing.
+##
+## Idle process rather than physics, for the reason player_camera.gd gives: this
+## is presentation and should update every drawn frame, not every fixed tick.
+func _process(_delta: float) -> void:
+	if not depth_scale_enabled or _player == null or not is_instance_valid(_player):
+		return
+	# Yield to the death squash. player.gd's die() tweens this very property to a
+	# flattened pose and sets _is_dead before it starts, so without this the corpse
+	# would be fighting us for the sprite every frame.
+	if _player._is_dead:
+		return
+
+	var depth: float = to_local(_player.global_position).y
+	var t: float = clampf(inverse_lerp(LOBBY_FLOOR.position.y, LOBBY_FLOOR.end.y, depth),
+			0.0, 1.0)
+	var size: float = lerpf(depth_scale_far, depth_scale_near, t)
+
+	_player.sprite.scale = _sprite_scale * size
+	# The sprite is offset upward from the body origin, which sits at the player's
+	# feet. Scaling that offset too keeps the feet on the floor — without it the
+	# whole figure creeps downward as it grows and looks like it is sinking.
+	_player.sprite.position = _sprite_offset * size
 
 
 ## Open or shut the car doors, from wherever they currently are.

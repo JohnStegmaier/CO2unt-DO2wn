@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://src/systems/floor_config.gd" id="6_floor_config"]
 [ext_resource type="PackedScene" path="res://src/ui/elevator_ride/elevator_ride.tscn" id="7_ride"]
 [ext_resource type="PackedScene" path="res://src/levels/elevator_room/elevator_room.tscn" id="8_exit_room"]
+[ext_resource type="PackedScene" path="res://src/ui/screen_fade/screen_fade.tscn" id="9_fade"]
 
 [sub_resource type="Resource" id="Resource_floor_config"]
 script = ExtResource("6_floor_config")
@@ -36,3 +37,5 @@ position = Vector2(221, 143)
 [node name="PauseMenu" parent="." instance=ExtResource("5_pause")]
 
 [node name="ElevatorRide" parent="." instance=ExtResource("7_ride")]
+
+[node name="ScreenFade" parent="." instance=ExtResource("9_fade")]

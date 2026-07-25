@@ -73,6 +73,9 @@ var _rng := RandomNumberGenerator.new()
 @onready var _death_overlay: DeathOverlay = $Player/Camera2D/DeathOverlay
 @onready var _pause_menu: PauseMenu = $PauseMenu
 @onready var _ride: ElevatorRide = $ElevatorRide
+## The wipe used for room changes that cannot be slid across. Distinct from the
+## ride, which is a whole sequence, and from the death wipe, which never reopens.
+@onready var _fade: ScreenFade = $ScreenFade
 
 var _plan: FloorPlan
 var _current_room: Room
@@ -162,7 +165,9 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 	# The room we are leaving stays in the tree until the slide finishes — both
 	# rooms have to be on screen at once for the view to travel between them.
 	var previous_room := _current_room
+	var previous_kind: int = -1
 	if previous_room != null:
+		previous_kind = _plan.get_room(_current_coord).kind
 		previous_room.door_entered.disconnect(_on_door_entered)
 		previous_room.elevator_entered.disconnect(_on_elevator_entered)
 
@@ -205,6 +210,9 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 		# Start of a run — there is nothing to slide from.
 		_player.warp_to(landing)
 		_camera.set_bounds(_current_room.interior_rect())
+	elif _is_cut_transition(data.kind) or _is_cut_transition(previous_kind):
+		await _cut_to(landing, previous_room)
+		previous_room.queue_free()
 	else:
 		await _slide_to(landing, previous_room)
 		previous_room.queue_free()
@@ -216,6 +224,48 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 	# a tween puppet with physics disabled.
 	_populate(data)
 	_transitioning = false
+
+
+## Does moving into or out of a room of this kind have to be a cut?
+##
+## Only the swapped-in exit room, and only while one is actually installed. The
+## slide assumes the two cells share an edge and are drawn the same way round;
+## a replacement exit room is neither, so travelling to it has nothing to show.
+##
+## Keyed on the same fact that chose the scene rather than on the scene's type, so
+## this file still names no alternative implementation — anything dropped into
+## exit_room_scene gets the cut without announcing itself.
+func _is_cut_transition(kind: int) -> bool:
+	return kind == RoomData.Kind.EXIT and exit_room_scene != null
+
+
+## Swap rooms behind a wipe instead of travelling between them.
+##
+## The player is moved rather than tweened, so there is no path across the gap for
+## anything to look wrong on. Everything that would be seen happens while the
+## screen is black; the clock keeps running through it, same as the slide.
+func _cut_to(landing: Vector2, previous_room: Room) -> void:
+	_player.is_warping = true
+	_player.velocity = Vector2.ZERO
+	_camera.set_lead_enabled(false)
+	previous_room.process_mode = Node.PROCESS_MODE_DISABLED
+
+	await _fade.fade_out()
+
+	_player.warp_to(landing)
+	_camera.set_bounds(_current_room.interior_rect())
+	# The camera rides the player, so it has just been teleported too. Physics
+	# interpolation is on project-wide and would otherwise smear the first frame
+	# after the wipe across the whole distance travelled.
+	_camera.reset_physics_interpolation()
+	# One frame under the black, so the new room's bodies are settled and the view
+	# is already where it belongs before anything is visible.
+	await get_tree().physics_frame
+
+	await _fade.fade_in()
+
+	_camera.set_lead_enabled(true)
+	_player.is_warping = false
 
 
 ## Zelda-style room slide. Nothing is paused: the O2 countdown keeps running for

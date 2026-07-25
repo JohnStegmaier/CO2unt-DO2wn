@@ -50,11 +50,19 @@ var is_warping := false
 ## what a hit costs. Signals up, calls down: the player never touches the HUD.
 signal damaged(amount: int, type: int)
 
+## The body has finished dying. Emitted after the animation, so a listener can
+## hold the camera on us before the screen goes anywhere. The decision that we
+## died is not ours — the O2 timer makes it and the run calls die().
+signal died
+
 ## Seconds of mercy after a hit. Without it a stream of bullets lands several
 ## times a second and a roomful of enemies empties the tank in moments.
 @export var invulnerable_time := 0.6
 
 var _invulnerable_until_msec: int = 0
+
+## Fires-once guard on die(), so a death sequence cannot be started twice.
+var _is_dead := false
 
 
 func _ready() -> void:
@@ -75,7 +83,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _process(_delta: float) -> void:
-	if is_dodging:
+	if is_dodging or _is_dead:
 		return
 
 	if aiming_with_gamepad:
@@ -96,7 +104,7 @@ func _process(_delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	if is_warping:
+	if is_warping or _is_dead:
 		return
 
 	if is_dodging:
@@ -133,13 +141,45 @@ func _physics_process(delta: float) -> void:
 ## _physics_process, because _physics_process returns early while is_warping and
 ## a countdown there would freeze mid-transition.
 func take_damage(amount: int, type: int = Damage.Type.BLUNT) -> void:
-	if is_warping:
+	if is_warping or _is_dead:
 		return
 	if Time.get_ticks_msec() < _invulnerable_until_msec:
 		return
 	_invulnerable_until_msec = Time.get_ticks_msec() + int(invulnerable_time * 1000.0)
 	damaged.emit(amount, type)
 	_flash_hit()
+
+
+## Out of air. Hand over control and play out.
+##
+## PLACEHOLDER ANIMATION: a squash-and-fade, borrowed from the enemy death at
+## enemy.gd:_on_health_died, because no death frames exist yet. When they land,
+## replace the tween with sprite.play("death") and await animation_finished —
+## everything around this stays as it is.
+##
+## Unlike an enemy we do NOT queue_free: the body has to stay on screen for the
+## vignette to close over it.
+func die() -> void:
+	if _is_dead:
+		return
+	_is_dead = true
+	can_move = false
+	can_shoot = false
+	is_dodging = false
+	velocity = Vector2.ZERO
+
+	# Stop interacting the instant we die, so a stray bullet or a still-moving
+	# enemy cannot shove the corpse around under the vignette.
+	set_deferred("collision_layer", 0)
+	set_deferred("collision_mask", 0)
+
+	var death := create_tween()
+	death.set_parallel(true)
+	death.tween_property(sprite, "scale", Vector2(1.4, 0.5), 0.35).set_ease(Tween.EASE_OUT)
+	death.tween_property(sprite, "modulate", Color(0.6, 0.7, 0.9, 0.65), 0.35)
+	death.tween_property(gun, "modulate:a", 0.0, 0.2)
+	await death.finished
+	died.emit()
 
 
 ## Brief red flash, so a hit reads even when the only feedback is a number in the
@@ -176,7 +216,7 @@ func shoot() -> void:
 	bullet.global_position = gun.global_position + spawn_offset
 	bullet.reset_physics_interpolation()
 
-	await get_tree().create_timer(fire_rate).timeout
+	await get_tree().create_timer(fire_rate, false).timeout
 	can_shoot = true
 
 
@@ -228,7 +268,7 @@ func dodge(direction: Vector2) -> void:
 
 
 func return_gun() -> void:
-	await get_tree().create_timer(0.35).timeout
+	await get_tree().create_timer(0.35, false).timeout
 	var return_tween := create_tween()
 	return_tween.set_parallel(true)
 	return_tween.tween_property(gun, "position", gun_default_position, 0.15).set_ease(Tween.EASE_OUT)

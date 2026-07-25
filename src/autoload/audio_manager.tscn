@@ -9,6 +9,8 @@ script = ExtResource("1_dygvs")
 
 [node name="MusicPlayer2" type="AudioStreamPlayer" parent="." unique_id=91558190]
 
+[node name="HeartbeatPlayer" type="AudioStreamPlayer" parent="." unique_id=1893774015]
+
 [node name="SFX1" type="AudioStreamPlayer" parent="." unique_id=775429381]
 
 [node name="SFX2" type="AudioStreamPlayer" parent="." unique_id=1200585295]

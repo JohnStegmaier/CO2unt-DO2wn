@@ -12,21 +12,34 @@
 [ext_resource type="Texture2D" uid="uid://cx7p0kxr2xkby" path="res://assets/sprites/characters/player/Dodge_Forward/player_roll7.png" id="8_a31ob"]
 [ext_resource type="Texture2D" uid="uid://b7ckxabs1klhg" path="res://assets/sprites/characters/player/Dodge_Forward/player_roll8.png" id="9_5qgjf"]
 [ext_resource type="Texture2D" uid="uid://cqrhajinqihwu" path="res://assets/sprites/characters/player/Dodge_Forward/player_roll9.png" id="10_fjj3i"]
+[ext_resource type="Texture2D" uid="uid://b6ja3w3u6uly5" path="res://assets/sprites/characters/player/Dodge_Right/player_roll_right1.png" id="12_45rvh"]
 [ext_resource type="Texture2D" uid="uid://b6ck1f0s1d5ao" path="res://assets/sprites/characters/player/Idle_forward/Player_Idle1.png" id="12_amj0e"]
 [ext_resource type="Texture2D" uid="uid://bmu6rbk0v0k8h" path="res://assets/sprites/characters/player/Idle_forward/Player_Idle2.png" id="13_33dyk"]
+[ext_resource type="Texture2D" uid="uid://b3yel32kctp27" path="res://assets/sprites/characters/player/Dodge_Right/player_roll_right2.png" id="13_xm7nl"]
+[ext_resource type="Texture2D" uid="uid://b6b6370wgrdv8" path="res://assets/sprites/characters/player/Dodge_Right/player_roll_right3.png" id="14_f610a"]
 [ext_resource type="Texture2D" uid="uid://kdyrurlsdgrm" path="res://assets/sprites/characters/player/Idle_forward/Player_Idle3.png" id="14_t4js2"]
 [ext_resource type="Texture2D" uid="uid://cxrnqnjcveddd" path="res://assets/sprites/characters/player/Idle_forward/Player_Idle4.png" id="15_4tw7w"]
+[ext_resource type="Texture2D" uid="uid://341l2dpnean" path="res://assets/sprites/characters/player/Dodge_Right/player_roll_right4.png" id="15_lacky"]
 [ext_resource type="Texture2D" uid="uid://cm4a87ahjb7tc" path="res://assets/sprites/items/BigGun_B_Transparent.png" id="15_lqdhu"]
 [ext_resource type="Texture2D" uid="uid://dhb1cqrf5oyh5" path="res://assets/sprites/characters/player/Walk/Player_Walk_Right1.png" id="16_3d0mj"]
+[ext_resource type="Texture2D" uid="uid://bdmhllnrxyu06" path="res://assets/sprites/characters/player/Dodge_Right/player_roll_right5.png" id="16_akx0o"]
 [ext_resource type="Texture2D" uid="uid://ccip6h4d58mkp" path="res://assets/sprites/characters/player/Idle_Right/Player_Idle_Right1.png" id="16_amj0e"]
 [ext_resource type="Texture2D" uid="uid://csdp2lbbd00ax" path="res://assets/sprites/characters/player/Idle_Right/Player_Idle_Right2.png" id="17_33dyk"]
 [ext_resource type="Texture2D" uid="uid://dhi87ifl7iht8" path="res://assets/sprites/characters/player/Walk/Player_Walk_Right2.png" id="17_dao75"]
+[ext_resource type="Texture2D" uid="uid://cifqy41mq7hsv" path="res://assets/sprites/characters/player/Dodge_Right/player_roll_right6.png" id="17_fbnv4"]
 [ext_resource type="Texture2D" uid="uid://da4wy6uicqglf" path="res://assets/sprites/characters/player/Walk/Player_Walk_Right3.png" id="18_45xpv"]
+[ext_resource type="Texture2D" uid="uid://cn4ca0ogket3p" path="res://assets/sprites/characters/player/Dodge_Right/player_roll_right7.png" id="18_i78gy"]
 [ext_resource type="Texture2D" uid="uid://dssy8p6yijenw" path="res://assets/sprites/characters/player/Idle_Right/Player_Idle_Right3.png" id="18_t4js2"]
 [ext_resource type="Texture2D" uid="uid://ditvp06ss0r1e" path="res://assets/sprites/characters/player/Idle_Right/Player_Idle_Right4.png" id="19_4tw7w"]
 [ext_resource type="Texture2D" uid="uid://bktpfpdeun28b" path="res://assets/sprites/characters/player/Walk/Player_Walk_Right4.png" id="19_ngh1c"]
 [ext_resource type="Texture2D" uid="uid://0w872j0efybp" path="res://assets/sprites/characters/player/Walk/Player_Walk_Right5.png" id="20_amj0e"]
 [ext_resource type="Texture2D" uid="uid://docg4st27eaqn" path="res://assets/sprites/characters/player/Walk/Player_Walk_Right6.png" id="21_33dyk"]
+[ext_resource type="Texture2D" uid="uid://d1cp0iic1gbng" path="res://assets/sprites/characters/player/Walk/walk_down/Walk_down1.png" id="27_i78gy"]
+[ext_resource type="Texture2D" uid="uid://cehfgfktfao8y" path="res://assets/sprites/characters/player/Walk/walk_down/Walk_down2.png" id="28_ts1rd"]
+[ext_resource type="Texture2D" uid="uid://d2dwvn0vrvu13" path="res://assets/sprites/characters/player/Walk/walk_down/Walk_down3.png" id="29_2a6xp"]
+[ext_resource type="Texture2D" uid="uid://4p30h6kjavrh" path="res://assets/sprites/characters/player/Walk/walk_down/Walk_down4.png" id="30_pg6a0"]
+[ext_resource type="Texture2D" uid="uid://dgb72xum31oci" path="res://assets/sprites/characters/player/Walk/walk_down/Walk_down5.png" id="31_y8r58"]
+[ext_resource type="Texture2D" uid="uid://de7p70gt7nrnk" path="res://assets/sprites/characters/player/Walk/walk_down/Walk_down6.png" id="32_8dxlo"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_5ixxa"]
 radius = 3.0
@@ -64,7 +77,33 @@ animations = [{
 }],
 "loop": 0,
 "name": &"dodge_down",
-"speed": 17.0
+"speed": 13.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("12_45rvh")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_xm7nl")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_f610a")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_lacky")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_akx0o")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_fbnv4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_i78gy")
+}],
+"loop": 0,
+"name": &"dodge_right",
+"speed": 13.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -115,10 +154,28 @@ animations = [{
 "name": &"idle_up_right",
 "speed": 5.0
 }, {
-"frames": [],
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("27_i78gy")
+}, {
+"duration": 1.0,
+"texture": ExtResource("28_ts1rd")
+}, {
+"duration": 1.0,
+"texture": ExtResource("29_2a6xp")
+}, {
+"duration": 1.0,
+"texture": ExtResource("30_pg6a0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("31_y8r58")
+}, {
+"duration": 1.0,
+"texture": ExtResource("32_8dxlo")
+}],
 "loop": 1,
 "name": &"walk_down",
-"speed": 5.0
+"speed": 9.0
 }, {
 "frames": [],
 "loop": 1,
@@ -160,9 +217,9 @@ animations = [{
 }]
 
 [node name="Player" type="CharacterBody2D" unique_id=1612937390]
+disable_mode = 1
 collision_layer = 2
 collision_mask = 5
-disable_mode = 1
 script = ExtResource("1_lkv7d")
 bullet_scene = ExtResource("2_t8d2k")
 
@@ -173,7 +230,7 @@ shape = SubResource("CapsuleShape2D_5ixxa")
 texture_filter = 1
 position = Vector2(0, -6)
 sprite_frames = SubResource("SpriteFrames_nn08x")
-animation = &"idle_down"
+animation = &"walk_down"
 
 [node name="BigGunBTransparent" type="Sprite2D" parent="." unique_id=1371732958]
 modulate = Color(1.8764027, 1.111197, 1.5168338, 1)

@@ -26,6 +26,11 @@ var gun_default_scale: Vector2
 var can_shoot := true
 var gun_direction := Vector2.RIGHT
 
+## True while the Game is moving us between rooms. Physics is handed over to the
+## transition for the duration — a dodge finishing mid-slide would otherwise
+## re-enable can_move and fight the tween for control of our position.
+var is_warping := false
+
 
 func _ready() -> void:
 	gun_default_position = gun.position
@@ -43,6 +48,9 @@ func _process(_delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if is_warping:
+		return
+
 	if is_dodging:
 		dodge_timer += delta
 		var t: float = clamp(dodge_timer / DODGE_DURATION, 0.0, 1.0)

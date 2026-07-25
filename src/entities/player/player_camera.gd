@@ -9,12 +9,12 @@ extends Camera2D
 
 @export_group("Movement Lead")
 @export var movement_lead_amount: float = 20.0      ## Max pixels the camera shifts toward movement direction
-@export var movement_lead_smoothing: float = 4.0    ## Higher = snappier response to velocity changes
+@export var movement_lead_smoothing: float = 2.0    ## Higher = snappier response to velocity changes
 
 @export_group("Mouse Lead")
 @export var mouse_lead_amount: float = 90.0          ## Max pixels the camera shifts toward the mouse
 @export var mouse_lead_deadzone: float = 40.0        ## Pixels from screen center before mouse-lead starts
-@export var mouse_lead_smoothing: float = 8.0        ## Higher = snappier response to mouse movement
+@export var mouse_lead_smoothing: float = 3.5        ## Higher = snappier response to mouse movement
 
 @export_group("Level Bounds")
 ## Set these to match your level (e.g. TileMap.get_used_rect() * cell size).
@@ -29,6 +29,13 @@ extends Camera2D
 
 var _movement_offset: Vector2 = Vector2.ZERO
 var _mouse_offset: Vector2 = Vector2.ZERO
+var _lead_enabled: bool = true
+
+
+## Suppress movement and mouse lead, so a room transition reads as a clean slide
+## rather than a slide with a wandering offset riding on top of it.
+func set_lead_enabled(enabled: bool) -> void:
+	_lead_enabled = enabled
 
 
 ## Clamp the view to a room. Called on every room change, because the camera
@@ -59,8 +66,14 @@ func _process(delta: float) -> void:
 	if player == null:
 		return
 
-	_update_movement_lead(delta)
-	_update_mouse_lead(delta)
+	if _lead_enabled:
+		_update_movement_lead(delta)
+		_update_mouse_lead(delta)
+	else:
+		# Ease the lead out instead of zeroing it. Snapping a 90px offset to
+		# zero would be exactly the jolt the transition is meant to avoid.
+		_movement_offset = _movement_offset.lerp(Vector2.ZERO, 1.0 - exp(-movement_lead_smoothing * delta))
+		_mouse_offset = _mouse_offset.lerp(Vector2.ZERO, 1.0 - exp(-mouse_lead_smoothing * delta))
 
 	# Combine both leads. Mouse lead dominates because it has a larger
 	# amount and higher smoothing responsiveness by default.

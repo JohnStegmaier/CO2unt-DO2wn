@@ -2,6 +2,10 @@
 .godot/
 /android/
 
+# Local export output. tools/check_layout.py enforces a closed root allowlist,
+# so committing this would fail CI.
+/build/
+
 # IDE / editor
 .idea/
 *.swp

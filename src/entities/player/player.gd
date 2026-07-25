@@ -3,9 +3,9 @@ extends CharacterBody2D
 class_name Player
 
 @export var bullet_scene: PackedScene
-@export var muzzle_offset := 25.0
-@export var muzzle_y_offset := 6.0
-@export var fire_rate := 0.05
+@export var muzzle_offset := 20
+@export var muzzle_y_offset := 0
+@export var fire_rate := 0.1
 @export var bullet_damage := 10
 ## How fast our shots travel. Lives here rather than on the bullet because the
 ## enemies fire the same scene and need their own number — see enemy.gd.

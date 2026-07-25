@@ -65,6 +65,13 @@ scale = Vector2(0.3861112, 0.38611114)
 texture = ExtResource("3_xvotp")
 centered = false
 
+[node name="PlayButton" type="Control" parent="."]
+offset_left = 479.0
+offset_top = 198.0
+offset_right = 567.0
+offset_bottom = 279.0
+mouse_default_cursor_shape = 2
+
 [node name="Arrow" type="Sprite2D" parent="." unique_id=2024975786]
 modulate = Color(0.8872221, 1.5538405, 1.5911472, 1)
 position = Vector2(517, 136.99998)

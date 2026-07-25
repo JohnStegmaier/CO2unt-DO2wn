@@ -6,6 +6,11 @@ extends Node2D
 ## index driven by ui_up/ui_down/ui_accept rather than Buttons, matching the main
 ## menu — the project has no Theme and no Control-based menu, and a bare Label
 ## is the easiest thing to swap for a sprite when the art lands.
+##
+## The mouse drives the same index rather than a parallel path: hovering an option
+## selects it and clicking one confirms it, so the caret always agrees with what a
+## click is about to do. Labels default to MOUSE_FILTER_IGNORE, so the scene sets
+## these two to STOP — without that they are invisible to the mouse.
 
 const GAME_SCENE := "res://src/screens/game/game.tscn"
 const MAIN_MENU_SCENE := "res://src/screens/main_menu/main_menu.tscn"
@@ -32,6 +37,10 @@ func _ready() -> void:
 	get_tree().paused = false
 	AudioManager.stop_music()
 	_show_last_frame(NavigationManager.take_payload())
+	for i in _options.size():
+		var option: Label = _options[i]
+		option.mouse_entered.connect(_on_option_hovered.bind(i))
+		option.gui_input.connect(_on_option_gui_input.bind(i))
 	_update_options()
 
 
@@ -56,6 +65,26 @@ func _process(_delta: float) -> void:
 
 	if Input.is_action_just_pressed("ui_accept"):
 		_confirm()
+
+
+func _on_option_hovered(index: int) -> void:
+	if _leaving or _selection == index:
+		return
+	_selection = index
+	_update_options()
+
+
+## Click selects and confirms in one go — moving the caret and making the player
+## click a second time would be the same trap as a menu that ignores the mouse.
+func _on_option_gui_input(event: InputEvent, index: int) -> void:
+	if _leaving:
+		return
+	if not (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed):
+		return
+	_options[index].accept_event()
+	_selection = index
+	_update_options()
+	_confirm()
 
 
 func _confirm() -> void:

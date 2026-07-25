@@ -234,11 +234,13 @@ animation = &"walk_down"
 
 [node name="BigGunBTransparent" type="Sprite2D" parent="." unique_id=1371732958]
 modulate = Color(1.8764027, 1.111197, 1.5168338, 1)
-position = Vector2(1.1368684e-13, 3.9999998)
-scale = Vector2(0.1, 0.1)
+position = Vector2(0, 5)
+scale = Vector2(0.05, 0.05)
 texture = ExtResource("15_lqdhu")
-offset = Vector2(120, 0)
+offset = Vector2(200, 0)
 flip_h = true
+region_enabled = true
+region_rect = Rect2(8.45491, -63.49489, 233.54509, 227.5741)
 
 [node name="Muzzle" type="Marker2D" parent="BigGunBTransparent" unique_id=1118717441]
 position = Vector2(223.74, -51.085)

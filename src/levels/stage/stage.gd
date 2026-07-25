@@ -14,8 +14,9 @@ func setup() -> void:
 func _ready() -> void:
 	GlobalTimer.tick.connect(setup)
 	GlobalTimer.tick.connect(_on_global_tick)
-	if NavigationManager.spawn_door_tag != null:
-		_on_level_spawn(NavigationManager.spawn_door_tag)
+	var spawn_tag := NavigationManager.consume_spawn_door_tag()
+	if spawn_tag != "":
+		_on_level_spawn(spawn_tag)
 
 func _on_global_tick() -> void:
 	print(global_timer.tickflip)

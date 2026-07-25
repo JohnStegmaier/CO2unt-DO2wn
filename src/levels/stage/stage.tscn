@@ -76,7 +76,7 @@ shape = SubResource("RectangleShape2D_nckmm")
 
 [node name="door_left" parent="Doors" unique_id=171832432 instance=ExtResource("6_e1nbm")]
 position = Vector2(156, 277)
-destination_room_name = "stage_left"
+destination_scene = "res://src/levels/stage/stage_left.tscn"
 destination_door_uuid = "right"
 spawn_direction = "right"
 

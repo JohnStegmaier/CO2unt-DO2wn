@@ -38,7 +38,7 @@ centered = false
 
 [node name="door_right" parent="Doors" unique_id=426593801 instance=ExtResource("5_if4m5")]
 position = Vector2(523, 279)
-destination_room_name = "stage"
+destination_scene = "res://src/levels/stage/stage.tscn"
 destination_door_uuid = "left"
 spawn_direction = "left"
 

@@ -5,11 +5,17 @@ class_name Player
 @export var bullet_scene: PackedScene
 @export var muzzle_offset := 20
 @export var muzzle_y_offset := 0
-@export var fire_rate := 0.1
+@export var fire_rate := 0.14
 @export var bullet_damage := 10
 ## How fast our shots travel. Lives here rather than on the bullet because the
 ## enemies fire the same scene and need their own number — see enemy.gd.
 @export var bullet_speed := 400.0
+
+@export_group("Ammo")
+@export var magazine_size := 6
+## Seconds an empty magazine takes to come back full. Reload is automatic — there
+## is no manual reload input — so this is the only cost of running the mag dry.
+@export var reload_time := 1.2
 
 @onready var sprite = $AnimatedSprite2D
 @onready var gun: Sprite2D = $BigGunBTransparent
@@ -33,6 +39,11 @@ var gun_default_scale: Vector2
 const AIM_DEADZONE := 0.25
 
 var can_shoot := true
+var ammo := 0
+
+## Fired whenever the magazine count changes — on every shot and when a reload
+## finishes — so the HUD never has to poll for it.
+signal ammo_changed(current: int, magazine_size: int)
 ## World-space aim, whichever device supplied it. Bullets and the gun sprite
 ## both read this, so neither has to know how the player is aiming.
 var gun_direction := Vector2.RIGHT
@@ -71,6 +82,7 @@ var _is_dead := false
 func _ready() -> void:
 	gun_default_position = gun.position
 	gun_default_scale = gun.scale
+	ammo = magazine_size
 
 
 ## Last device to speak wins. Joypad motion is filtered by deadzone because an
@@ -216,11 +228,21 @@ func shoot() -> void:
 			CollisionLayers.WORLD | CollisionLayers.ENEMY, bullet_damage, Damage.Type.BLUNT,
 			bullet_speed)
 	get_tree().current_scene.add_child(bullet)
-	AudioManager.play_sfx("laser_gun_01")
+	AudioManager.play_sfx("laser_gun_01", randf_range(0.9, 1.1))
 	bullet.global_position = gun.global_position + spawn_offset
 	bullet.reset_physics_interpolation()
 
-	await get_tree().create_timer(fire_rate, false).timeout
+	ammo -= 1
+	ammo_changed.emit(ammo, magazine_size)
+
+	if ammo <= 0:
+		# Empty mag reloads on its own — can_shoot stays false for the whole wait,
+		# which is what blocks the shoot input until it is back up.
+		await get_tree().create_timer(reload_time, false).timeout
+		ammo = magazine_size
+		ammo_changed.emit(ammo, magazine_size)
+	else:
+		await get_tree().create_timer(fire_rate, false).timeout
 	can_shoot = true
 
 

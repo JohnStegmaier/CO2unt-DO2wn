@@ -3,12 +3,31 @@
 [ext_resource type="Script" uid="uid://bp7pnwnhiuadt" path="res://src/entities/gun_stuff/bullet.gd" id="1_kid0w"]
 [ext_resource type="Texture2D" uid="uid://c1fliuq7h5mv3" path="res://assets/sprites/items/Energy_Bullet.png" id="2_btnqe"]
 
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_glow"]
+blend_mode = 1
+
+[sub_resource type="Gradient" id="Gradient_glow"]
+colors = PackedColorArray(1, 1, 1, 0.8, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_glow"]
+gradient = SubResource("Gradient_glow")
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+
 [sub_resource type="CircleShape2D" id="CircleShape2D_nckmm"]
 
 [node name="Bullet" type="Area2D" unique_id=1315338816]
 collision_layer = 8
 collision_mask = 5
 script = ExtResource("1_kid0w")
+
+[node name="Glow" type="Sprite2D" parent="." unique_id=-483146995]
+modulate = Color(1, 1, 1, 0.6392157)
+z_index = -1
+material = SubResource("CanvasItemMaterial_glow")
+scale = Vector2(0.16, 0.16)
+texture = SubResource("GradientTexture2D_glow")
+region_rect = Rect2(0, 0, 64, 64)
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1173223551]
 texture = ExtResource("2_btnqe")

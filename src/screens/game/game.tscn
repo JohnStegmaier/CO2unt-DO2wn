@@ -5,9 +5,22 @@
 [ext_resource type="PackedScene" uid="uid://3opvjgbns0rk" path="res://src/ui/hud/ui.tscn" id="3_ui"]
 [ext_resource type="PackedScene" path="res://src/ui/death_overlay/death_overlay.tscn" id="4_death"]
 [ext_resource type="PackedScene" path="res://src/ui/pause_menu/pause_menu.tscn" id="5_pause"]
+[ext_resource type="Script" path="res://src/systems/floor_config.gd" id="6_floor_config"]
+[ext_resource type="PackedScene" path="res://src/ui/elevator_ride/elevator_ride.tscn" id="7_ride"]
+
+[sub_resource type="Resource" id="Resource_floor_config"]
+script = ExtResource("6_floor_config")
+rooms_min = 14
+rooms_max = 18
+rooms_per_floor = 2
+max_depth = 6
+depth_bias = 1.5
+exit_min_depth = 3
+special_min_depth = 2
 
 [node name="Game" type="Node2D"]
 script = ExtResource("1_game")
+floor_config = SubResource("Resource_floor_config")
 
 [node name="RoomContainer" type="Node2D" parent="."]
 
@@ -19,3 +32,5 @@ position = Vector2(221, 143)
 [node name="Ui" parent="." instance=ExtResource("3_ui")]
 
 [node name="PauseMenu" parent="." instance=ExtResource("5_pause")]
+
+[node name="ElevatorRide" parent="." instance=ExtResource("7_ride")]

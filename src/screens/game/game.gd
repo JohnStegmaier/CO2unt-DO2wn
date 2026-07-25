@@ -34,6 +34,14 @@ const GAME_OVER_SCENE := "res://src/screens/game_over/game_over.tscn"
 ## long enough to register that the body stopped moving.
 @export var death_hold: float = 0.6
 
+@export_group("Floor")
+## Shape of every floor in the run. Tune it here and each generated floor obeys.
+@export var floor_config: FloorConfig
+## Pin a non-zero value to replay a run exactly, floor for floor. Left at 0 it is
+## randomised on start and printed, so a floor that plays badly can be recovered
+## from the log rather than described from memory.
+@export var run_seed: int = 0
+
 var _rng := RandomNumberGenerator.new()
 
 @onready var _room_container: Node2D = $RoomContainer
@@ -48,6 +56,7 @@ var _rng := RandomNumberGenerator.new()
 ## closing dark. See death_overlay.gd.
 @onready var _death_overlay: DeathOverlay = $Player/Camera2D/DeathOverlay
 @onready var _pause_menu: PauseMenu = $PauseMenu
+@onready var _ride: ElevatorRide = $ElevatorRide
 
 var _plan: FloorPlan
 var _current_room: Room
@@ -56,6 +65,9 @@ var _transitioning: bool = false
 ## Fires-once guard on the death sequence, and the flag that tells the music
 ## re-arm on GlobalTimer.tick to stay down.
 var _dying: bool = false
+## Floors descended. 0 is the first, and it feeds both the seed and the room
+## count, so every floor of a run is a different size and shape.
+var _floor_number: int = 0
 
 
 func _ready() -> void:
@@ -71,13 +83,15 @@ func _ready() -> void:
 	_o2_timer.suffocation_changed.connect(_death_overlay.set_vignette_progress)
 	_o2_timer.suffocated.connect(_on_player_died)
 
-	# Placement will seed from the floor seed once the generator exists; until
-	# then a fresh arrangement per run is what we want.
 	_rng.randomize()
+	if run_seed == 0:
+		run_seed = _rng.randi()
+	if floor_config == null:
+		# Belt and braces: the scene supplies one, but a Game dropped into
+		# another scene without it should still generate rather than crash.
+		floor_config = FloorConfig.new()
 
-	_plan = _build_debug_plan()
-	print(_plan.to_ascii())
-	_enter_room(_plan.spawn_coord)
+	_begin_floor(0)
 
 
 ## Called once per run, not once per room — the old per-level version restarted
@@ -134,6 +148,7 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 	var previous_room := _current_room
 	if previous_room != null:
 		previous_room.door_entered.disconnect(_on_door_entered)
+		previous_room.elevator_entered.disconnect(_on_elevator_entered)
 
 	# Bullets belong to the room they were fired in, not to the run.
 	get_tree().call_group("projectiles", "queue_free")
@@ -154,8 +169,9 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 	_current_room.position = Vector2(coord) * Room.STRIDE
 	_room_container.add_child(_current_room)
 	_current_room.reset_physics_interpolation()
-	_current_room.configure(data.doors)
+	_current_room.configure(data)
 	_current_room.door_entered.connect(_on_door_entered)
+	_current_room.elevator_entered.connect(_on_elevator_entered)
 	_current_coord = coord
 
 	var landing: Vector2 = _current_room.interior_rect().get_center()
@@ -221,10 +237,61 @@ func _pan_camera_between(t: float, from_rect: Rect2, to_rect: Rect2) -> void:
 	_camera.set_bounds(Rect2(from_rect.position.lerp(to_rect.position, t), from_rect.size))
 
 
-## Taking the elevator to the next level. Not wired to anything yet — the exit
-## room is still a visual stub — but this is where O2 policy is applied.
+## The player stepped into the exit room's elevator.
+##
+## The ride is what makes this cheap: it covers the screen, so the whole floor can
+## be thrown away and a new one generated in a window the player cannot see. That
+## is also why nothing here fades or waits on the world — the overlay is already
+## hiding it.
+func _on_elevator_entered() -> void:
+	# _dying as well as _transitioning: a suffocating player keeps full control and
+	# can still walk, so without this a body already on its way to the game over
+	# screen could board the elevator and be carried to a floor it has no business
+	# reaching.
+	if _transitioning or _dying:
+		return
+	_transitioning = true
+	# The player is a passenger for the duration. Without this, held movement keys
+	# would still drive move_and_slide against a room that is being freed.
+	_player.is_warping = true
+	_player.velocity = Vector2.ZERO
+
+	await _ride.descend()
+
+	_clear_floor()
+	await _begin_floor(_floor_number + 1)
+	_on_floor_advanced()
+
+	# Reclaimed after _begin_floor, which clears it on the way out. The doors are
+	# still shut at this point, so nothing can be walked into until they open.
+	_transitioning = true
+	await _ride.arrive(_floor_number)
+
+	_player.is_warping = false
+	_transitioning = false
+
+
+## Taking the elevator down. This is where O2 policy is applied, and the only
+## reason it is a function of its own: if floors should get progressively less
+## air, or air should carry over, this is the one place that changes.
 func _on_floor_advanced() -> void:
 	_o2_timer.refill()
+
+
+## Throw the current floor away so the next one starts from nothing.
+##
+## The room is freed outright rather than slid away: the next floor is a different
+## grid, so there is no adjacency for a camera pan to travel across.
+func _clear_floor() -> void:
+	get_tree().call_group("projectiles", "queue_free")
+	if _current_room == null:
+		return
+	_current_room.door_entered.disconnect(_on_door_entered)
+	_current_room.elevator_entered.disconnect(_on_elevator_entered)
+	_current_room.queue_free()
+	# Nulled so _enter_room takes its start-of-run path and warps the player in
+	# rather than trying to slide between two rooms on unrelated grids.
+	_current_room = null
 
 
 ## The tank read zero. The suit powers down and the ticking stops, leaving only
@@ -332,30 +399,19 @@ func _on_enemy_died(data: RoomData) -> void:
 		_current_room.set_locked(false)
 
 
-## Hand-authored stand-in for the generator. Spawn has all four exits, with a
-## couple of arms and a special room at the end of each. FloorGenerator will
-## replace this one call and nothing else here moves.
-func _build_debug_plan() -> FloorPlan:
-	var plan := FloorPlan.new()
-	var kinds := {
-		Vector2i(0, 0): RoomData.Kind.SPAWN,
-		Vector2i(0, -1): RoomData.Kind.SHOP,
-		Vector2i(-1, 0): RoomData.Kind.NORMAL,
-		Vector2i(-2, 0): RoomData.Kind.TREASURE,
-		Vector2i(1, 0): RoomData.Kind.NORMAL,
-		Vector2i(0, 1): RoomData.Kind.NORMAL,
-		Vector2i(0, 2): RoomData.Kind.EXIT,
-		Vector2i(1, 1): RoomData.Kind.BOSS,
-	}
-	for coord in kinds:
-		plan.add_room(RoomData.new(coord, kinds[coord]))
+## Generate a floor and walk into its spawn room.
+func _begin_floor(floor_number: int) -> void:
+	_floor_number = floor_number
+	var floor_seed: int = FloorGenerator.floor_seed_for(run_seed, floor_number)
+	_plan = FloorGenerator.generate(floor_config, floor_number, floor_seed)
 
-	plan.connect_rooms(Vector2i(0, 0), GridDirection.Side.NORTH)
-	plan.connect_rooms(Vector2i(0, 0), GridDirection.Side.EAST)
-	plan.connect_rooms(Vector2i(0, 0), GridDirection.Side.SOUTH)
-	plan.connect_rooms(Vector2i(0, 0), GridDirection.Side.WEST)
-	plan.connect_rooms(Vector2i(-1, 0), GridDirection.Side.WEST)
-	plan.connect_rooms(Vector2i(0, 1), GridDirection.Side.SOUTH)
-	plan.connect_rooms(Vector2i(0, 1), GridDirection.Side.EAST)
+	# Enemy placement shares the floor's seed, so replaying a seed puts the bad
+	# guys back too, not just the walls. Only along the same route, mind: rooms
+	# are stocked as you reach them, so a different path draws differently.
+	_rng.seed = floor_seed
 
-	return plan
+	print("floor %d — run seed %d, %d rooms" % [floor_number + 1, run_seed, _plan.size()])
+	print(_plan.to_ascii())
+	# Awaited, so a caller riding the elevator can hold the overlay up until the
+	# spawn room is built and stocked rather than opening onto an empty screen.
+	await _enter_room(_plan.spawn_coord)

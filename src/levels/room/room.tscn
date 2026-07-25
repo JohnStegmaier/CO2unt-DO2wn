@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://dff0ryoaalsux" path="res://src/levels/room/room.gd" id="1_room"]
 [ext_resource type="Texture2D" uid="uid://dndxj5us5bnvi" path="res://assets/sprites/environment/isaac_template_standard.png" id="2_bg"]
 [ext_resource type="PackedScene" uid="uid://c1g6yvd4ortv1" path="res://src/components/level_door.tscn" id="3_door"]
+[ext_resource type="PackedScene" path="res://src/components/elevator/elevator.tscn" id="4_elevator"]
 
 [sub_resource type="CompressedTexture2D" id="CompressedTexture2D_wf81e"]
 load_path = "res://.godot/imported/isaac_template_standard.png-387ec9706ca26b574271ef296a230183.ctex"
@@ -157,6 +158,17 @@ offset_top = -24.0
 offset_right = 13.0
 offset_bottom = 22.0
 color = Color(0.2196078, 0.3294118, 0.4, 1)
+
+[node name="Tint" type="ColorRect" parent="."]
+z_index = 1
+offset_right = 442.0
+offset_bottom = 286.0
+mouse_filter = 2
+color = Color(0, 0, 0, 0)
+
+[node name="Elevator" parent="." instance=ExtResource("4_elevator")]
+z_index = 1
+position = Vector2(221, 85)
 
 [node name="Entities" type="Node2D" parent="." unique_id=1902334471]
 z_index = 2

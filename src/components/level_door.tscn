@@ -3,14 +3,13 @@
 [ext_resource type="Script" uid="uid://meryamchwjxa" path="res://src/components/level_door.gd" id="1_xx2kh"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ofedd"]
+size = Vector2(46, 28)
 
 [node name="level_door" type="Area2D" unique_id=426593801]
 script = ExtResource("1_xx2kh")
 
-[node name="despawn_location" type="CollisionShape2D" parent="." unique_id=628300908]
+[node name="trigger" type="CollisionShape2D" parent="." unique_id=628300908]
 shape = SubResource("RectangleShape2D_ofedd")
 debug_color = Color(0, 0.6114118, 0.6310286, 0.41960785)
-
-[node name="spawn_location" type="Marker2D" parent="." unique_id=1994355630]
 
 [connection signal="body_entered" from="." to="." method="_on_body_entered"]

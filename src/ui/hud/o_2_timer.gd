@@ -46,6 +46,18 @@ func _setup() -> void:
 	update_label()
 	setup_done = true
 	
+## Reset the countdown for a new level. This is the ONE place O2 policy lives —
+## if levels should get progressively less time, or time should carry over
+## instead of resetting, change it here and nowhere else.
+func refill() -> void:
+	time_left = total_time
+	borders_shown = false
+	top_border.position = top_border_start_pos
+	bottom_border.position = bottom_border_start_pos
+	update_label()
+	update_needle()
+
+
 func _process(delta: float) -> void:
 	if not setup_done:
 		return

@@ -1,24 +1,12 @@
 extends Node
 
-const stage = preload("res://src/levels/stage/stage.tscn")
-const stage_left = preload("res://src/levels/stage/stage_left.tscn")
+## Screen-level navigation: menu to game, game to game over.
+##
+## Room-to-room movement is NOT here. Rooms are swapped inside the Game scene
+## without a scene change, so nothing has to be carried across one.
 
-signal on_trigger_player_spawn(position: Vector2, direction: String)
-
-var spawn_door_tag
-
-func go_to_level(level_tag, destination_tag):
-	var scene_to_load
-	
-	match level_tag:
-		"stage":
-			scene_to_load = stage
-		"stage_left":
-			scene_to_load = stage_left
-			
-	if scene_to_load != null:
-		spawn_door_tag = destination_tag
-		get_tree().change_scene_to_packed(scene_to_load)
-		
-func trigger_player_spawn(position: Vector2, direction: String):
-	on_trigger_player_spawn.emit(position, direction)
+func go_to_screen(scene_path: String) -> void:
+	if scene_path.is_empty():
+		push_warning("NavigationManager: empty scene path")
+		return
+	get_tree().change_scene_to_file(scene_path)

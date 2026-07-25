@@ -1,6 +1,6 @@
 extends Node2D
 
-const STAGE_SCENE := "res://src/levels/stage/stage.tscn"
+const GAME_SCENE := "res://src/screens/game/game.tscn"
 
 @onready var arrow = $Arrow
 
@@ -26,4 +26,4 @@ func _on_global_tick() -> void:
 func _process(_delta: float) -> void:
 	if selection == 1 and Input.is_action_just_pressed("ui_accept"):
 		AudioManager.stop_music()
-		get_tree().change_scene_to_file(STAGE_SCENE)
+		NavigationManager.go_to_screen(GAME_SCENE)

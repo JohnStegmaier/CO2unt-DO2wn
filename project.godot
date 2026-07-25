@@ -16,6 +16,7 @@ config/features=PackedStringArray("4.7", "GL Compatibility")
 
 [autoload]
 
+GameConfig="*res://src/autoload/game_config.gd"
 GlobalTimer="*uid://ba53pyixmqet7"
 AudioManager="*uid://dfyijpgqy6rei"
 NavigationManager="*uid://bitr8b03r12p"
@@ -27,6 +28,10 @@ window/size/viewport_height=360
 window/size/window_width_override=1280
 window/size/window_height_override=720
 window/stretch/mode="canvas_items"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/profile_switcher/plugin.cfg")
 
 [input]
 

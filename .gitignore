@@ -6,6 +6,12 @@
 # so committing this would fail CI.
 /build/
 
+# Whichever tuning profile you last picked in the editor toolbar dropdown. A
+# personal choice made while testing, so it must never reach a pull request —
+# that is the whole point of the dropdown writing here instead of into
+# project.godot's run args. See src/config/profiles/README.md.
+/src/config/local.cfg
+
 # IDE / editor
 .idea/
 *.swp

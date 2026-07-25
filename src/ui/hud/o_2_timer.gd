@@ -117,6 +117,11 @@ const FLICK_DURATION := 0.10  # seconds for the flick out, same again for return
 
 func _ready() -> void:
 	print("ready!")
+	# Before anything reads it: _setup() and refill() both copy total_time into
+	# time_left, and they are the only things that start the clock. Overriding
+	# here rather than editing the number above is the whole point of issue #26 —
+	# a test value in a profile cannot be committed into the game by accident.
+	total_time = GameConfig.get_value("oxygen", "total_time", total_time)
 	GlobalTimer.tick.connect(_setup)
 	needle.rotation_degrees = degrees
 

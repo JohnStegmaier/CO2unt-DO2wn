@@ -206,7 +206,7 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 	_current_room.elevator_entered.connect(_on_elevator_entered)
 	_current_coord = coord
 
-	var landing: Vector2 = _current_room.interior_rect().get_center()
+	var landing: Vector2 = _current_room.default_spawn_position()
 	if arrive_side >= 0:
 		landing = _current_room.spawn_position(arrive_side)
 

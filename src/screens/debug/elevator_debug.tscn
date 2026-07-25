@@ -10,4 +10,4 @@ script = ExtResource("1_edbg")
 [node name="ElevatorRoom" parent="." instance=ExtResource("2_lobby")]
 
 [node name="Player" parent="." instance=ExtResource("3_player")]
-position = Vector2(221, 228)
+position = Vector2(221, 220)

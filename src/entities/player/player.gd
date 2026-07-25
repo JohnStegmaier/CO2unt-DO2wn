@@ -54,6 +54,17 @@ var aim_deflection := 0.0
 ## one wins and the player can swap mid-run without touching a settings screen.
 var aiming_with_gamepad := false
 
+## Per-axis multiplier on how fast we move, for rooms that are not drawn top-down.
+##
+## The belt-scroll lobby squashes the vertical axis: there, up and down are depth
+## rather than a second direction to run in, and its walkable band is a fraction
+## of a room's height. At full speed the whole thing is crossed in a third of a
+## second, which turns walking into the lift into a twitch input.
+##
+## Vector2.ONE everywhere else, so a room that says nothing gets today's movement.
+## Whoever sets it owns putting it back — see elevator_room.gd.
+var move_scale := Vector2.ONE
+
 ## True while the Game is moving us between rooms. Physics is handed over to the
 ## transition for the duration — a dodge finishing mid-slide would otherwise
 ## re-enable can_move and fight the tween for control of our position.
@@ -126,7 +137,9 @@ func _physics_process(delta: float) -> void:
 		dodge_timer += delta
 		var t: float = clamp(dodge_timer / DODGE_DURATION, 0.0, 1.0)
 		var speed_multiplier: float = 1.0 if t < 0.5 else (1.0 - ((t - 0.5) / 0.5))
-		velocity = dodge_direction * DODGE_SPEED * speed_multiplier
+		# Scaled like the walk below. An undamped roll is 200px/s and would clear a
+		# depth-squashed room in one press, straight past whatever is at the far end.
+		velocity = dodge_direction * DODGE_SPEED * speed_multiplier * move_scale
 		move_and_slide()
 		return
 
@@ -135,7 +148,9 @@ func _physics_process(delta: float) -> void:
 		input_vector.y = Input.get_axis("ui_up", "ui_down")
 		input_vector = input_vector.normalized()
 
-		velocity = input_vector * WALK_SPEED
+		# Scaled after normalising, so the input still reads as a direction and only
+		# the world decides what a step along each axis is worth.
+		velocity = input_vector * WALK_SPEED * move_scale
 		update_animation(input_vector)
 		move_and_slide()
 

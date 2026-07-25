@@ -1,120 +1,99 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://src/levels/elevator_room/elevator_room.gd" id="1_lobby"]
-[ext_resource type="PackedScene" path="res://src/components/level_door.tscn" id="2_door"]
 [ext_resource type="PackedScene" path="res://src/components/elevator/elevator.tscn" id="3_elevator"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_side"]
-size = Vector2(28, 286)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_back"]
-size = Vector2(173, 104)
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_back_side"]
+size = Vector2(189, 190)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_car_back"]
-size = Vector2(96, 32)
+size = Vector2(64, 94)
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_near"]
-size = Vector2(198, 28)
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_band"]
+size = Vector2(28, 50)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_near_lip"]
+size = Vector2(343, 10)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_leaf"]
-size = Vector2(48, 36)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_approach"]
-size = Vector2(144, 152)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_car_trigger"]
-size = Vector2(88, 44)
+size = Vector2(32, 30)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_lobby"]
-size = Vector2(442, 286)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_plug"]
-size = Vector2(46, 28)
+size = Vector2(442, 240)
 
 [node name="ElevatorRoom" type="Node2D"]
 script = ExtResource("1_lobby")
 
 [node name="Art" type="Node2D" parent="."]
 
-[node name="floor" type="ColorRect" parent="Art"]
-z_index = -1
-offset_top = 104.0
-offset_right = 442.0
-offset_bottom = 286.0
-color = Color(0.28, 0.3, 0.34, 1)
-mouse_filter = 2
-
 [node name="ceiling" type="ColorRect" parent="Art"]
 offset_right = 442.0
-offset_bottom = 16.0
-color = Color(0.13, 0.15, 0.19, 1)
+offset_bottom = 14.0
+color = Color(0.09, 0.1, 0.13, 1)
 mouse_filter = 2
 
 [node name="back_wall" type="ColorRect" parent="Art"]
-offset_top = 16.0
+offset_top = 14.0
 offset_right = 442.0
-offset_bottom = 104.0
+offset_bottom = 190.0
 color = Color(0.2, 0.23, 0.29, 1)
 mouse_filter = 2
 
+[node name="floor" type="ColorRect" parent="Art"]
+offset_top = 190.0
+offset_right = 442.0
+offset_bottom = 240.0
+color = Color(0.3, 0.32, 0.36, 1)
+mouse_filter = 2
+
+[node name="skirting" type="ColorRect" parent="Art"]
+offset_top = 186.0
+offset_right = 442.0
+offset_bottom = 190.0
+color = Color(0.13, 0.15, 0.19, 1)
+mouse_filter = 2
+
 [node name="wall_left" type="ColorRect" parent="Art"]
-offset_top = 104.0
+offset_top = 14.0
 offset_right = 49.0
-offset_bottom = 286.0
-color = Color(0.16, 0.18, 0.23, 1)
+offset_bottom = 240.0
+color = Color(0.15, 0.17, 0.22, 1)
 mouse_filter = 2
 
 [node name="wall_right" type="ColorRect" parent="Art"]
 offset_left = 392.0
-offset_top = 104.0
+offset_top = 14.0
 offset_right = 442.0
-offset_bottom = 286.0
-color = Color(0.16, 0.18, 0.23, 1)
-mouse_filter = 2
-
-[node name="wall_near_left" type="ColorRect" parent="Art"]
-offset_top = 236.0
-offset_right = 198.0
-offset_bottom = 286.0
-color = Color(0.1, 0.11, 0.14, 1)
-mouse_filter = 2
-
-[node name="wall_near_right" type="ColorRect" parent="Art"]
-offset_left = 244.0
-offset_top = 236.0
-offset_right = 442.0
-offset_bottom = 286.0
-color = Color(0.1, 0.11, 0.14, 1)
-mouse_filter = 2
-
-[node name="near_doorway" type="ColorRect" parent="Art"]
-offset_left = 198.0
-offset_top = 236.0
-offset_right = 244.0
-offset_bottom = 264.0
-color = Color(0.03, 0.04, 0.06, 1)
+offset_bottom = 240.0
+color = Color(0.15, 0.17, 0.22, 1)
 mouse_filter = 2
 
 [node name="Alcove" type="Node2D" parent="."]
 
+[node name="door_frame" type="ColorRect" parent="Alcove"]
+offset_left = 177.0
+offset_top = 82.0
+offset_right = 265.0
+offset_bottom = 190.0
+color = Color(0.38, 0.41, 0.47, 1)
+mouse_filter = 2
+
 [node name="car_interior" type="ColorRect" parent="Alcove"]
-z_index = 1
-offset_left = 173.0
-offset_top = 32.0
-offset_right = 269.0
-offset_bottom = 104.0
-color = Color(0.05, 0.06, 0.09, 1)
+offset_left = 189.0
+offset_top = 94.0
+offset_right = 253.0
+offset_bottom = 190.0
+color = Color(0.04, 0.05, 0.08, 1)
 mouse_filter = 2
 
 [node name="LeftLeaf" type="Node2D" parent="Alcove"]
-z_index = 2
-position = Vector2(197, 86)
+position = Vector2(205, 180)
 
 [node name="panel" type="ColorRect" parent="Alcove/LeftLeaf"]
-offset_left = -24.0
-offset_top = -46.0
-offset_right = 24.0
-offset_bottom = 18.0
+offset_left = -16.0
+offset_top = -86.0
+offset_right = 16.0
+offset_bottom = 10.0
 color = Color(0.55, 0.6, 0.66, 1)
 mouse_filter = 2
 
@@ -122,17 +101,17 @@ mouse_filter = 2
 collision_mask = 0
 
 [node name="shape" type="CollisionShape2D" parent="Alcove/LeftLeaf/body"]
+position = Vector2(0, -5)
 shape = SubResource("RectangleShape2D_leaf")
 
 [node name="RightLeaf" type="Node2D" parent="Alcove"]
-z_index = 2
-position = Vector2(245, 86)
+position = Vector2(237, 180)
 
 [node name="panel" type="ColorRect" parent="Alcove/RightLeaf"]
-offset_left = -24.0
-offset_top = -46.0
-offset_right = 24.0
-offset_bottom = 18.0
+offset_left = -16.0
+offset_top = -86.0
+offset_right = 16.0
+offset_bottom = 10.0
 color = Color(0.55, 0.6, 0.66, 1)
 mouse_filter = 2
 
@@ -140,49 +119,14 @@ mouse_filter = 2
 collision_mask = 0
 
 [node name="shape" type="CollisionShape2D" parent="Alcove/RightLeaf/body"]
+position = Vector2(0, -5)
 shape = SubResource("RectangleShape2D_leaf")
 
-[node name="left_pillar" type="ColorRect" parent="Alcove"]
-z_index = 3
-offset_left = 125.0
-offset_top = 32.0
-offset_right = 173.0
-offset_bottom = 104.0
-color = Color(0.38, 0.41, 0.47, 1)
-mouse_filter = 2
-
-[node name="right_pillar" type="ColorRect" parent="Alcove"]
-z_index = 3
-offset_left = 269.0
-offset_top = 32.0
-offset_right = 317.0
-offset_bottom = 104.0
-color = Color(0.38, 0.41, 0.47, 1)
-mouse_filter = 2
-
-[node name="ApproachZone" type="Area2D" parent="Alcove"]
-position = Vector2(221, 108)
-collision_layer = 0
-collision_mask = 2
-
-[node name="shape" type="CollisionShape2D" parent="Alcove/ApproachZone"]
-shape = SubResource("RectangleShape2D_approach")
-debug_color = Color(0.2, 0.7, 0.4, 0.2)
-
-[node name="CarTrigger" type="Area2D" parent="Alcove"]
-position = Vector2(221, 54)
-collision_layer = 0
-collision_mask = 2
-
-[node name="shape" type="CollisionShape2D" parent="Alcove/CarTrigger"]
-shape = SubResource("RectangleShape2D_car_trigger")
-debug_color = Color(0.9, 0.6, 0.2, 0.25)
-
 [node name="CarMarker" type="Marker2D" parent="Alcove"]
-position = Vector2(221, 52)
+position = Vector2(221, 182)
 
 [node name="LobbyZone" type="Area2D" parent="."]
-position = Vector2(221, 143)
+position = Vector2(221, 120)
 collision_layer = 0
 collision_mask = 2
 
@@ -195,75 +139,47 @@ debug_color = Color(0.4, 0.4, 0.9, 0.1)
 [node name="WallBody" type="StaticBody2D" parent="Walls"]
 collision_mask = 0
 
-[node name="wall_left" type="CollisionShape2D" parent="Walls/WallBody"]
-position = Vector2(35, 143)
-shape = SubResource("RectangleShape2D_wall_side")
-
-[node name="wall_right" type="CollisionShape2D" parent="Walls/WallBody"]
-position = Vector2(406, 143)
-shape = SubResource("RectangleShape2D_wall_side")
-
 [node name="back_left" type="CollisionShape2D" parent="Walls/WallBody"]
-position = Vector2(86.5, 52)
-shape = SubResource("RectangleShape2D_wall_back")
+position = Vector2(94.5, 95)
+shape = SubResource("RectangleShape2D_back_side")
 
 [node name="back_right" type="CollisionShape2D" parent="Walls/WallBody"]
-position = Vector2(355.5, 52)
-shape = SubResource("RectangleShape2D_wall_back")
+position = Vector2(347.5, 95)
+shape = SubResource("RectangleShape2D_back_side")
 
 [node name="car_back" type="CollisionShape2D" parent="Walls/WallBody"]
-position = Vector2(221, 16)
+position = Vector2(221, 47)
 shape = SubResource("RectangleShape2D_car_back")
 
-[node name="near_left" type="CollisionShape2D" parent="Walls/WallBody"]
-position = Vector2(99, 250)
-shape = SubResource("RectangleShape2D_wall_near")
+[node name="wall_left" type="CollisionShape2D" parent="Walls/WallBody"]
+position = Vector2(35, 215)
+shape = SubResource("RectangleShape2D_wall_band")
 
-[node name="near_right" type="CollisionShape2D" parent="Walls/WallBody"]
-position = Vector2(343, 250)
-shape = SubResource("RectangleShape2D_wall_near")
+[node name="wall_right" type="CollisionShape2D" parent="Walls/WallBody"]
+position = Vector2(406, 215)
+shape = SubResource("RectangleShape2D_wall_band")
+
+[node name="near_lip" type="CollisionShape2D" parent="Walls/WallBody"]
+position = Vector2(220.5, 245)
+shape = SubResource("RectangleShape2D_near_lip")
 
 [node name="Plugs" type="Node2D" parent="Walls"]
 
-[node name="plug_near" type="StaticBody2D" parent="Walls/Plugs"]
-visible = false
-collision_mask = 0
-position = Vector2(221, 250)
-
-[node name="shape" type="CollisionShape2D" parent="Walls/Plugs/plug_near"]
-shape = SubResource("RectangleShape2D_plug")
-
-[node name="seal" type="ColorRect" parent="Walls/Plugs/plug_near"]
-offset_left = -23.0
-offset_top = -14.0
-offset_right = 23.0
-offset_bottom = 14.0
-color = Color(0.1, 0.11, 0.14, 1)
-mouse_filter = 2
-
 [node name="Entities" type="Node2D" parent="."]
-z_index = 2
 
 [node name="Doors" type="Node2D" parent="."]
-
-[node name="door_near" parent="Doors" instance=ExtResource("2_door")]
-position = Vector2(221, 250)
-side = 2
 
 [node name="Cutscene" type="CanvasLayer" parent="."]
 layer = 2
 
 [node name="Tint" type="ColorRect" parent="."]
 offset_right = 442.0
-offset_bottom = 286.0
+offset_bottom = 240.0
 color = Color(0, 0, 0, 0)
 mouse_filter = 2
 
 [node name="Elevator" parent="." instance=ExtResource("3_elevator")]
 visible = false
 
-[connection signal="body_entered" from="Alcove/ApproachZone" to="." method="_on_approach_entered"]
-[connection signal="body_exited" from="Alcove/ApproachZone" to="." method="_on_approach_exited"]
-[connection signal="body_entered" from="Alcove/CarTrigger" to="." method="_on_car_entered"]
 [connection signal="body_entered" from="LobbyZone" to="." method="_on_lobby_entered"]
 [connection signal="body_exited" from="LobbyZone" to="." method="_on_lobby_exited"]

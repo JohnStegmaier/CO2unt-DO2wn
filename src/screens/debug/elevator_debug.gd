@@ -32,6 +32,8 @@ func _ready() -> void:
 	_room.configure(data)
 	_room.door_entered.connect(_on_door_entered)
 	_room.elevator_entered.connect(_on_elevator_entered)
+	# warp_to rather than an authored position, so the harness lands the player
+	# exactly where Game's cut would put them — between the door and exit lines.
 	_player.warp_to(_room.spawn_position(arrive_side))
 	_camera.set_bounds(_room.interior_rect())
 

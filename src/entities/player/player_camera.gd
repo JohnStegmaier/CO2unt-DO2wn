@@ -34,8 +34,8 @@ var _lead_enabled: bool = true
 
 ## Suppress movement and aim lead, so a room transition reads as a clean slide
 ## rather than a slide with a wandering offset riding on top of it.
-func set_lead_enabled(enabled: bool) -> void:
-	_lead_enabled = enabled
+func set_lead_enabled(lead_enabled: bool) -> void:
+	_lead_enabled = lead_enabled
 
 
 ## Clamp the view to a room. Called on every room change, because the camera

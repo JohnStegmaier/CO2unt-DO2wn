@@ -13,12 +13,10 @@ extends Room
 ## player left through. Everything below is the difference between this cell and
 ## an ordinary one, and nothing in game.gd has to know which it got.
 
-## The player boarded and the floor is over.
-##
-## refill_o2 is this elevator's own setting, passed rather than acted on: whether
-## a floor change costs you your remaining air is O2 policy, and O2 policy lives
-## with the timer. A door decides only that it is that kind of door.
-signal boarded(refill_o2: bool)
+## Boarding is reported through Room's own elevator_entered signal rather than one
+## of our own. Game already connects it on every room it builds and disconnects it
+## when it tears a floor down, so the ride, the floor regeneration and the O2
+## refill all work here without knowing this room exists.
 
 ## Room-local rect anything on foot may stand in. Narrower in depth than
 ## Room.FLOOR because the far wall is 104 deep instead of 49 — it has to hold an
@@ -44,10 +42,10 @@ const LOBBY_FLOOR := Rect2(49, 104, 343, 132)
 @export var board_walk_time: float = 0.35
 ## The beat between the doors sealing and the floor advancing. This is the pause
 ## that makes boarding read as a decision rather than a trip hazard.
-@export var board_hold_time: float = 0.8
-## Refill the tank on boarding. The single switch for "is the elevator a
-## checkpoint, or just a door" — Game applies it, this only decides it.
-@export var refill_o2_on_board: bool = true
+##
+## Kept short: Game's ElevatorRide plays straight after this and has its own doors
+## and fades, so a long hold here is dead air in front of the ride, not drama.
+@export var board_hold_time: float = 0.4
 ## Named SFX from AudioManager. Empty plays nothing, so this cannot break a build
 ## that has not recorded one yet.
 @export var board_sfx: String = ""
@@ -67,11 +65,11 @@ const LOBBY_FLOOR := Rect2(49, 104, 343, 132)
 ## shoot. Off would mean shipping the odd-looking version, so it defaults on.
 @export var hide_player_gun: bool = true
 
-@onready var _leaf_left: Node2D = $Elevator/LeftLeaf
-@onready var _leaf_right: Node2D = $Elevator/RightLeaf
-@onready var _leaf_left_body: StaticBody2D = $Elevator/LeftLeaf/body
-@onready var _leaf_right_body: StaticBody2D = $Elevator/RightLeaf/body
-@onready var _car_marker: Marker2D = $Elevator/CarMarker
+@onready var _leaf_left: Node2D = $Alcove/LeftLeaf
+@onready var _leaf_right: Node2D = $Alcove/RightLeaf
+@onready var _leaf_left_body: StaticBody2D = $Alcove/LeftLeaf/body
+@onready var _leaf_right_body: StaticBody2D = $Alcove/RightLeaf/body
+@onready var _car_marker: Marker2D = $Alcove/CarMarker
 @onready var _cutscene_layer: CanvasLayer = $Cutscene
 @onready var _near_door: LevelDoor = $Doors/door_near
 @onready var _near_plug: StaticBody2D = $Walls/Plugs/plug_near
@@ -115,15 +113,22 @@ func _exit_tree() -> void:
 ## and that bit is the way back.
 ##
 ## Deliberately not super.configure(): Room's version walks all four sides through
-## door_for(), and this scene has one doorway. The mask is still remembered — a
-## temporary seal has to be liftable — it just describes where the single door
-## leads rather than which of four exist.
-func configure(doors: int) -> void:
-	_open_doors = doors
+## door_for(), places a top-down car against a bare wall and washes the room in its
+## kind's tint — none of which applies to a lobby with one doorway, its own doors
+## and its own walls. The mask is still remembered, because a temporary seal has to
+## be liftable; it just describes where the single door leads rather than which of
+## four exist.
+func configure(data: RoomData) -> void:
+	_open_doors = data.doors
 	set_locked(false)
 
+	# The inherited top-down car is put away rather than removed. It is the base
+	# scene's way off a floor and this room is a replacement for it, not a host for
+	# it — but Room reaches for the node unconditionally, so it has to exist.
+	_elevator.set_active(false)
+
 	for side in GridDirection.SIDES:
-		if (doors & GridDirection.bit(side)) != 0:
+		if data.has_door(side):
 			_return_side = side
 			return
 	push_warning("ElevatorRoom: configured with no doors, defaulting the way back to north")
@@ -285,12 +290,15 @@ func _board(player: Player) -> void:
 	await get_tree().create_timer(board_hold_time).timeout
 	await _play_cutscene()
 
-	player.is_warping = false
 	_restore_player()
 
-	# Last statement on purpose: the handler frees this room, and anything after
-	# the emit would be running on a node already on its way out.
-	boarded.emit(refill_o2_on_board)
+	# is_warping stays TRUE. Game's _on_elevator_entered takes the player over for
+	# the ride and hands control back at the far end; releasing it here would give
+	# them a frame of movement in a room that is about to be freed.
+	#
+	# Last statement on purpose: the handler tears this floor down, and anything
+	# after the emit would be running on a node already on its way out.
+	elevator_entered.emit()
 
 
 ## The seam for a cutscene that does not exist yet. With the slot empty this

@@ -8,7 +8,6 @@ extends Node2D
 ## rooms are instanced into RoomContainer instead of loaded with change_scene.
 
 const ROOM_SCENE := preload("res://src/levels/room/room.tscn")
-const ELEVATOR_ROOM_SCENE := preload("res://src/levels/elevator_room/elevator_room.tscn")
 const ENEMY_SCENE := preload("res://src/entities/enemy/enemy.tscn")
 const GAME_OVER_SCENE := "res://src/screens/game_over/game_over.tscn"
 
@@ -34,6 +33,22 @@ const GAME_OVER_SCENE := "res://src/screens/game_over/game_over.tscn"
 ## Seconds the corpse is held under the closed vignette before the wipe. Just
 ## long enough to register that the body stopped moving.
 @export var death_hold: float = 0.6
+
+@export_group("Exit Room")
+## Stand-in scene for the floor's exit cell. Empty means the exit is an ordinary
+## room with the wall-mounted elevator in it, exactly as if this had never been
+## added; point it at a room scene and that scene is used for the exit instead.
+##
+## Deliberately an injected scene rather than a preloaded const or a bool: this
+## file names no alternative implementation and imports nothing from one, so the
+## exit room is swapped, added or removed entirely from the inspector. Anything
+## satisfying Room's contract — configure, spawn_position, interior_rect,
+## door_entered, elevator_entered — can be dropped in, and clearing the slot takes
+## it back out with no code change and nothing left behind.
+##
+## Wired in game.tscn. When the feature-flag system lands, this becomes one line
+## here and the slot can stay as the registry of what the flag chooses between.
+@export var exit_room_scene: PackedScene
 
 @export_group("Floor")
 ## Shape of every floor in the run. Tune it here and each generated floor obeys.
@@ -157,14 +172,14 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 	var data := _plan.get_room(coord)
 	data.visited = true
 
-	# The floor's exit is a belt-scroll elevator lobby rather than a top-down cell.
-	# It is a Room, and it reports boarding through the same elevator_entered signal
-	# an ordinary exit room does, so every line below this block is unchanged and
-	# the ride does not care which kind of elevator it was called from.
-	if data.kind == RoomData.Kind.EXIT:
-		_current_room = ELEVATOR_ROOM_SCENE.instantiate()
-	else:
-		_current_room = ROOM_SCENE.instantiate()
+	# The exit can be a room of its own — see exit_room_scene. Whatever comes back
+	# is a Room and reports boarding through the same elevator_entered signal an
+	# ordinary exit room does, so every line below this is unchanged and the ride
+	# never learns which kind of elevator called it.
+	var scene: PackedScene = ROOM_SCENE
+	if data.kind == RoomData.Kind.EXIT and exit_room_scene != null:
+		scene = exit_room_scene
+	_current_room = scene.instantiate()
 	# Rooms sit at their true grid position rather than all at the origin, so
 	# world space and map space never disagree — which is also what makes the
 	# slide below a plain camera pan instead of a compositing trick.

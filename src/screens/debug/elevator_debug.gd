@@ -2,15 +2,15 @@ extends Node2D
 
 ## Standalone harness for the elevator lobby — select this scene and press F6.
 ##
-## It stands in for Game and calls precisely the four things Game calls on a room:
-## configure(), spawn_position(), interior_rect() and door_entered, plus the
-## lobby's own boarded signal. That is deliberate. If the lobby ever stops
-## satisfying Room's contract, this scene breaks first and in isolation, instead
-## of two rooms deep into a run.
+## It stands in for Game and calls precisely the things Game calls on a room:
+## configure(), spawn_position(), interior_rect(), door_entered and
+## elevator_entered. That is deliberate. If the lobby ever stops satisfying Room's
+## contract, this scene breaks first and in isolation, instead of a floor deep into
+## a run.
 ##
-## No HUD: applying the O2 refill is Game's job, so boarding only reports what it
-## decided and reloads, which is enough to ride the elevator again without
-## restarting.
+## No HUD and no ride: the O2 refill, the descent overlay and the next floor are
+## all Game's job. Boarding just says so and reloads, which is enough to ride the
+## elevator again without restarting.
 
 ## Which grid side the harness pretends the lobby was entered from. Change it in
 ## the inspector to prove the near door reports whichever side the floor plan gave
@@ -23,9 +23,15 @@ extends Node2D
 
 
 func _ready() -> void:
-	_room.configure(GridDirection.bit(arrive_side))
+	# A stand-in for the cell the floor plan would hand over: an exit room whose one
+	# doorway is on arrive_side. Built here rather than taken from a generator so
+	# the harness stays independent of how floors are made.
+	var data := RoomData.new(Vector2i.ZERO, RoomData.Kind.EXIT)
+	data.doors = GridDirection.bit(arrive_side)
+
+	_room.configure(data)
 	_room.door_entered.connect(_on_door_entered)
-	_room.boarded.connect(_on_boarded)
+	_room.elevator_entered.connect(_on_elevator_entered)
 	_player.warp_to(_room.spawn_position(arrive_side))
 	_camera.set_bounds(_room.interior_rect())
 
@@ -34,8 +40,8 @@ func _on_door_entered(side: int) -> void:
 	print("ElevatorDebug: would return through %s" % GridDirection.side_name(side))
 
 
-func _on_boarded(refill_o2: bool) -> void:
-	print("ElevatorDebug: boarded (refill_o2=%s)" % refill_o2)
+func _on_elevator_entered() -> void:
+	print("ElevatorDebug: boarded — Game would play the ride and build the next floor")
 	# Reload rather than free the room: Game replaces the whole floor at this
 	# point, and a harness that left an empty screen would only be testable once.
 	get_tree().reload_current_scene()

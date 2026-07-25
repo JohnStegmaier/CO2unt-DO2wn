@@ -8,6 +8,8 @@ extends Node2D
 ## why there is one room scene instead of one per door combination.
 
 signal door_entered(side: int)
+## The player stepped into the exit room's elevator.
+signal elevator_entered
 
 ## Distance between neighbouring room origins. Must equal the background texture
 ## size exactly, or rooms will not tile edge to edge.
@@ -21,9 +23,46 @@ const INTERIOR := Rect2(0, 0, 442, 286)
 ## everything inside their inner faces.
 const FLOOR := Rect2(49, 49, 343, 187)
 
+## Placeholder wash per RoomData.Kind, indexed the same way KIND_GLYPHS is — one
+## tells you which room you are in from the terminal, the other from the screen.
+## Ordinary and spawn rooms are untinted, so a colour always means "something is
+## here". Stand-ins until the special rooms have art of their own.
+const KIND_TINTS: Array[Color] = [
+	Color(0, 0, 0, 0),                        # NORMAL
+	Color(0, 0, 0, 0),                        # SPAWN
+	Color(0.55, 0.06, 0.09, 0.3),             # BOSS
+	Color(0.85, 0.66, 0.16, 0.24),            # SHOP
+	Color(0.16, 0.42, 0.82, 0.26),            # TREASURE
+	Color(0.16, 0.72, 0.36, 0.24),            # EXIT
+]
+
+## Where the elevator stands when this room is the exit, indexed by the wall it
+## is set into. Each sits with its back against that wall's inner face, so the
+## room can use any wall it has no doorway on — and a dead end, which is the only
+## kind of room the exit is placed at, always has three spare.
+const ELEVATOR_POSITIONS: Array[Vector2] = [
+	Vector2(221, 85),    # NORTH
+	Vector2(360, 143),   # EAST
+	Vector2(221, 200),   # SOUTH
+	Vector2(81, 143),    # WEST
+]
+
+## Walls tried in turn for the elevator. North and south come first because the
+## car is drawn front-on: against a side wall it reads as facing the wrong way.
+## A dead end only ever has one door, so in practice it is always north, or south
+## when the door is north.
+const ELEVATOR_WALL_PREFERENCE: Array[int] = [
+	GridDirection.Side.NORTH,
+	GridDirection.Side.SOUTH,
+	GridDirection.Side.EAST,
+	GridDirection.Side.WEST,
+]
+
 @onready var _doors: Node2D = $Doors
 @onready var _plugs: Node2D = $Walls/Plugs
 @onready var _entities: Node2D = $Entities
+@onready var _tint: ColorRect = $Tint
+@onready var _elevator: Elevator = $Elevator
 
 ## The door mask this room was configured with. Remembered so the doors can be
 ## sealed for a fight and restored afterwards without the room having to know
@@ -34,6 +73,7 @@ var _open_doors: int = 0
 func _ready() -> void:
 	for side in GridDirection.SIDES:
 		door_for(side).player_entered.connect(_on_door_player_entered)
+	_elevator.entered.connect(_on_elevator_entered)
 
 
 ## Put something on the floor at a room-local position.
@@ -58,12 +98,33 @@ func open_door_landings() -> Array[Vector2]:
 	return landings
 
 
-## Open the doors in the mask and plug the rest. This is the room's shape as the
-## floor plan defines it — the mask is remembered so a temporary seal can be
-## lifted again.
-func configure(doors: int) -> void:
-	_open_doors = doors
-	_apply_doors(doors)
+## Dress this shell as the cell the floor plan describes: open the doors it has,
+## plug the rest, and wash it in its kind's colour. The door mask is remembered
+## so a temporary seal can be lifted again.
+func configure(data: RoomData) -> void:
+	_open_doors = data.doors
+	_apply_doors(data.doors)
+	_tint.color = KIND_TINTS[data.kind]
+	_place_elevator(data)
+
+
+## Stand the elevator against a bare wall, or put it away if this is not the exit.
+##
+## It must never share a wall with a doorway: arriving through a door places the
+## player just inside it, and that is deep enough to land in the car and take the
+## elevator the instant they walk in.
+func _place_elevator(data: RoomData) -> void:
+	if data.kind != RoomData.Kind.EXIT:
+		_elevator.set_active(false)
+		return
+
+	var wall: int = GridDirection.Side.NORTH
+	for side in ELEVATOR_WALL_PREFERENCE:
+		if not data.has_door(side):
+			wall = side
+			break
+	_elevator.position = ELEVATOR_POSITIONS[wall]
+	_elevator.set_active(true)
 
 
 ## Seal every doorway, or restore the ones the floor plan gave this room.
@@ -111,3 +172,7 @@ func _plug_for(side: int) -> StaticBody2D:
 
 func _on_door_player_entered(side: int) -> void:
 	door_entered.emit(side)
+
+
+func _on_elevator_entered() -> void:
+	elevator_entered.emit()

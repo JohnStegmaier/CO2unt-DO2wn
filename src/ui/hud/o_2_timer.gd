@@ -155,6 +155,14 @@ func _setup() -> void:
 func refill() -> void:
 	time_left = total_time
 	drain_rate = 1.0
+	# Announced, not just cleared. Reaching the exit while already out of air is
+	# reachable — the player keeps full control while suffocating — and everything
+	# _on_air_depleted switched off is switched back on by the listener to this,
+	# not by the flag. Clearing it silently would leave the clock tick and the
+	# music disconnected, and the player drawn over the walls, for the whole rest
+	# of the run.
+	if _depleted_emitted:
+		air_restored.emit()
 	_depleted_emitted = false
 	_suffocated_emitted = false
 	_set_suffocation(0.0)

@@ -59,3 +59,6 @@ horizontal_alignment = 1
 position = Vector2(271, 29)
 texture = ExtResource("3_rocwj")
 offset = Vector2(-5.515, 0)
+
+[node name="Marker2D" type="Marker2D" parent="." unique_id=1840076982]
+position = Vector2(198, 217)

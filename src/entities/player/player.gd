@@ -35,6 +35,11 @@ var fire_rate: float
 ## Derived from SPEED_LVL/WALK_SPEED_VALUES by set_speed_lvl() — see _ready().
 var WALK_SPEED: float
 
+## Fired whenever a stat level changes, so the HUD never has to poll for it.
+signal power_level_changed(lvl: int)
+signal speed_lvl_changed(lvl: int)
+signal firerate_lvl_changed(lvl: int)
+
 @export_group("Ammo")
 @export var magazine_size := 6
 ## Seconds an empty magazine takes to come back full. Reload is automatic — there
@@ -160,16 +165,19 @@ func _ready() -> void:
 func set_power_level(lvl: int) -> void:
 	POWER_LVL = clampi(lvl, MIN_STAT_LVL, MAX_STAT_LVL)
 	bullet_damage = roundi(BULLET_DAMAGE_VALUES[POWER_LVL - 1] * STAT_SCALE)
+	power_level_changed.emit(POWER_LVL)
 
 
 func set_speed_lvl(lvl: int) -> void:
 	SPEED_LVL = clampi(lvl, MIN_STAT_LVL, MAX_STAT_LVL)
 	WALK_SPEED = WALK_SPEED_VALUES[SPEED_LVL - 1] * STAT_SCALE
+	speed_lvl_changed.emit(SPEED_LVL)
 
 
 func set_firerate_lvl(lvl: int) -> void:
 	FIRERATE_LVL = clampi(lvl, MIN_STAT_LVL, MAX_STAT_LVL)
 	fire_rate = FIRE_RATE_VALUES[FIRERATE_LVL - 1] * STAT_SCALE
+	firerate_lvl_changed.emit(FIRERATE_LVL)
 
 
 ## Last device to speak wins. Joypad motion is filtered by deadzone because an

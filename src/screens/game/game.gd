@@ -114,6 +114,13 @@ func _ready() -> void:
 	_player.bombs_changed.connect(_o2_timer.set_bombs)
 	_o2_timer.set_bombs(_player.f_bombs, _player.max_f_bombs)
 
+	_player.power_level_changed.connect(_o2_timer.set_power_level)
+	_o2_timer.set_power_level(_player.POWER_LVL)
+	_player.speed_lvl_changed.connect(_o2_timer.set_speed_lvl)
+	_o2_timer.set_speed_lvl(_player.SPEED_LVL)
+	_player.firerate_lvl_changed.connect(_o2_timer.set_firerate_lvl)
+	_o2_timer.set_firerate_lvl(_player.FIRERATE_LVL)
+
 	# Profile overrides, all of them landing before anything reads the values.
 	# Defaults stay on the exports above, so a profile that names none of these
 	# keys runs the shipped numbers — see docs/TUNING_PROFILES.md.

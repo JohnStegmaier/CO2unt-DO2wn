@@ -96,6 +96,24 @@ var _air_critical := false
 @onready var bomb_containers: Array[Sprite2D] = [
 	$UIMain/bomb_container1, $UIMain/bomb_container2, $UIMain/bomb_container3
 ]
+@onready var power_lv_pips: Array[Sprite2D] = [
+	$UIMain/StatContainers/PowerLv1, $UIMain/StatContainers/PowerLv2,
+	$UIMain/StatContainers/PowerLv3, $UIMain/StatContainers/PowerLv4,
+	$UIMain/StatContainers/PowerLv5, $UIMain/StatContainers/PowerLv6,
+	$UIMain/StatContainers/PowerLv7,
+]
+@onready var speed_lv_pips: Array[Sprite2D] = [
+	$UIMain/StatContainers/SpeedLv1, $UIMain/StatContainers/SpeedLv2,
+	$UIMain/StatContainers/SpeedLv3, $UIMain/StatContainers/SpeedLv4,
+	$UIMain/StatContainers/SpeedLv5, $UIMain/StatContainers/SpeedLv6,
+	$UIMain/StatContainers/SpeedLv7,
+]
+@onready var firerate_lv_pips: Array[Sprite2D] = [
+	$UIMain/StatContainers/FireRateLv1, $UIMain/StatContainers/FireRateLv2,
+	$UIMain/StatContainers/FireRateLv3, $UIMain/StatContainers/FireRateLv4,
+	$UIMain/StatContainers/FireRateLv5, $UIMain/StatContainers/FireRateLv6,
+	$UIMain/StatContainers/FireRateLv7,
+]
 
 var setup_done = false
 
@@ -119,6 +137,11 @@ const LIGHT_OFF_COLOR := Color(1, 0.5254902, 0.3647059, 0.25)
 ## Matches the self_modulate already authored onto bomb_container2/3 in the scene.
 const BOMB_FULL_ALPHA := 1.0
 const BOMB_EMPTY_ALPHA := 80.0 / 255.0
+
+## Full brightness for a stat level the player has reached, half for one still
+## locked ahead of them.
+const LEVEL_LIT_MODULATE := Color(1, 1, 1, 1)
+const LEVEL_UNLIT_MODULATE := Color(0.5, 0.5, 0.5, 1)
 
 var _lights_alternate := false
 
@@ -323,6 +346,25 @@ func _set_air_critical(critical: bool) -> void:
 func set_bombs(current: int, _max_bombs: int = 0) -> void:
 	for i in bomb_containers.size():
 		bomb_containers[i].self_modulate.a = BOMB_FULL_ALPHA if i < current else BOMB_EMPTY_ALPHA
+
+
+## Lights up one pip per level reached, left to right; pips beyond the current
+## level sit at half brightness.
+func _set_level_pips(pips: Array[Sprite2D], lvl: int) -> void:
+	for i in pips.size():
+		pips[i].self_modulate = LEVEL_LIT_MODULATE if i < lvl else LEVEL_UNLIT_MODULATE
+
+
+func set_power_level(lvl: int) -> void:
+	_set_level_pips(power_lv_pips, lvl)
+
+
+func set_speed_lvl(lvl: int) -> void:
+	_set_level_pips(speed_lv_pips, lvl)
+
+
+func set_firerate_lvl(lvl: int) -> void:
+	_set_level_pips(firerate_lv_pips, lvl)
 
 
 func update_label() -> void:

@@ -22,6 +22,15 @@ extends Room
 ## duck-typed by game.gd, which never names this class.
 signal treasure_opened(at: Vector2)
 
+## What this room washes itself in: nothing.
+##
+## Room.KIND_TINTS describes itself as a stand-in "until the special rooms have
+## art of their own", and a colour there means "something is here". The chest is
+## this room's art and says the same thing better, so the wash has done its job
+## and a blue field over a red chest now reads as a lighting fault rather than a
+## label.
+const NO_TINT := Color(0, 0, 0, 0)
+
 @onready var _chest: Chest = $Obstacles/Chest
 
 
@@ -32,7 +41,8 @@ func _ready() -> void:
 	_chest.opened.connect(_on_chest_opened)
 
 
-## Dress the shell as usual, then put the chest back the way the player left it.
+## Dress the shell as usual, drop the placeholder wash, then put the chest back
+## the way the player left it.
 ##
 ## The restore has to happen here rather than in the chest's own _ready, and the
 ## difference is the whole reason RoomData exists: a room is freed when the player
@@ -41,6 +51,11 @@ func _ready() -> void:
 ## chest is told.
 func configure(data: RoomData) -> void:
 	super.configure(data)
+	# After super, which is what applied the tint — and cleared here rather than by
+	# blanking KIND_TINTS[TREASURE], so the fallback keeps its label. Empty the
+	# treasure_room_scene slot and the cell goes back to being an ordinary room with
+	# nothing in it, where the wash is the only thing saying it is not one.
+	_tint.color = NO_TINT
 	if data.treasure_opened:
 		_chest.show_opened()
 

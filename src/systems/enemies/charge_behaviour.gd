@@ -104,6 +104,20 @@ func fires() -> bool:
 	return false
 
 
+## The dead stop, as a number something can draw. This archetype is the only one
+## that already had its whole warning and no way to show it: TELEGRAPH stops the
+## body, which reads as hesitating rather than as winding up, and
+## [member EnemyDef.telegraph_seconds] cannot help because that one belongs to a
+## gun this does not have.
+##
+## Note it runs to 1 as the phase ENDS, so a tell drawn from it lands on the frame
+## the lunge starts rather than a frame either side of it.
+func windup(ctx: SteeringContext) -> float:
+	if ctx.phase != Phase.TELEGRAPH or telegraph_time <= 0.0:
+		return 0.0
+	return clampf(1.0 - ctx.phase_remaining / telegraph_time, 0.0, 1.0)
+
+
 ## Where it is going while it stalks, where it is committed while it does not.
 ## During TELEGRAPH and RECOVER the body is stationary, so drawing it from
 ## velocity would leave it facing whatever direction it happened to stop in.

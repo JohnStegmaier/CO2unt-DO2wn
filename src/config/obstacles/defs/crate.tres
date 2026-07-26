@@ -9,6 +9,7 @@ id = &"crate"
 texture = ExtResource("2_tex")
 offset = Vector2(6, 5.5)
 sprite_scale = 0.5
+shadow_offset = Vector2(0, 13)
 body_radius = 11.0
 max_hp = 20
 indestructible = false

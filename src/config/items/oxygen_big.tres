@@ -15,4 +15,5 @@ id = &"oxygen_big"
 display_name = "Oxygen Tank"
 icon = ExtResource("3_u4qjy")
 icon_scale = 0.36
+pickup_sound = &"powerup_01"
 effects = Array[ExtResource("1_je8yf")]([SubResource("Resource_us57b")])

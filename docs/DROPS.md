@@ -59,12 +59,21 @@ which is what makes an unnamed source quiet rather than an error.
 
 #### Storefronts
 
-The shop is the first source that does not roll. `DropEntry.price` is what a
-source charges for a row — zero everywhere else — and a source whose rows are
-**all** priced is a storefront: everything on it is offered at once rather than
-sampled, so `weight` means nothing there. `check_drops.gd` recognises one by that
-same all-priced test, prints it as a price list instead of a drop rate, and
-asserts it is actually sellable. See [SHOP.md](SHOP.md).
+`DropEntry.price` is what a source charges for a row — zero everywhere else —
+and a source whose rows are **all** priced is a storefront. `check_drops.gd`
+recognises one by that all-priced test, prints it as a price list instead of a
+drop rate, and asserts it is actually sellable. See [SHOP.md](SHOP.md).
+
+A shelf still rolls, table by table, exactly like every other source —
+[`DropTableShopStockProvider`](../src/systems/drop_table_shop_stock_provider.gd)
+just does it once, the moment [`ShopRegistry`](../src/systems/shop_registry.gd)
+first asks, and keeps the result for the life of the shop. A rule with three
+single-row tables and no empty row in any of them is three guaranteed items,
+same as anywhere else; a table with more rows than `rolls` is a chance row on
+a shelf, same as the shop's own weapon table (`shotgun` / `timmy_gun` /
+`chakram`, one of the three, priced the same regardless of which). The
+"everything at once" shelf is what you get when every table happens to be
+guaranteed — not a separate rule the way it briefly was.
 
 ### Floors
 
@@ -197,7 +206,9 @@ updating `DEFAULT_RATES` in the checker is how you say you meant it.
   | `coin_small` | 0.40 | 40% |
   | `oxygen_small` | 0.20 | 20% |
   | `bomb` | 0.20 | 20% |
-  | *(nothing)* | 0.20 | 20% |
+  | `power_up` | 0.03 | 3% |
+  | `firerate_up` | 0.03 | 3% |
+  | *(nothing)* | 0.14 | 14% |
 
   **This is the one deliberate balance change in the branch.** PR #51's roll was
   coin 0.6 / oxygen 0.2 / bomb 0.2, summing to 1.0 — every kill dropped
@@ -206,8 +217,17 @@ updating `DEFAULT_RATES` in the checker is how you say you meant it.
   every enemy devalues it, and oxygen is effectively the health bar here, so it
   should not get rarer just because coins got commoner.
 
+  The two stat upgrades were later paid for out of that same *nothing* row —
+  0.06 of it — for the reason below. The three asserted rates did not move,
+  which is the point: the row that shrank is the one nobody feels.
+
   `tools/check_drops.gd` asserts these rates, so nothing else can drift into the
   shipped economy unnoticed.
+
+  `&"boss"` is its own row rather than a share of this table — a floor boss
+  paying out the same coin/oxygen/bomb a booger does is not the fight-ending
+  moment the design roadmap below promises. It rolls two single-entry tables,
+  both guaranteed: `speed_up` and `oxygen_big`, every kill, no roll involved.
 - **`economy.tres`** — the coin-heavy candidate, as far as the current item set
   reaches. Also the worked example of the three things a rule can do that the
   default does not: a guaranteed table beside a chance table, a source that
@@ -220,6 +240,12 @@ equips itself on pickup — so it is a row in a `DropTable` and needs nothing el
 from this system. Crates, barrels, chests and the shop all offer them today; the
 enemy tables deliberately do not, because they are rate-locked by
 `check_drops.gd`. See **docs/WEAPONS.md**.
+
+A picked-up weapon keeps its own damage and fire interval, but both are now
+scaled by the player's POWER and FIRERATE levels — otherwise a Damage Upgrade
+bought from the shop does nothing for the twenty seconds a borrowed gun is held,
+which reads as a broken purchase. See `scales_with_player_stats` in
+**docs/WEAPONS.md**.
 
 ## The three candidate economies
 

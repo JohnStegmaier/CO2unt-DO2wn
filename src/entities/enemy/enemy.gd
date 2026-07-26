@@ -448,7 +448,23 @@ func _draw_facing() -> void:
 ## still staggers a roomful, and the wind-up lands after it rather than instead.
 func _maybe_shoot(delta: float) -> void:
 	_fire_cooldown -= delta
-	if _fire_cooldown > 0.0 or _fire_suppressed > 0.0 or _stun_timer > 0.0:
+
+	_aim = _behaviour.aim(_ctx)
+	# A shot the behaviour has stopped wanting takes its tell back with it — you
+	# stepped out of range, a barrel closed the line, the pulse bomb jammed the
+	# trigger, it got stunned. A ring that closes onto nothing is worse than none,
+	# because it teaches the player that rings do not mean anything.
+	if _aim.is_zero_approx() or _fire_suppressed > 0.0 or _stun_timer > 0.0:
+		_windup = 0.0
+		return
+
+	if _windup > 0.0:
+		_windup = maxf(0.0, _windup - delta)
+		if _windup <= 0.0:
+			_fire()
+		return
+
+	if _fire_cooldown > 0.0:
 		return
 
 	_windup = _def.telegraph_seconds

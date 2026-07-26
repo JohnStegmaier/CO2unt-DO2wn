@@ -113,6 +113,16 @@ func _ready() -> void:
 	_player.bombs_changed.connect(_o2_timer.set_bombs)
 	_o2_timer.set_bombs(_player.f_bombs, _player.max_f_bombs)
 
+	# Profile overrides, all of them landing before anything reads the values.
+	# Defaults stay on the exports above, so a profile that names none of these
+	# keys runs the shipped numbers — see docs/TUNING_PROFILES.md.
+	enemies_min = GameConfig.get_value("enemies", "min", enemies_min)
+	enemies_max = GameConfig.get_value("enemies", "max", enemies_max)
+	# A profile that lowers only the ceiling should not leave the floor above it:
+	# `[enemies] max = 0` on its own has to mean an empty room, not one enemy.
+	enemies_min = mini(enemies_min, enemies_max)
+	run_seed = GameConfig.get_value("floor", "run_seed", run_seed)
+
 	_rng.randomize()
 	if run_seed == 0:
 		run_seed = _rng.randi()
@@ -120,6 +130,7 @@ func _ready() -> void:
 		# Belt and braces: the scene supplies one, but a Game dropped into
 		# another scene without it should still generate rather than crash.
 		floor_config = FloorConfig.new()
+	floor_config.apply_overrides()
 
 	_begin_floor(0)
 
@@ -464,6 +475,15 @@ func _populate(data: RoomData) -> void:
 		return
 	if data.enemies_remaining < 0:
 		data.enemies_remaining = _rng.randi_range(enemies_min, enemies_max)
+
+	# A room that stocks nothing must not seal itself. The doors are unlocked by
+	# enemies dying, so locking an empty room locks it for good and the floor is
+	# unfinishable. Normalised to 0 rather than left negative so a revisit takes
+	# the early return above. Unreachable on the shipped values, where enemies_min
+	# is 1 — the peaceful profile is what makes a zero roll possible.
+	if data.enemies_remaining <= 0:
+		data.enemies_remaining = 0
+		return
 
 	var player_local: Vector2 = _current_room.to_local(_player.global_position)
 	var spots := EnemyPlacement.points(Room.FLOOR, data.enemies_remaining,

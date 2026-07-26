@@ -28,7 +28,10 @@ var sounds = {
 	"powerup_01": preload("res://assets/audio/sfx/powerup_01.mp3"),
 	"wall_collision_1": preload("res://assets/audio/sfx/wall_collision_1.mp3"),
 	"shotgun_blast": preload("res://assets/audio/sfx/Shotgun_Blast.mp3"),
-	"shotgun_pickup": preload("res://assets/audio/sfx/shotgun_pickup.mp3")
+	"shotgun_pickup": preload("res://assets/audio/sfx/shotgun_pickup.mp3"),
+	"elevator_ding": preload("res://assets/audio/sfx/Elevator_dingdong.mp3"),
+	"elevator_whir": preload("res://assets/audio/sfx/Elevator_whir.mp3"),
+	"elevator_rattle": preload("res://assets/audio/sfx/Elevator_rattle.mp3")
 }
 
 ## Endgame sounds the artists have not delivered yet. They are loaded at runtime

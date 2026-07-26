@@ -23,6 +23,7 @@ room_scene = ExtResource("11_shop_room")
 stock_provider = SubResource("Resource_shop_stock")
 starting_coins = 60
 music = "shop_calm"
+[ext_resource type="Resource" path="res://src/config/drops/default.tres" id="10_drop_config"]
 
 [sub_resource type="Resource" id="Resource_floor_config"]
 script = ExtResource("6_floor_config")
@@ -38,6 +39,7 @@ special_min_depth = 2
 script = ExtResource("1_game")
 exit_room_scene = ExtResource("8_exit_room")
 shop_config = SubResource("Resource_shop_config")
+drop_config = ExtResource("10_drop_config")
 floor_config = SubResource("Resource_floor_config")
 
 [node name="RoomContainer" type="Node2D" parent="."]

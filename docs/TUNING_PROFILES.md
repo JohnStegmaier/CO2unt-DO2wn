@@ -57,6 +57,7 @@ then make it hard.
 | `swarm` | 8–12 enemies a room. Placement, door locking and frame time under load. |
 | `combat_lab` | Small floor, packed rooms, air that will not run out. For tuning fights. |
 | `die_quickly` | 15 seconds of air — the letterbox, the heartbeat, suffocation, game over. |
+| `drops_economy` | The coin-heavy drop tables instead of the shipped ones. See [DROPS.md](DROPS.md). |
 
 The order is not alphabetical and not the order they were written. Each file
 declares where it sits:
@@ -87,6 +88,7 @@ overrides — a section is only listed there if it actually changed something.
 | `floor` | `rooms_min`, `rooms_max`, `rooms_per_floor` | `floor_config.gd` — size, and growth per floor |
 | `floor` | `max_depth`, `depth_bias` | `floor_config.gd` — shape |
 | `floor` | `exit_min_depth`, `special_min_depth` | `floor_config.gd` — how far out the specials sit |
+| `drops` | `config` | `game.gd` — names a `.tres` in `src/config/drops/` to use instead of the one on `game.tscn`. The whole economy in one key; see [DROPS.md](DROPS.md) |
 
 Shrinking a floor means lowering the depth rules with it: the generator rerolls
 40 times and then warns before it will ship an exit shallower than

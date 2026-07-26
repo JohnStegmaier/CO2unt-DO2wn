@@ -206,7 +206,9 @@ updating `DEFAULT_RATES` in the checker is how you say you meant it.
   | `coin_small` | 0.40 | 40% |
   | `oxygen_small` | 0.20 | 20% |
   | `bomb` | 0.20 | 20% |
-  | *(nothing)* | 0.20 | 20% |
+  | `power_up` | 0.03 | 3% |
+  | `firerate_up` | 0.03 | 3% |
+  | *(nothing)* | 0.14 | 14% |
 
   **This is the one deliberate balance change in the branch.** PR #51's roll was
   coin 0.6 / oxygen 0.2 / bomb 0.2, summing to 1.0 — every kill dropped
@@ -214,6 +216,10 @@ updating `DEFAULT_RATES` in the checker is how you say you meant it.
   nothing; **oxygen and bomb are untouched at 0.2 each**. Guaranteed loot from
   every enemy devalues it, and oxygen is effectively the health bar here, so it
   should not get rarer just because coins got commoner.
+
+  The two stat upgrades were later paid for out of that same *nothing* row —
+  0.06 of it — for the reason below. The three asserted rates did not move,
+  which is the point: the row that shrank is the one nobody feels.
 
   `tools/check_drops.gd` asserts these rates, so nothing else can drift into the
   shipped economy unnoticed.
@@ -234,6 +240,12 @@ equips itself on pickup — so it is a row in a `DropTable` and needs nothing el
 from this system. Crates, barrels, chests and the shop all offer them today; the
 enemy tables deliberately do not, because they are rate-locked by
 `check_drops.gd`. See **docs/WEAPONS.md**.
+
+A picked-up weapon keeps its own damage and fire interval, but both are now
+scaled by the player's POWER and FIRERATE levels — otherwise a Damage Upgrade
+bought from the shop does nothing for the twenty seconds a borrowed gun is held,
+which reads as a broken purchase. See `scales_with_player_stats` in
+**docs/WEAPONS.md**.
 
 ## The three candidate economies
 

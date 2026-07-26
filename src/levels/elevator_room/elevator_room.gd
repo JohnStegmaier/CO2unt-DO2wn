@@ -304,6 +304,18 @@ func set_locked(locked: bool) -> void:
 	_exit_armed = not locked
 
 
+## Nothing to seal. This room has no doorways at all — the way in is a warp and
+## the way on is the lift — so Room's version, which walks four sides looking for
+## a Doors node that is not there, would fault the moment the floor asked.
+##
+## Overridden rather than guarded upstream because this room IS the thing being
+## sealed off: on floor 1 the seal goes on the doorway of the room NEXT to this
+## one, which is an ordinary room and answers for itself. Whatever is asked of
+## this one is by definition about somewhere else.
+func set_sealed_sides(_sides: int) -> void:
+	pass
+
+
 ## Will the lift take the player anywhere? Room's version hides a top-down car;
 ## this room's car is the architecture, so it stays visible and the DOORS are what
 ## goes dead. Walking up to a lift that will not open is the whole message on

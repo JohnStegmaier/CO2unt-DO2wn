@@ -56,6 +56,11 @@ enum Behaviour { CHASER, SKIRMISHER }
 @export var dodge_time := 0.22
 @export var dodge_cooldown := 1.0
 
+@export_group("Drops")
+@export var pickup_scene: PackedScene
+## Rolled once on death. See oxygen_pickup.gd for what it actually restores.
+@export_range(0.0, 1.0) var pickup_drop_chance := 0.3
+
 @export_group("")
 
 ## Where a shot leaves the body. Structural rather than a feel knob.
@@ -240,6 +245,13 @@ func _on_health_died() -> void:
 	# body-check the player while it plays out.
 	set_deferred("collision_layer", 0)
 	set_deferred("collision_mask", 0)
+
+	if pickup_scene != null and randf() < pickup_drop_chance:
+		var pickup: Node2D = pickup_scene.instantiate()
+		# Parented to the run container like bullets, not to this corpse — the
+		# corpse is about to fade and queue_free, and the drop has to outlive it.
+		get_tree().current_scene.add_child(pickup)
+		pickup.global_position = global_position
 
 	var death := create_tween()
 	death.set_parallel(true)

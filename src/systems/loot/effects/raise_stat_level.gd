@@ -1,7 +1,7 @@
 class_name RaiseStatLevel
 extends ItemEffect
 
-## Bumps one of the player's three stat levels.
+## Bumps one of the player's four stat levels.
 ##
 ## The levels themselves, the seven-entry value tables behind them and the clamp
 ## at either end all live on player.gd. This only says which one and by how much,
@@ -11,19 +11,21 @@ extends ItemEffect
 ##
 ## Declared as an enum for readable call sites but exported and passed as a plain
 ## int, for the reason in grid_direction.gd.
-enum Stat { POWER, SPEED, FIRERATE }
+enum Stat { POWER, SPEED, FIRERATE, RELOAD }
 
-@export_enum("power", "speed", "firerate") var stat: int = 0
+@export_enum("power", "speed", "firerate", "reload") var stat: int = 0
 ## Levels gained. Negative is legal and is how a penalty item would be written.
 @export var steps: int = 1
 
 ## Parallel to Stat, so the setter and the level to read are looked up by the
 ## same index rather than by two match statements that could disagree.
 const _SETTERS: Array[StringName] = [
-	&"set_power_level", &"set_speed_lvl", &"set_firerate_lvl",
+	&"set_power_level", &"set_speed_lvl", &"set_firerate_lvl", &"set_reload_speed_lvl",
 ]
-const _LEVELS: Array[StringName] = [&"POWER_LVL", &"SPEED_LVL", &"FIRERATE_LVL"]
-const _NAMES: Array[String] = ["power", "speed", "fire rate"]
+const _LEVELS: Array[StringName] = [
+	&"POWER_LVL", &"SPEED_LVL", &"FIRERATE_LVL", &"RELOAD_SPEED_LVL",
+]
+const _NAMES: Array[String] = ["power", "speed", "fire rate", "reload speed"]
 
 
 func apply(target: Node) -> void:

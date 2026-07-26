@@ -263,8 +263,10 @@ func _ready() -> void:
 
 	_player.power_level_changed.connect(_o2_timer.set_power_level)
 	_o2_timer.set_power_level(_player.POWER_LVL)
-	_player.speed_lvl_changed.connect(_o2_timer.set_speed_lvl)
-	_o2_timer.set_speed_lvl(_player.SPEED_LVL)
+	# Walk speed keeps levelling in the background (Player.SPEED_LVL / WALK_SPEED)
+	# but this row on the HUD shows reload speed instead — see o_2_timer.gd.
+	_player.reload_speed_lvl_changed.connect(_o2_timer.set_reload_lvl)
+	_o2_timer.set_reload_lvl(_player.RELOAD_SPEED_LVL)
 	_player.firerate_lvl_changed.connect(_o2_timer.set_firerate_lvl)
 	_o2_timer.set_firerate_lvl(_player.FIRERATE_LVL)
 

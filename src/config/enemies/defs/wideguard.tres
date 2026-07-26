@@ -2,20 +2,20 @@
 
 [ext_resource type="Script" path="res://src/systems/enemies/enemy_def.gd" id="1_def"]
 [ext_resource type="Script" path="res://src/systems/enemies/skirmish_behaviour.gd" id="2_skirmish"]
-[ext_resource type="SpriteFrames" path="res://src/config/enemies/frames/guard_frames.tres" id="3_frames"]
+[ext_resource type="SpriteFrames" path="res://src/config/enemies/frames/wideguard_frames.tres" id="3_frames"]
 [ext_resource type="PackedScene" uid="uid://ckinnty100svf" path="res://src/entities/gun_stuff/bullet.tscn" id="4_bullet"]
 
-[sub_resource type="Resource" id="Resource_guard_skirmish"]
+[sub_resource type="Resource" id="Resource_wideguard_skirmish"]
 script = ExtResource("2_skirmish")
 preferred_range = 140.0
 range_band = 25.0
-speed = 60.0
-strafe_speed = 55.0
+speed = 45.0
+strafe_speed = 41.0
 acceleration = 6.0
 fire_range = 220.0
-dodge_speed = 180.0
+dodge_speed = 135.0
 dodge_time = 0.22
-dodge_cooldown = 2.0
+dodge_cooldown = 1.0
 cover_travel = 110.0
 cover_time = 1.6
 think_interval = 0.35
@@ -24,29 +24,27 @@ avoidance = 0.7
 
 [resource]
 script = ExtResource("1_def")
-id = &"guard"
-behaviour = SubResource("Resource_guard_skirmish")
-weight = 1.8
+id = &"wideguard"
+behaviour = SubResource("Resource_wideguard_skirmish")
+weight = 0.2
 loot_source = &"guard"
 boss_eligible = true
 frames = ExtResource("3_frames")
 facing = 2
 facing_offset_degrees = 0.0
 sprite_offset = Vector2(0, -5)
-sprite_scale = 0.9
-shadow_offset = Vector2(0, 7)
+sprite_scale = 1.035
 frame_rate = 1.0
 body_radius = 4.0
 body_height = 14.0
-max_hp = 30
-contact_damage = 5
+max_hp = 60
+contact_damage = 10
 break_damage = 0
 bullet_scene = ExtResource("4_bullet")
-bullet_damage = 8
+bullet_damage = 16
 bullet_damage_type = 0
 bullet_speed = 180.0
 fire_interval = 1.6
-telegraph_seconds = 0.35
 aim_spread = 0.2
 muzzle_offset = 10.0
 spawn_grace = 0.8

@@ -57,12 +57,15 @@ const LOOT_OFFSET := Vector2(0, 26)
 
 var _opened: bool = false
 var _player_near: bool = false
+## Which device the prompt is currently written for. See _refresh_prompt.
+var _prompt_for_gamepad: bool = false
 
 
 func _ready() -> void:
 	_sprite.texture = TEXTURE_CLOSED
 	_sprite.offset = ART_OFFSET
 	_prompt.visible = false
+	_refresh_prompt()
 	_zone.body_entered.connect(_on_body_entered)
 	_zone.body_exited.connect(_on_body_exited)
 	# One sweep of who is already inside, deferred to the first frame the physics
@@ -83,8 +86,26 @@ func _sweep_for_player() -> void:
 func _process(_delta: float) -> void:
 	if _opened or not _player_near:
 		return
+	# Checked here rather than every frame of the run: past the guard above is
+	# exactly the window in which the prompt is on screen to be read.
+	if InputPrompt.using_gamepad() != _prompt_for_gamepad:
+		_refresh_prompt()
 	if Input.is_action_just_pressed("interact"):
 		_open()
+
+
+## Name the button the player is actually holding.
+##
+## The text used to be authored in the scene as "[E] OPEN", which is a lie to
+## anyone on a pad — there, interact is X. A prompt naming the wrong button is
+## worse than none: the player presses what she was told, the chest sits there,
+## and she concludes it is scenery.
+func _refresh_prompt() -> void:
+	_prompt_for_gamepad = InputPrompt.using_gamepad()
+	var glyph: String = InputPrompt.glyph("interact")
+	# Empty means nothing is bound on this device. Better a bare verb than
+	# "[] OPEN", which reads as a rendering bug.
+	_prompt.text = "OPEN" if glyph.is_empty() else "[%s] OPEN" % glyph
 
 
 ## Open it now, with the noise and the signal. The one path a player can take.

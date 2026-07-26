@@ -60,7 +60,7 @@ enum SpreadMode {
 ## Uniform scale for [member held_texture] on the gun sprite.
 ##
 ## Sprites in this project are authored at wildly different sizes — the pistol is
-## 242x202 drawn at 0.05, the shotgun is 14x3 drawn at 1.0 — so this is part of
+## 32x32 drawn at 0.75, the shotgun is 14x3 drawn at 1.0 — so this is part of
 ## how a weapon looks rather than a fudge factor, the same as ItemDef.icon_scale.
 @export var held_scale: float = 1.0
 ## Pushes the sprite away from the hand it pivots around. The pistol's art has
@@ -99,18 +99,25 @@ enum SpreadMode {
 ## Seconds an empty magazine takes to come back full.
 @export var reload_time: float = 1.2
 
-## Whether this gun grows with the player's POWER and FIRERATE levels.
+## Whether this gun grows with the player's POWER, FIRERATE and RELOAD_SPEED
+## levels.
 ##
 ## TRUE for the starting pistol only: it is the player's own gun, so power-ups
-## are supposed to be felt through it, and it draws damage and fire interval from
-## Player.BULLET_DAMAGE_VALUES / FIRE_RATE_VALUES instead of from the two fields
-## above.
+## are supposed to be felt through it, and it draws damage, fire interval and
+## reload time from Player.BULLET_DAMAGE_VALUES / FIRE_RATE_VALUES /
+## RELOAD_SPEED_VALUES instead of from the fields above.
 ##
-## FALSE for everything picked up. A shotgun found on floor 1 should hit exactly
-## as hard as one found on floor 5 — it is a different weapon, not the ordinary
-## gun scaled up by whatever POWER_LVL happens to be. Turning this on for a
-## pickup weapon is how you would make it a stat multiplier instead, which is a
-## real design choice and therefore a checkbox rather than a hardcoded rule.
+## FALSE for everything picked up. Such a weapon keeps its OWN damage and fire
+## interval — a shotgun is a different weapon, not the ordinary gun renamed — but
+## those numbers are still multiplied by how far the player's POWER and FIRERATE
+## levels have come from level 1. So a shotgun found on floor 5 does hit harder
+## than one found on floor 1, in proportion, while the gap between a shotgun and
+## a timmy gun stays exactly as tuned.
+##
+## The flag was an all-or-nothing swap until upgrades reached the shop: an
+## upgrade bought and then made invisible for the twenty seconds a pickup weapon
+## is held reads as a broken purchase, not as weapon identity. Scaling is applied
+## in damage_against/interval_against, so this stays the one place to change it.
 @export var scales_with_player_stats: bool = false
 
 @export_group("Projectile")
@@ -193,15 +200,33 @@ func shot_directions(aim: Vector2, rng: RandomNumberGenerator) -> Array[Vector2]
 
 
 ## What one projectile from this weapon hits for, given what the player's own gun
-## would have hit for. See [member scales_with_player_stats].
-func damage_against(player_damage: int) -> int:
-	return player_damage if scales_with_player_stats else damage
-
-
-## Seconds between shots, given the player's own current fire rate.
+## would have hit for and how far their POWER level has come from level 1.
 ## See [member scales_with_player_stats].
-func interval_against(player_interval: float) -> float:
-	return player_interval if scales_with_player_stats else fire_interval
+##
+## The multiplier defaults to 1.0 so a caller that has no player to ask — a check
+## script proving the spread, say — reads the weapon's own printed number.
+func damage_against(player_damage: int, power_mult: float = 1.0) -> int:
+	if scales_with_player_stats:
+		return player_damage
+	# Never round a real weapon down to nothing: a multiplier below one is a
+	# nerfed run, not a gun that stopped working.
+	return maxi(1, roundi(damage * power_mult))
+
+
+## Seconds between shots, given the player's own current fire rate and how far
+## their FIRERATE level has come from level 1. See [member scales_with_player_stats].
+func interval_against(player_interval: float, firerate_mult: float = 1.0) -> float:
+	if scales_with_player_stats:
+		return player_interval
+	return fire_interval * firerate_mult
+
+
+## Seconds an empty magazine takes to come back full, given the player's own
+## current reload speed. player_reload_speed is a multiplier rather than a
+## seconds value like [param player_interval] above, so scaling divides by it
+## instead of substituting it outright. See [member scales_with_player_stats].
+func reload_time_against(player_reload_speed: float) -> float:
+	return reload_time / player_reload_speed if scales_with_player_stats else reload_time
 
 
 ## Equip on pickup.

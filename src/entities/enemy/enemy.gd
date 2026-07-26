@@ -61,6 +61,12 @@ const STUCK_IGNORE_RANGE := 24.0
 ## short enough that it is not a second, longer stagger stacked on the silence.
 const PULSE_KNOCKBACK_HOLD := 0.25
 
+## What a stunned enemy is tinted while _stun_timer is running. Pushed well
+## past 1.0 rather than dimmed below it — modulate only scales existing colour,
+## so darkening a already-saturated sprite barely reads, where blowing the
+## channels out toward white is unmissable even at a glance.
+const STUN_TINT := Color(2.4, 2.4, 2.4, 1.0)
+
 ## Seconds between one body's hits on the same prop. The player's own mercy
 ## window rate-limits contact damage TO the player; a crate has no such window,
 ## so without this a booger pressed against a barrel would delete it in two
@@ -83,6 +89,15 @@ var _boss_contact_damage: int = -1
 var _boss_bullet_damage: int = -1
 
 var _fire_cooldown := 0.0
+## Seconds left of the wind-up before a shot we have already committed to. The
+## window that did not exist before [AttackTell] needed something to draw — see
+## [method _maybe_shoot].
+var _windup := 0.0
+## Where the behaviour wanted to shoot this frame, kept rather than asked for
+## twice. [method EnemyBehaviour.aim] is not free: it runs
+## [method SteeringContext.can_see_target] over every prop in the room, and the
+## tell needs the same answer [method _maybe_shoot] just got.
+var _aim := Vector2.ZERO
 var _break_cooldown := 0.0
 var _stuck_frames: int = 0
 var _unstick_frames: int = 0
@@ -98,10 +113,19 @@ var _knockback_hold := 0.0
 ## Set by pulse_stagger. The trigger stays jammed for the whole silence, which is
 ## much longer than the shove.
 var _fire_suppressed := 0.0
+## Set by pulse_stagger. Outlasts _knockback_hold — the shove plays out first,
+## then the enemy stands there unable to steer, shoot, or land contact damage
+## for the rest of this.
+var _stun_timer := 0.0
 
 @onready var _health: Health = $Health
 @onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var _collider: CollisionShape2D = $CollisionShape2D
+## Under the sprite rather than the body, so it inherits both
+## [member EnemyDef.sprite_scale] and the boss multiplier [method make_boss]
+## applies to the same node. A ring sized in absolute pixels would be right on
+## exactly one enemy.
+@onready var _tell: AttackTell = $AnimatedSprite2D/AttackTell
 
 
 ## Become one particular kind of bad guy.
@@ -128,6 +152,13 @@ func configure(def: EnemyDef) -> void:
 	sprite.position = def.sprite_offset
 	sprite.scale = Vector2.ONE * def.sprite_scale
 	sprite.speed_scale = def.frame_rate
+
+	$Shadow.position = def.shadow_offset
+
+	# Reached through the tree rather than through _tell, for the same reason the
+	# collider, the sprite and the shadow above are: this runs BEFORE the node
+	# enters it, and the @onready has not resolved yet.
+	$AnimatedSprite2D/AttackTell.color = def.telegraph_color
 
 	$Health.max_hp = def.max_hp
 	_ctx.radius = def.body_radius
@@ -198,6 +229,10 @@ func make_boss(hp_scale: float, damage_scale: float, size_scale: float) -> void:
 	shape.height *= size_scale
 	_ctx.radius = shape.radius
 
+	var shadow: Sprite2D = $Shadow
+	shadow.scale *= size_scale
+	shadow.position *= size_scale
+
 
 func _ready() -> void:
 	# The single most likely "why do bullets go straight through" failure: player
@@ -251,6 +286,9 @@ func _physics_process(delta: float) -> void:
 
 	_draw_facing()
 	_maybe_shoot(delta)
+	# After the shot, not before it, so the ring comes off on the same frame the
+	# bullet appears rather than lingering a frame behind it.
+	_show_attack_tell()
 
 
 func _tick_timers(delta: float) -> void:
@@ -259,6 +297,14 @@ func _tick_timers(delta: float) -> void:
 	_knockback_hold = maxf(0.0, _knockback_hold - delta)
 	_fire_suppressed = maxf(0.0, _fire_suppressed - delta)
 	_break_cooldown = maxf(0.0, _break_cooldown - delta)
+
+	var was_stunned := _stun_timer > 0.0
+	_stun_timer = maxf(0.0, _stun_timer - delta)
+	# Edge-triggered rather than forced every frame: a hit landing mid-stun still
+	# gets to run its own flash tween (see _on_health_damaged) without this
+	# fighting it every physics tick.
+	if was_stunned and _stun_timer <= 0.0:
+		_sprite.modulate = Color.WHITE
 
 
 ## Rewrite the behaviour's view of the world, in the field's space.
@@ -283,6 +329,8 @@ func _refresh_context(delta: float) -> void:
 func _desired_velocity() -> Vector2:
 	if _dodge_hold > 0.0 or _knockback_hold > 0.0:
 		return velocity
+	if _stun_timer > 0.0:
+		return Vector2.ZERO
 	if _unstick_frames > 0:
 		_unstick_frames -= 1
 		# Assigned outright rather than eased, because the collision has already
@@ -351,7 +399,11 @@ func _damage_on_contact() -> void:
 		if collider == null or not collider.has_method("take_damage"):
 			continue
 		if collider == _target:
-			collider.take_damage(_contact_damage(), Damage.Type.BLUNT)
+			# Stunned means incapacitated, not just quiet — a booger standing
+			# there dazed should not still be able to shove damage into whoever
+			# walks into it.
+			if _stun_timer <= 0.0:
+				collider.take_damage(_contact_damage(), Damage.Type.BLUNT)
 			continue
 		if _def == null or _def.break_damage <= 0 or _break_cooldown > 0.0:
 			continue
@@ -383,15 +435,72 @@ func _draw_facing() -> void:
 ## The behaviour says whether it would fire; the def says how often. Splitting it
 ## that way is what lets a turret's sweep decide WHEN without also owning the
 ## weapon's rate of fire.
+##
+## The wind-up sits between the two and belongs to neither, which is why it is
+## held here as a second clock rather than folded into the cooldown. A shot can
+## only ever leave at the END of a full one, and that is the property worth having
+## — a tell that is sometimes skipped is worse than no tell at all, because the
+## player has by then learned to wait for it. The guard that has been out of range
+## for ten seconds, with a cooldown long since gone negative, now winds up when it
+## re-acquires you instead of firing on the frame it sees you.
+##
+## [member EnemyDef.spawn_grace] is untouched: the roll in front of the first shot
+## still staggers a roomful, and the wind-up lands after it rather than instead.
 func _maybe_shoot(delta: float) -> void:
 	_fire_cooldown -= delta
-	if _fire_cooldown > 0.0 or _fire_suppressed > 0.0:
+
+	_aim = _behaviour.aim(_ctx)
+	# A shot the behaviour has stopped wanting takes its tell back with it — you
+	# stepped out of range, a barrel closed the line, the pulse bomb jammed the
+	# trigger, it got stunned. A ring that closes onto nothing is worse than none,
+	# because it teaches the player that rings do not mean anything.
+	if _aim.is_zero_approx() or _fire_suppressed > 0.0 or _stun_timer > 0.0:
+		_windup = 0.0
 		return
-	var aim: Vector2 = _behaviour.aim(_ctx)
-	if aim.is_zero_approx():
+
+	if _windup > 0.0:
+		_windup = maxf(0.0, _windup - delta)
+		if _windup <= 0.0:
+			_fire()
 		return
-	_fire_cooldown = _def.fire_interval
-	_shoot(aim.normalized())
+
+	if _fire_cooldown > 0.0:
+		return
+
+	_windup = _def.telegraph_seconds
+	if _windup <= 0.0:
+		_fire()
+
+
+## Spending the wind-up out of the interval rather than after it is what keeps a
+## telegraph a warning instead of a nerf: the cooldown restarts short by exactly
+## the tell that is about to be paid in front of the next shot, so one shot to the
+## next is still [member EnemyDef.fire_interval] to the frame. Adding it on top
+## would have quietly cut every shooter's rate of fire by the length of its own
+## tell, which is a balance change wearing a readability change's clothes.
+func _fire() -> void:
+	_fire_cooldown = maxf(0.0, _def.fire_interval - _def.telegraph_seconds)
+	_shoot(_aim.normalized())
+
+
+## Which wind-up is running, and where it points.
+##
+## Two of them, because two different things know an attack is coming and they are
+## not the same thing: this node owns the clock in front of a SHOT, because it
+## owns the fire cooldown, and a behaviour owns the clock in front of anything it
+## invented for itself — see [method EnemyBehaviour.windup]. Collapsing them into
+## one would mean either the behaviour setting its own rate of fire or a charger
+## pretending to have a gun.
+##
+## The shot wins where both could answer. Nothing overrides both today, and if
+## something ever does, the shot is the one with a bullet behind it.
+func _show_attack_tell() -> void:
+	if _windup > 0.0 and _def.telegraph_seconds > 0.0:
+		_tell.set_charge(1.0 - _windup / _def.telegraph_seconds, _aim)
+		return
+	# facing() rather than aim(): a charger has no aim vector at all, and mid
+	# wind-up its facing is already the player — see [method ChargeBehaviour.facing].
+	_tell.set_charge(_behaviour.windup(_ctx), _behaviour.facing(_ctx))
 
 
 func _shoot(aim: Vector2) -> void:
@@ -435,16 +544,24 @@ func _on_dodge_sensor_area_entered(area: Area2D) -> void:
 	_dodge_cooldown = _behaviour.dodge_cooldown_seconds()
 
 
-## Hit by the player's pulse bomb: shoved away from the blast and its trigger
-## jammed for silence_duration. Duck-typed the same way take_damage is, so the
-## bomb needs nothing more than has_method to reach every enemy on screen.
-func pulse_stagger(from: Vector2, force: float, silence_duration: float) -> void:
+## Hit by the player's pulse bomb: shoved away from the blast, its trigger
+## jammed for silence_duration, stunned still (no steering, no shooting, no
+## contact damage) for stun_duration, and dealt a little blast damage on top.
+## Duck-typed the same way take_damage is, so the bomb needs nothing more than
+## has_method to reach every enemy on screen.
+func pulse_stagger(from: Vector2, force: float, silence_duration: float, stun_duration: float, damage: int) -> void:
 	var away := global_position - from
 	if away.length() < 0.001:
 		away = Vector2.RIGHT
 	velocity = away.normalized() * force
 	_knockback_hold = PULSE_KNOCKBACK_HOLD
 	_fire_suppressed = silence_duration
+	_stun_timer = stun_duration
+	# Set directly rather than left to the hit-flash tween below: a pulse tuned
+	# with pulse_damage at 0 still stuns, and should still read as stunned.
+	_sprite.modulate = STUN_TINT
+	if damage > 0:
+		take_damage(damage, Damage.Type.BLUNT)
 
 
 ## Bullets duck-type this — see bullet.gd. Damage lands on the body itself
@@ -467,10 +584,19 @@ func _bullet_damage() -> int:
 func _on_health_damaged(_amount: int, _type: int) -> void:
 	var flash := create_tween()
 	flash.tween_property(_sprite, "modulate", Color(4.0, 4.0, 4.0), 0.04)
-	flash.tween_property(_sprite, "modulate", Color.WHITE, 0.08)
+	# Settles on the stun tint rather than a hardcoded white, so a hit landing
+	# mid-stun (the pulse's own damage, or a bullet that follows it) flashes and
+	# comes back to grey instead of snapping back to full colour.
+	flash.tween_property(_sprite, "modulate", _resting_modulate(), 0.08)
 	# Pitch-varied, or a shotgun spread landing on four bodies on one frame is a
 	# single loud click rather than four hits.
 	AudioManager.play_sfx("enemy_take_damage", randf_range(0.92, 1.08), -8.0)
+
+
+## Baseline tint outside of a hit flash: grey while stunned, plain white
+## otherwise.
+func _resting_modulate() -> Color:
+	return STUN_TINT if _stun_timer > 0.0 else Color.WHITE
 
 
 func _on_health_died() -> void:

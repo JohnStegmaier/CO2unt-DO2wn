@@ -8,13 +8,15 @@ extends ShopStockProvider
 ## needing a loot system each. This is the shop end of that: it reads the rule
 ## for [member source] and turns its rows into priced offers.
 ##
-## One deliberate reinterpretation. A [DropTable] is normally a pool you ROLL —
-## [member DropTable.rolls] draws from it at random. A shelf is not a roll; it is
-## everything on offer, laid out. So this takes every row rather than sampling,
-## and [member DropEntry.weight] is ignored for this source. Weight still has to
-## be there because it is on the row, and check_drops.gd still reports it — but
-## for a shop it means nothing, and a shelf that shuffled its contents every
-## visit would fight [ShopRegistry], which exists to make stock stay put.
+## A [DropTable] is rolled here exactly the way it is everywhere else in the
+## loot path — [member DropTable.rolls] draws that many rows, weighted by
+## [member DropEntry.weight] — which is what lets one table be "always this,
+## and this, and this" (as many single-row guaranteed tables as there are
+## always-on items) sitting in the same rule as a table that is "one of these
+## three weapons, at random." [ShopRegistry] is what keeps a shelf from
+## reshuffling on every visit: it asks a provider ONCE per shop and hands back
+## the same [ShopStock] after that, so the roll below only ever happens once
+## per (floor, coord) — see [method _rng_for].
 ##
 ## Rows with no item, or priced at zero, are skipped: a free row is a drop-table
 ## row that wandered into a shop rule, and putting it on a shelf with no price
@@ -32,21 +34,33 @@ extends ShopStockProvider
 @export var source: StringName = &"shop"
 
 
-func stock_for(floor_number: int, _coord: Vector2i, capacity: int) -> Array[ShopOffer]:
+func stock_for(floor_number: int, coord: Vector2i, capacity: int) -> Array[ShopOffer]:
 	var offers: Array[ShopOffer] = []
 	if drop_config == null:
 		return offers
 
+	var rng := _rng_for(floor_number, coord)
 	for table in drop_config.tables_for(source, floor_number):
 		if table == null:
 			continue
-		for entry in table.entries:
+		for entry in LootRoller.roll_entries(table, rng):
 			if offers.size() >= capacity:
 				return offers
-			if entry == null or entry.item == null or entry.price <= 0:
+			if entry.price <= 0:
 				continue
 			var offer := ShopOffer.new()
 			offer.item = entry.item
 			offer.price = entry.price
 			offers.append(offer)
 	return offers
+
+
+## Deterministic per shop, the same identity [ShopRegistry] caches stock under —
+## two shops sharing a coord on different floors still roll differently, and
+## reloading the same floor with the same coord rolls the same shelf, without
+## this needing the run's seed threaded all the way down through
+## [ShopConfig] and [ShopRegistry] for what is, so far, one random row.
+func _rng_for(floor_number: int, coord: Vector2i) -> RandomNumberGenerator:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("%d:%d,%d" % [floor_number, coord.x, coord.y])
+	return rng

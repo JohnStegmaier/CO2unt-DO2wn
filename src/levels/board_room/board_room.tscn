@@ -1,0 +1,188 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="PackedScene" uid="uid://cjnf0aq7acwnh" path="res://src/levels/room/room.tscn" id="1_room"]
+[ext_resource type="Script" path="res://src/levels/board_room/board_room.gd" id="2_board"]
+[ext_resource type="Texture2D" uid="uid://byqrq0r1ecj5h" path="res://assets/sprites/environment/temple-A.png" id="3_temple"]
+[ext_resource type="Texture2D" path="res://assets/sprites/vfx/tv_test_patterns_02.png" id="4_tv"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_far"]
+size = Vector2(16, 143)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_table"]
+size = Vector2(56, 190)
+
+[node name="BoardRoom" instance=ExtResource("1_room")]
+script = ExtResource("2_board")
+
+[node name="background_north" type="Sprite2D" parent="." index="1"]
+z_index = -1
+texture_filter = 1
+position = Vector2(20.999998, -122.0)
+scale = Vector2(0.31249997, 0.33888888)
+texture = ExtResource("3_temple")
+centered = false
+region_enabled = true
+region_rect = Rect2(0, 0, 1280, 664)
+
+[node name="wall_north_west" parent="Walls/WallBody"]
+position = Vector2(111, -113.5)
+
+[node name="wall_north_east" parent="Walls/WallBody"]
+position = Vector2(330.5, -113.5)
+
+[node name="wall_west_far" type="CollisionShape2D" parent="Walls/WallBody" index="8"]
+position = Vector2(29, -50.5)
+shape = SubResource("RectangleShape2D_wall_far")
+
+[node name="wall_east_far" type="CollisionShape2D" parent="Walls/WallBody" index="9"]
+position = Vector2(413, -50.5)
+shape = SubResource("RectangleShape2D_wall_far")
+
+[node name="plug_north" parent="Walls/Plugs"]
+position = Vector2(221, -108)
+
+[node name="Table" type="StaticBody2D" parent="Obstacles" index="0"]
+position = Vector2(221, 71)
+collision_mask = 0
+
+[node name="shape" type="CollisionShape2D" parent="Obstacles/Table" index="0"]
+shape = SubResource("RectangleShape2D_table")
+
+[node name="top" type="ColorRect" parent="Obstacles/Table" index="1"]
+offset_left = -28.0
+offset_top = -95.0
+offset_right = 28.0
+offset_bottom = 95.0
+mouse_filter = 2
+color = Color(0.235, 0.153, 0.106, 1)
+
+[node name="inlay" type="ColorRect" parent="Obstacles/Table" index="2"]
+offset_left = -22.0
+offset_top = -89.0
+offset_right = 22.0
+offset_bottom = 89.0
+mouse_filter = 2
+color = Color(0.325, 0.216, 0.149, 1)
+
+[node name="ChairWest1" type="ColorRect" parent="Obstacles" index="1"]
+offset_left = 167.0
+offset_top = -22.0
+offset_right = 183.0
+offset_bottom = -6.0
+mouse_filter = 2
+color = Color(0.204, 0.212, 0.243, 1)
+
+[node name="ChairWest2" type="ColorRect" parent="Obstacles" index="2"]
+offset_left = 167.0
+offset_top = 12.0
+offset_right = 183.0
+offset_bottom = 28.0
+mouse_filter = 2
+color = Color(0.204, 0.212, 0.243, 1)
+
+[node name="ChairWest3" type="ColorRect" parent="Obstacles" index="3"]
+offset_left = 167.0
+offset_top = 46.0
+offset_right = 183.0
+offset_bottom = 62.0
+mouse_filter = 2
+color = Color(0.204, 0.212, 0.243, 1)
+
+[node name="ChairWest4" type="ColorRect" parent="Obstacles" index="4"]
+offset_left = 167.0
+offset_top = 80.0
+offset_right = 183.0
+offset_bottom = 96.0
+mouse_filter = 2
+color = Color(0.204, 0.212, 0.243, 1)
+
+[node name="ChairWest5" type="ColorRect" parent="Obstacles" index="5"]
+offset_left = 167.0
+offset_top = 114.0
+offset_right = 183.0
+offset_bottom = 130.0
+mouse_filter = 2
+color = Color(0.204, 0.212, 0.243, 1)
+
+[node name="ChairWest6" type="ColorRect" parent="Obstacles" index="6"]
+offset_left = 167.0
+offset_top = 148.0
+offset_right = 183.0
+offset_bottom = 164.0
+mouse_filter = 2
+color = Color(0.204, 0.212, 0.243, 1)
+
+[node name="ChairEast1" type="ColorRect" parent="Obstacles" index="7"]
+offset_left = 259.0
+offset_top = -22.0
+offset_right = 275.0
+offset_bottom = -6.0
+mouse_filter = 2
+color = Color(0.204, 0.212, 0.243, 1)
+
+[node name="ChairEast2" type="ColorRect" parent="Obstacles" index="8"]
+offset_left = 259.0
+offset_top = 12.0
+offset_right = 275.0
+offset_bottom = 28.0
+mouse_filter = 2
+color = Color(0.204, 0.212, 0.243, 1)
+
+[node name="ChairEast3" type="ColorRect" parent="Obstacles" index="9"]
+offset_left = 259.0
+offset_top = 46.0
+offset_right = 275.0
+offset_bottom = 62.0
+mouse_filter = 2
+color = Color(0.204, 0.212, 0.243, 1)
+
+[node name="ChairEast4" type="ColorRect" parent="Obstacles" index="10"]
+offset_left = 259.0
+offset_top = 80.0
+offset_right = 275.0
+offset_bottom = 96.0
+mouse_filter = 2
+color = Color(0.204, 0.212, 0.243, 1)
+
+[node name="ChairEast5" type="ColorRect" parent="Obstacles" index="11"]
+offset_left = 259.0
+offset_top = 114.0
+offset_right = 275.0
+offset_bottom = 130.0
+mouse_filter = 2
+color = Color(0.204, 0.212, 0.243, 1)
+
+[node name="ChairEast6" type="ColorRect" parent="Obstacles" index="12"]
+offset_left = 259.0
+offset_top = 148.0
+offset_right = 275.0
+offset_bottom = 164.0
+mouse_filter = 2
+color = Color(0.204, 0.212, 0.243, 1)
+
+[node name="TvFrame" type="ColorRect" parent="Obstacles" index="13"]
+offset_left = 186.0
+offset_top = -121.0
+offset_right = 256.0
+offset_bottom = -106.0
+mouse_filter = 2
+color = Color(0.055, 0.059, 0.071, 1)
+
+[node name="TvScreen" type="Sprite2D" parent="Obstacles" index="14"]
+texture_filter = 1
+position = Vector2(189, -119)
+scale = Vector2(0.088888888, 0.019097222)
+texture = ExtResource("4_tv")
+centered = false
+
+[node name="Tint" parent="."]
+offset_top = -143.0
+
+[node name="door_north" parent="Doors"]
+position = Vector2(221, -108)
+
+[node name="door_north_open" parent="Doors"]
+position = Vector2(221.5, -113.5)
+
+[node name="door_north_shut" parent="Doors"]
+position = Vector2(221.5, -113.5)

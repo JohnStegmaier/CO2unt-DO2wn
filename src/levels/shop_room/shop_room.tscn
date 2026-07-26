@@ -115,6 +115,19 @@ depth_factor = 0.15
 
 [node name="SelectionFrame" parent="Depth/Shelves" instance=ExtResource("3_frame")]
 
+[node name="BrowsePrompt" type="Label" parent="Depth/Shelves"]
+visible = false
+offset_left = 91.0
+offset_top = 36.0
+offset_right = 351.0
+offset_bottom = 50.0
+theme_override_colors/font_color = Color(1, 0.94, 0.62, 1)
+theme_override_font_sizes/font_size = 9
+text = "[E] BUY    [ESC] LEAVE"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+
 [node name="Shopkeeper" type="Node2D" parent="Depth"]
 script = ExtResource("2_layer")
 depth_factor = 0.35
@@ -129,9 +142,9 @@ autoplay = "idle"
 
 [node name="TalkPrompt" type="Label" parent="Depth/Shopkeeper"]
 visible = false
-offset_left = 186.0
+offset_left = 179.0
 offset_top = 90.0
-offset_right = 256.0
+offset_right = 263.0
 offset_bottom = 104.0
 theme_override_colors/font_color = Color(1, 0.94, 0.62, 1)
 theme_override_font_sizes/font_size = 9

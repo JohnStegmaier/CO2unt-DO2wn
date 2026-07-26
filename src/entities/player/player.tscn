@@ -22,7 +22,7 @@
 [ext_resource type="Texture2D" uid="uid://kdyrurlsdgrm" path="res://assets/sprites/characters/player/Idle_forward/Player_Idle3.png" id="14_t4js2"]
 [ext_resource type="Texture2D" uid="uid://cxrnqnjcveddd" path="res://assets/sprites/characters/player/Idle_forward/Player_Idle4.png" id="15_4tw7w"]
 [ext_resource type="Texture2D" uid="uid://341l2dpnean" path="res://assets/sprites/characters/player/Dodge_Right/player_roll_right4.png" id="15_lacky"]
-[ext_resource type="Texture2D" uid="uid://cm4a87ahjb7tc" path="res://assets/sprites/items/BigGun_B_Transparent.png" id="15_lqdhu"]
+[ext_resource type="Texture2D" uid="uid://db4b88i3gjg8c" path="res://assets/sprites/weapons/mini-gun.png" id="15_lqdhu"]
 [ext_resource type="Texture2D" uid="uid://dhb1cqrf5oyh5" path="res://assets/sprites/characters/player/Walk/Player_Walk_Right1.png" id="16_3d0mj"]
 [ext_resource type="Texture2D" uid="uid://bdmhllnrxyu06" path="res://assets/sprites/characters/player/Dodge_Right/player_roll_right5.png" id="16_akx0o"]
 [ext_resource type="Texture2D" uid="uid://ccip6h4d58mkp" path="res://assets/sprites/characters/player/Idle_Right/Player_Idle_Right1.png" id="16_amj0e"]
@@ -55,6 +55,15 @@
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_5ixxa"]
 radius = 3.0
 height = 14.0
+
+[sub_resource type="Gradient" id="Gradient_shadow"]
+colors = PackedColorArray(0, 0, 0, 0.6, 0, 0, 0, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_shadow"]
+gradient = SubResource("Gradient_shadow")
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_nn08x"]
 animations = [{
@@ -328,6 +337,12 @@ starting_weapon = ExtResource("2_pistol")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1811685466]
 shape = SubResource("CapsuleShape2D_5ixxa")
 
+[node name="Shadow" type="Sprite2D" parent="."]
+z_index = -1
+position = Vector2(0, 11)
+scale = Vector2(0.28, 0.095)
+texture = SubResource("GradientTexture2D_shadow")
+
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=1781942890]
 texture_filter = 1
 position = Vector2(0, -6)
@@ -340,14 +355,12 @@ position = Vector2(0, -28)
 script = ExtResource("1_reload")
 
 [node name="BigGunBTransparent" type="Sprite2D" parent="." unique_id=1371732958]
-modulate = Color(1.8764027, 1.111197, 1.5168338, 1)
+texture_filter = 1
 position = Vector2(0, 5)
-scale = Vector2(0.05, 0.05)
+scale = Vector2(0.375, 0.375)
 texture = ExtResource("15_lqdhu")
-offset = Vector2(200, 0)
+offset = Vector2(27, 0)
 flip_h = true
-region_enabled = true
-region_rect = Rect2(8.45491, -63.49489, 233.54509, 227.5741)
 
 [node name="Muzzle" type="Marker2D" parent="BigGunBTransparent" unique_id=1118717441]
 position = Vector2(223.74, -51.085)

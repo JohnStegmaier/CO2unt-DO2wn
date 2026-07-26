@@ -35,6 +35,52 @@ A turret alone is a puzzle you walk around. The point of it is layering: put one
 behind a room of boogers and the fight stops being about killing things and
 starts being about where you are standing while you do it.
 
+## Telling an attack
+
+Every attack that can hurt you closes a ring first — `AttackTell`, a `Node2D`
+under the enemy's sprite that is handed a 0–1 charge and a direction and draws
+the rest itself. It hangs off the sprite rather than the body so
+`sprite_scale` and the boss multiplier both reach it; nothing is sized in
+absolute pixels.
+
+**Two clocks feed it, and which one an archetype uses is not a style choice.**
+
+| Source | Who holds it | Used by |
+| --- | --- | --- |
+| `EnemyDef.telegraph_seconds` | `Enemy._maybe_shoot` — the node, because the node owns the fire cooldown | guard |
+| `EnemyBehaviour.windup(ctx)` | The behaviour, for an attack it invented itself | licker, turret |
+
+`telegraph_seconds` is spent **out of** `fire_interval`, not added to it: the
+cooldown restarts short by exactly the tell that is about to be paid, so one shot
+to the next is unchanged and a telegraph is a warning rather than a nerf. `0.0`
+is the per-enemy off switch. It may never exceed `fire_interval`, and
+`check_enemies.gd` refuses a def where it does.
+
+A shot can only leave at the **end** of a full wind-up. A tell that is sometimes
+skipped is worse than no tell, because by then the player has learned to wait for
+it — so a guard re-acquiring you after ten seconds out of range winds up rather
+than firing on the frame it sees you. Equally, a wind-up whose attack stops being
+wanted takes its ring back with it: line of sight closes, a turret swings off, the
+pulse bomb jams the trigger.
+
+**Two archetypes hold their own clock, for two different reasons.** The licker's
+attack is a lunge, so there is no gun for `telegraph_seconds` to describe — its
+`Phase.TELEGRAPH` was always the warning and simply had no way to show it. The
+turret's tell is per **bearing** rather than per shot: a stop fires a burst of
+three, that window is fixed, and a per-shot tell shifts the burst late enough to
+lose the last one — a third of its fire, for a warning it does not need, since it
+never tracks you. Its ring closes across the turn instead and lands as the barrel
+settles, which is also the frame the first shot leaves.
+
+The booger has no tell. Walking into you is its own warning.
+
+**Colour is per def, and it is a legibility knob, not a meaning one.**
+`telegraph_color` lives in **Appearance** because what decides it is the body the
+ring sits on, not the attack behind it — the licker is deep red, so it takes a
+blue one and everything else keeps the default red-orange. A ring means one
+thing whatever colour it is; do not start encoding the *kind* of attack in the
+hue, or reading it becomes a lookup instead of a reflex.
+
 ## Adding an enemy with no new code
 
 1. Put the frames in `assets/sprites/characters/bad_guy/<name>/`.
@@ -50,7 +96,7 @@ starts being about where you are standing while you do it.
 
 Adding an entirely new *way of fighting* is a new script extending
 `EnemyBehaviour` in `src/systems/enemies/`, overriding whichever of `steer`,
-`aim`, `facing` and `dodge` it needs. Nothing else changes — `enemy.gd` does not
+`aim`, `facing`, `dodge` and `windup` it needs. Nothing else changes — `enemy.gd` does not
 contain the name of a single archetype, and is not supposed to start.
 
 ## Facing

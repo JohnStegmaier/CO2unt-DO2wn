@@ -53,6 +53,7 @@ then make it hard.
 | `peaceful` | No enemies anywhere, no drain, no damage. An empty station to walk around. |
 | `infinite_oxygen` | 24 hours of air. Damage still costs seconds, so a fight can still kill you. |
 | `tiny_floor` | Six-room floors with the exit two rooms out — for the elevator and the descent. |
+| `basement` | Start in the Basement. The board room, the six men in suits, and the ending. |
 | `fixed_seed` | Pins the run seed, so every launch generates the identical floors. |
 | `swarm` | 8–12 enemies a room. Placement, door locking and frame time under load. |
 | `combat_lab` | Small floor, packed rooms, air that will not run out. For tuning fights. |
@@ -86,12 +87,15 @@ overrides — a section is only listed there if it actually changed something.
 | `enemies` | `min`, `max` | `game.gd` — per-room count. `max = 0` empties the floor |
 | `enemies` | `boss_min`, `boss_max` | `game.gd` — how many the boss room holds. Forced to zero when `max = 0`, so an emptied station has no boss barring the way down |
 | `floor` | `run_seed` | `game.gd` — non-zero pins the whole run |
+| `floor` | `start` | `game.gd` — which descent index a run opens on. Only there for the Basement, which is otherwise five floors and a boss away; see `basement.cfg` |
 | `floor` | `rooms_min`, `rooms_max`, `rooms_per_floor` | `floor_config.gd` — size, and growth per floor |
 | `floor` | `max_depth`, `depth_bias` | `floor_config.gd` — shape |
 | `floor` | `exit_min_depth`, `special_min_depth` | `floor_config.gd` — how far out the specials sit |
 | `drops` | `config` | `game.gd` — names a `.tres` in `src/config/drops/` to use instead of the one on `game.tscn`. The whole economy in one key; see [DROPS.md](DROPS.md) |
 | `obstacles` | `count_min`, `count_max` | `game.gd` — solid props per furnished room. Six is the ceiling: `ObstaclePlacement` lays a 3×2 grid and puts at most one prop in a cell |
 | `obstacles` | `room_kinds` | `game.gd` — bitmask over `RoomData.Kind` (normal 1, spawn 2, boss 4, shop 8, treasure 16, exit 32) of which rooms get props. Ships as `5`, normal and boss |
+| `decals` | `count_min`, `count_max` | `game.gd` — cosmetic floor dressing per furnished room: blood splats, torches. No collision, no cap tied to it — `DecalPlacement` lays a 2×2 grid |
+| `decals` | `room_kinds` | `game.gd` — same mask as `obstacles.room_kinds`. Ships as `5`, normal and boss |
 
 Shrinking a floor means lowering the depth rules with it: the generator rerolls
 40 times and then warns before it will ship an exit shallower than

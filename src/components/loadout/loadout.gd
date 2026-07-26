@@ -52,11 +52,20 @@ var is_reloading := false
 ## counter stays full without needing a second switch for "no reload".
 var infinite_ammo := false
 
-## What the owner's own gun would hit for, and how fast it would fire, right now.
-## Written from above whenever they change; read only by a weapon with
-## scales_with_player_stats on, which is the starting pistol and nothing else.
+## What the owner's own gun would hit for, how fast it would fire, and how fast
+## it would reload, right now. Written from above whenever they change; read
+## only by a weapon with scales_with_player_stats on, which is the starting
+## pistol and nothing else.
 var player_damage := 10
 var player_fire_interval := 0.14
+var player_reload_speed := 1.0
+
+## The same two stats as a factor of where they started, so a weapon that keeps
+## its own numbers can still be scaled by them — 1.0 at POWER/FIRERATE level 1,
+## and for the fire rate a factor BELOW one, since a shorter interval is faster.
+## Written from above alongside the pair above. See WeaponDef.damage_against.
+var player_power_mult := 1.0
+var player_firerate_mult := 1.0
 
 ## Fired whenever the magazine count changes, so the HUD never has to poll.
 signal ammo_changed(current: int, magazine_size: int)
@@ -192,7 +201,7 @@ func fire(origin: Vector2, aim: Vector2) -> void:
 	if weapon == null:
 		return
 
-	var damage := weapon.damage_against(player_damage)
+	var damage := weapon.damage_against(player_damage, player_power_mult)
 	for direction in weapon.shot_directions(aim, _rng):
 		_spawn_projectile(direction, damage, origin)
 
@@ -207,7 +216,7 @@ func fire(origin: Vector2, aim: Vector2) -> void:
 	if ammo <= 0:
 		start_reload()
 	else:
-		_cooldown = weapon.interval_against(player_fire_interval)
+		_cooldown = weapon.interval_against(player_fire_interval, player_firerate_mult)
 
 
 ## Reload early, with rounds still in the magazine. Refused when there is nothing
@@ -225,7 +234,7 @@ func start_reload() -> void:
 	if weapon == null or is_reloading:
 		return
 	is_reloading = true
-	_reload_remaining = weapon.reload_time
+	_reload_remaining = weapon.reload_time_against(player_reload_speed)
 	_cooldown = 0.0
 	reloading_changed.emit(true)
 

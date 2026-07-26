@@ -19,6 +19,9 @@ class_name Player
 @export var WALK_SPEED_VALUES: Array[int] = [150, 200, 250, 300, 350, 375, 400]
 ## Seconds between shots per FIRERATE_LVL — lower is faster, index 0 is level 1.
 @export var FIRE_RATE_VALUES: Array[float] = [0.14, 0.12, 0.11, 0.10, 0.09, 0.08, 0.07]
+## Reload speed multiplier per RELOAD_SPEED_LVL — 1.0 is the baseline reload
+## time, rising by 0.25 a level, index 0 is level 1.
+@export var RELOAD_SPEED_VALUES: Array[float] = [1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5]
 
 const MIN_STAT_LVL := 1
 const MAX_STAT_LVL := 7
@@ -26,6 +29,7 @@ const MAX_STAT_LVL := 7
 var POWER_LVL := 1
 var SPEED_LVL := 1
 var FIRERATE_LVL := 1
+var RELOAD_SPEED_LVL := 1
 
 ## Derived from POWER_LVL/BULLET_DAMAGE_VALUES by set_power_level() — see _ready().
 var bullet_damage: int
@@ -33,11 +37,15 @@ var bullet_damage: int
 var fire_rate: float
 ## Derived from SPEED_LVL/WALK_SPEED_VALUES by set_speed_lvl() — see _ready().
 var WALK_SPEED: float
+## Derived from RELOAD_SPEED_LVL/RELOAD_SPEED_VALUES by set_reload_speed_lvl() —
+## see _ready().
+var RELOAD_SPEED: float
 
 ## Fired whenever a stat level changes, so the HUD never has to poll for it.
 signal power_level_changed(lvl: int)
 signal speed_lvl_changed(lvl: int)
 signal firerate_lvl_changed(lvl: int)
+signal reload_speed_lvl_changed(lvl: int)
 
 ## Money carried. Uncapped — unlike ammo and bombs there is no magazine or carry
 ## limit here.
@@ -92,6 +100,13 @@ var f_bombs := 1
 ## from the inspector alongside max_f_bombs.
 @export var pulse_knockback_force := 260.0
 @export var pulse_silence_duration := 2.0
+## How long the blast leaves an enemy unable to steer, shoot, or land contact
+## damage — outlasts the knockback itself, which only holds for
+## Enemy.PULSE_KNOCKBACK_HOLD before this takes over.
+@export var pulse_stun_duration := 1.5
+## A little damage, not a kill button — the pulse is crowd control that also
+## chips away at whatever it staggers, not a second bomb.
+@export var pulse_damage := 5
 
 ## Fired whenever the bomb count changes, so the HUD never has to poll for it.
 signal bombs_changed(current: int, max_bombs: int)
@@ -109,7 +124,8 @@ func gain_coin() -> void:
 ## Emergency pulse: spends one bomb, wipes every projectile on screen (same
 ## group-wide sweep game.gd uses on a room change or death — so this clears the
 ## player's own bullets too, not just the enemies'), and staggers every enemy
-## on screen — knocked back and trigger-jammed for pulse_silence_duration.
+## on screen — knocked back, trigger-jammed for pulse_silence_duration, stunned
+## for pulse_stun_duration, and dealt pulse_damage.
 func use_bomb() -> void:
 	if f_bombs <= 0 or _is_dead:
 		return
@@ -124,7 +140,8 @@ func use_bomb() -> void:
 	# the same way bullet.gd only ever asks a body for take_damage.
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if enemy.has_method("pulse_stagger"):
-			enemy.pulse_stagger(global_position, pulse_knockback_force, pulse_silence_duration)
+			enemy.pulse_stagger(global_position, pulse_knockback_force, pulse_silence_duration,
+					pulse_stun_duration, pulse_damage)
 
 	_spawn_pulse()
 
@@ -302,6 +319,7 @@ func _ready() -> void:
 	set_power_level(POWER_LVL)
 	set_speed_lvl(SPEED_LVL)
 	set_firerate_lvl(FIRERATE_LVL)
+	set_reload_speed_lvl(RELOAD_SPEED_LVL)
 
 	# A child's _ready runs before its parent's, so the Loadout has ALREADY
 	# equipped the starting weapon and emitted for it — into nothing, because the
@@ -314,6 +332,7 @@ func set_power_level(lvl: int) -> void:
 	POWER_LVL = clampi(lvl, MIN_STAT_LVL, MAX_STAT_LVL)
 	bullet_damage = roundi(BULLET_DAMAGE_VALUES[POWER_LVL - 1] * STAT_SCALE)
 	_loadout.player_damage = bullet_damage
+	_loadout.player_power_mult = _mult_from_base(float(bullet_damage), BULLET_DAMAGE_VALUES)
 	power_level_changed.emit(POWER_LVL)
 
 
@@ -327,13 +346,40 @@ func set_firerate_lvl(lvl: int) -> void:
 	FIRERATE_LVL = clampi(lvl, MIN_STAT_LVL, MAX_STAT_LVL)
 	fire_rate = FIRE_RATE_VALUES[FIRERATE_LVL - 1] * STAT_SCALE
 	_loadout.player_fire_interval = fire_rate
+	_loadout.player_firerate_mult = _mult_from_base(fire_rate, FIRE_RATE_VALUES)
 	firerate_lvl_changed.emit(FIRERATE_LVL)
+
+
+func set_reload_speed_lvl(lvl: int) -> void:
+	RELOAD_SPEED_LVL = clampi(lvl, MIN_STAT_LVL, MAX_STAT_LVL)
+	RELOAD_SPEED = RELOAD_SPEED_VALUES[RELOAD_SPEED_LVL - 1] * STAT_SCALE
+	_loadout.player_reload_speed = RELOAD_SPEED
+	reload_speed_lvl_changed.emit(RELOAD_SPEED_LVL)
+
+
+## How far a stat has come from level 1, as a factor a picked-up weapon can be
+## scaled by — see WeaponDef.damage_against. STAT_SCALE rides along for free,
+## because `current` has already been multiplied by it and the level-1 entry has
+## not: a tuning profile that halves every stat halves the borrowed guns too.
+##
+## Level 1 is read off the table rather than stored, so retuning the tables is
+## still the only place a stat curve is written down. A table that starts at zero
+## is a broken profile, not a division by zero.
+func _mult_from_base(current: float, values: Array) -> float:
+	if values.is_empty() or is_zero_approx(float(values[0])):
+		return 1.0
+	return current / float(values[0])
 
 
 ## Last device to speak wins. Joypad motion is filtered by deadzone because an
 ## untouched stick still emits events — without the filter a pad sitting on the
 ## desk would take aim back from the mouse every frame.
 func _input(event: InputEvent) -> void:
+	# The on-screen prompts need the same question answered, but for the keyboard
+	# too — see InputPrompt for why the flag below cannot simply be reused. The
+	# Player is where the events already arrive, so it does the telling.
+	InputPrompt.note_event(event)
+
 	if event is InputEventMouseMotion:
 		aiming_with_gamepad = false
 	elif event is InputEventJoypadButton:
@@ -467,7 +513,7 @@ func take_damage(amount: int, type: int = Damage.Type.BLUNT) -> void:
 	_invulnerable_until_msec = Time.get_ticks_msec() + int(invulnerable_time * 1000.0)
 	damaged.emit(amount, type)
 	_flash_hit()
-	AudioManager.play_sfx("gas_escapes")
+	AudioManager.play_sfx("gas_escape")
 	AudioManager.play_sfx("damage_taken_0%d" % [1 if randf() < 0.5 else 2], randf_range(1.3,1.4))
 
 
@@ -651,6 +697,12 @@ func dodge(direction: Vector2) -> void:
 	dodge_timer = 0.0
 	AudioManager.play_sfx("player_grunt_01", randf_range(1.3,1.8))
 
+	# Enemies already deal no damage to a dodging player (take_damage's
+	# is_dodging check); drop the ENEMY bit too so the roll passes through their
+	# CharacterBody2D instead of just no-oping the contact damage while still
+	# getting shoved or blocked by it.
+	collision_mask &= ~CollisionLayers.ENEMY
+
 	if direction == Vector2.DOWN:
 		last_direction = "down"
 		sprite.play("dodge_down")
@@ -676,6 +728,10 @@ func dodge(direction: Vector2) -> void:
 	await sprite.animation_finished
 	is_dodging = false
 	can_move = true
+	# die() may have zeroed collision_mask entirely while this was awaiting the
+	# animation; leave that alone rather than punching ENEMY back into it.
+	if not _is_dead:
+		collision_mask |= CollisionLayers.ENEMY
 
 
 func return_gun() -> void:

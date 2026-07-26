@@ -377,37 +377,37 @@ position = Vector2(-144.5, 55.5)
 scale = Vector2(0.75, 0.75)
 texture = ExtResource("7_eq5yw")
 
-[node name="SpeedLv1" type="Sprite2D" parent="UIMain/StatContainers" unique_id=350857520]
+[node name="ReloadLv1" type="Sprite2D" parent="UIMain/StatContainers" unique_id=350857520]
 position = Vector2(-201.5, 79.5)
 scale = Vector2(0.75, 0.75)
 texture = ExtResource("8_xwudc")
 
-[node name="SpeedLv2" type="Sprite2D" parent="UIMain/StatContainers" unique_id=847970837]
+[node name="ReloadLv2" type="Sprite2D" parent="UIMain/StatContainers" unique_id=847970837]
 position = Vector2(-192, 79.5)
 scale = Vector2(0.75, 0.75)
 texture = ExtResource("8_xwudc")
 
-[node name="SpeedLv3" type="Sprite2D" parent="UIMain/StatContainers" unique_id=841097228]
+[node name="ReloadLv3" type="Sprite2D" parent="UIMain/StatContainers" unique_id=841097228]
 position = Vector2(-182.5, 79.5)
 scale = Vector2(0.75, 0.75)
 texture = ExtResource("8_xwudc")
 
-[node name="SpeedLv4" type="Sprite2D" parent="UIMain/StatContainers" unique_id=1171963034]
+[node name="ReloadLv4" type="Sprite2D" parent="UIMain/StatContainers" unique_id=1171963034]
 position = Vector2(-173, 79.5)
 scale = Vector2(0.75, 0.75)
 texture = ExtResource("8_xwudc")
 
-[node name="SpeedLv5" type="Sprite2D" parent="UIMain/StatContainers" unique_id=1584771718]
+[node name="ReloadLv5" type="Sprite2D" parent="UIMain/StatContainers" unique_id=1584771718]
 position = Vector2(-163.5, 79.5)
 scale = Vector2(0.75, 0.75)
 texture = ExtResource("8_xwudc")
 
-[node name="SpeedLv6" type="Sprite2D" parent="UIMain/StatContainers" unique_id=268985838]
+[node name="ReloadLv6" type="Sprite2D" parent="UIMain/StatContainers" unique_id=268985838]
 position = Vector2(-154, 79.5)
 scale = Vector2(0.75, 0.75)
 texture = ExtResource("8_xwudc")
 
-[node name="SpeedLv7" type="Sprite2D" parent="UIMain/StatContainers" unique_id=1894585656]
+[node name="ReloadLv7" type="Sprite2D" parent="UIMain/StatContainers" unique_id=1894585656]
 position = Vector2(-144.5, 79.5)
 scale = Vector2(0.75, 0.75)
 texture = ExtResource("8_xwudc")

@@ -65,8 +65,12 @@ func _ready() -> void:
 
 	if stock.is_empty():
 		push_warning("ShopDebug: nothing in stock — is there a &\"shop\" rule in the DropConfig?")
-	print("ShopDebug: %d coins, %d on the shelf. [E]/pad-X talk, arrows browse, [Backspace]/pad-Y back."
-			% [_player.coins, stock.count()])
+	# Keys read out of the input map rather than written down again — this line
+	# had rotted into naming a button that no longer exists once before.
+	print("ShopDebug: %d coins, %d on the shelf. %s/%s talk, arrows browse, %s/%s back."
+			% [_player.coins, stock.count(),
+			InputPrompt.glyph_for("interact", false), InputPrompt.glyph_for("interact", true),
+			InputPrompt.glyph_for("back", false), InputPrompt.glyph_for("back", true)])
 
 
 func _on_offer_purchased(offer: ShopOffer) -> void:

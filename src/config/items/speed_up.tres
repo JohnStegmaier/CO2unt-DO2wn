@@ -2,17 +2,17 @@
 
 [ext_resource type="Script" uid="uid://emnui7uyddjn" path="res://src/systems/loot/item_effect.gd" id="2_e51wo"]
 [ext_resource type="Script" uid="uid://dwgl5qnepcp10" path="res://src/systems/loot/effects/raise_stat_level.gd" id="3_26tn5"]
-[ext_resource type="Texture2D" uid="uid://cwn2oh3rn5447" path="res://assets/sprites/items/speed-up.png" id="4_oop14"]
+[ext_resource type="Texture2D" uid="uid://2t8te5pjtbqw" path="res://assets/sprites/items/speed-up.png" id="4_oop14"]
 [ext_resource type="Script" uid="uid://dmxi7afktl2qr" path="res://src/systems/loot/item_def.gd" id="5_otc5i"]
 
 [sub_resource type="Resource" id="Resource_31y42"]
 script = ExtResource("3_26tn5")
-stat = 1
+stat = 3
 
 [resource]
 script = ExtResource("5_otc5i")
 id = &"speed_up"
-display_name = "Speed Upgrade"
+display_name = "Reload Upgrade"
 icon = ExtResource("4_oop14")
 icon_scale = 0.75
 pickup_sound = &"money_jingle_1"

@@ -31,6 +31,14 @@ const _NAMES: Array[String] = ["power", "speed", "fire rate", "reload speed"]
 func apply(target: Node) -> void:
 	var setter: StringName = _SETTERS[stat]
 	if not target.has_method(setter):
+		# Loud, unlike grant_bomb's identical guard. A bomb that fails to land is
+		# a counter that did not move; this is a permanent upgrade, and
+		# item_pickup.gd frees the pickup and plays the collection jingle whether
+		# or not anything happened — so a silent return here is indistinguishable
+		# in play from a stat that levelled. That is the whole reason this was
+		# hard to pin down.
+		push_warning("RaiseStatLevel: %s has no %s — %s went nowhere."
+				% [target.name, setter, describe()])
 		return
 	# The setter clamps to MIN_STAT_LVL/MAX_STAT_LVL and emits its own changed
 	# signal, so a pickup at max level is wasted rather than an error — the same

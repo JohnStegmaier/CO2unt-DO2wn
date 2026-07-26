@@ -375,6 +375,11 @@ func _mult_from_base(current: float, values: Array) -> float:
 ## untouched stick still emits events — without the filter a pad sitting on the
 ## desk would take aim back from the mouse every frame.
 func _input(event: InputEvent) -> void:
+	# The on-screen prompts need the same question answered, but for the keyboard
+	# too — see InputPrompt for why the flag below cannot simply be reused. The
+	# Player is where the events already arrive, so it does the telling.
+	InputPrompt.note_event(event)
+
 	if event is InputEventMouseMotion:
 		aiming_with_gamepad = false
 	elif event is InputEventJoypadButton:

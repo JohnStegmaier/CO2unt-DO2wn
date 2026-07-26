@@ -95,6 +95,15 @@ const ARRIVE_SFX := "elevator_ding"
 ## Pixels per second the shaft lights streak past. Faster reads as deeper.
 @export var shaft_speed: float = 620.0
 
+## How much shaft is left showing down each edge of the screen.
+##
+## The car's front wall runs out from the plate to here and stops, so the frame reads as
+## the inside of a box rather than a door floating in a lift shaft — but it stops short
+## rather than reaching the edge, because those two strips of streaking light are the
+## only thing on screen that says the car is moving. Sealing them off would make the
+## descent a still image with a sound effect over it.
+@export var shaft_gap: int = 64
+
 ## How much the 16x32 rider is blown up. An integer for the same reason
 ## [constant PLATE_SCALE] is one.
 ##
@@ -117,6 +126,8 @@ var _travelling: bool = false
 @onready var _leaf_left: Sprite2D = $Screen/leaf_left
 @onready var _leaf_right: Sprite2D = $Screen/leaf_right
 @onready var _rider: AnimatedSprite2D = $Screen/Rider
+@onready var _car_wall: ColorRect = $Screen/car_wall
+@onready var _car_deck: ColorRect = $Screen/car_deck
 @onready var _label: Label = $Screen/label
 
 
@@ -124,6 +135,7 @@ func _ready() -> void:
 	visible = false
 	_screen.modulate.a = 0.0
 	_plate.texture = PLATE_BLANK
+	_place_car_shell()
 	_place_rider()
 	# Resting state is SHUT. The overlay is only ever faded up on a car the lobby has
 	# just sealed, so this is the position it has to be in before anyone can see it.
@@ -269,6 +281,34 @@ func _play_sfx(sound_name: String) -> void:
 ## A pixel of the plate, in the frame the overlay is drawn in.
 func _plate_to_screen(plate_pixel: Vector2i) -> Vector2:
 	return PLATE_ORIGIN + Vector2(plate_pixel) * PLATE_SCALE
+
+
+## Build the box the rider is standing in: the car's front wall out to within
+## [member shaft_gap] of each edge, and its floor from the doors forward.
+##
+## Flat colour rather than a crop of the plate, and that is not a shortcut: the plate's
+## surround is one solid value (#696A6A, sampled out of the art), so a ColorRect of it IS
+## that texture continued. Nothing to tile, no seam to line up, and it cannot fall out of
+## register with the frame it is extending.
+##
+## One wall behind the whole plate rather than two pieces either side of it, because the
+## front of a lift is a continuous surface with a hole in it — panelling only the sides
+## leaves the strip above and below the doors showing shaft, which reads as the car being
+## open to the sky. What it deliberately does NOT carry across is the plate's button panel
+## and floor readout: those are drawn once, on the plate, where they belong.
+##
+## The deck starts on the door's own sill, which puts the plate's bottom apron under the
+## floor rather than on top of it — the same trick the lobby plays with its floorboards,
+## and the reason the floor line lands in the same screen row on both sides of the cut.
+func _place_car_shell() -> void:
+	var view: Vector2 = get_viewport().get_visible_rect().size
+	var span: float = maxf(view.x - shaft_gap * 2.0, 0.0)
+	var sill: float = _plate_to_screen(Vector2i(0, DOOR_RECT.end.y)).y
+
+	_car_wall.position = Vector2(shaft_gap, 0.0)
+	_car_wall.size = Vector2(span, sill)
+	_car_deck.position = Vector2(shaft_gap, sill)
+	_car_deck.size = Vector2(span, maxf(view.y - sill, 0.0))
 
 
 ## Stand the player in the car, in front of the doors.

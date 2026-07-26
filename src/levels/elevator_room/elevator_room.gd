@@ -68,7 +68,14 @@ const CLAMP := Rect2(9, 0, 424, 240)
 
 ## Room-local rect anything on foot may stand in. A shallow strip at the bottom of
 ## a tall wall: that ratio is what makes the room read side-on rather than tilted.
-const LOBBY_FLOOR := Rect2(49, 190, 343, 50)
+##
+## Its top edge is the FLOOR LINE, and the floor line is the door's own sill — the
+## bottom of the opening, at 196. The lift is built into the wall rather than parked
+## against it, so the two have to be the same line: the wall meets the floor exactly
+## where the doors stop. The scene draws the Floor group AFTER the Alcove for the other
+## half of that, burying the plate's bottom apron under the floorboards instead of
+## letting it stand on them.
+const LOBBY_FLOOR := Rect2(49, 196, 343, 44)
 
 ## Nearest and furthest the player's origin ever gets, in room-local y. The
 ## walkable strip bottoms out against the near lip at 233, and the far end is

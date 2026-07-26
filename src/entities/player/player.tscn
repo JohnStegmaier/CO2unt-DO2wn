@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://bdiv4styvv2vm" path="res://src/entities/player/player.gd" id="1_lkv7d"]
 [ext_resource type="Script" uid="uid://ccalvfh5rit5y" path="res://src/entities/player/player_camera.gd" id="1_pcam0"]
-[ext_resource type="Script" path="res://src/entities/player/reload_indicator.gd" id="1_reload"]
+[ext_resource type="Script" uid="uid://cyixlj2dyq4hy" path="res://src/entities/player/reload_indicator.gd" id="1_reload"]
 [ext_resource type="Texture2D" uid="uid://dvbkwi18togod" path="res://assets/sprites/characters/player/Dodge_Forward/player_roll1.png" id="2_p2qdy"]
 [ext_resource type="PackedScene" uid="uid://ckinnty100svf" path="res://src/entities/gun_stuff/bullet.tscn" id="2_t8d2k"]
 [ext_resource type="Texture2D" uid="uid://goqhekktgk42" path="res://assets/sprites/characters/player/Dodge_Forward/player_roll2.png" id="3_lqdhu"]
@@ -32,10 +32,19 @@
 [ext_resource type="Texture2D" uid="uid://cn4ca0ogket3p" path="res://assets/sprites/characters/player/Dodge_Right/player_roll_right7.png" id="18_i78gy"]
 [ext_resource type="Texture2D" uid="uid://dssy8p6yijenw" path="res://assets/sprites/characters/player/Idle_Right/Player_Idle_Right3.png" id="18_t4js2"]
 [ext_resource type="Texture2D" uid="uid://ditvp06ss0r1e" path="res://assets/sprites/characters/player/Idle_Right/Player_Idle_Right4.png" id="19_4tw7w"]
+[ext_resource type="Texture2D" uid="uid://c0peb5dk0ul0y" path="res://assets/sprites/characters/player/Dodge_up/player_dodge_up1.png" id="19_l2t0n"]
 [ext_resource type="Texture2D" uid="uid://bktpfpdeun28b" path="res://assets/sprites/characters/player/Walk/Player_Walk_Right4.png" id="19_ngh1c"]
 [ext_resource type="Texture2D" uid="uid://0w872j0efybp" path="res://assets/sprites/characters/player/Walk/Player_Walk_Right5.png" id="20_amj0e"]
+[ext_resource type="Texture2D" uid="uid://cwk4c8ehmw417" path="res://assets/sprites/characters/player/Dodge_up/player_dodge_up2.png" id="20_orc7i"]
 [ext_resource type="Texture2D" uid="uid://docg4st27eaqn" path="res://assets/sprites/characters/player/Walk/Player_Walk_Right6.png" id="21_33dyk"]
+[ext_resource type="Texture2D" uid="uid://bpl1jii06m7fn" path="res://assets/sprites/characters/player/Dodge_up/player_dodge_up3.png" id="21_40k2b"]
+[ext_resource type="Texture2D" uid="uid://dyhbgdp225vyr" path="res://assets/sprites/characters/player/Dodge_up/player_dodge_up4.png" id="22_3j5rn"]
+[ext_resource type="Texture2D" uid="uid://bm8emsipvqm1k" path="res://assets/sprites/characters/player/Dodge_up/player_dodge_up5.png" id="23_3lbv2"]
+[ext_resource type="Texture2D" uid="uid://ovwlos2eqvdb" path="res://assets/sprites/characters/player/Dodge_up/player_dodge_up6.png" id="24_mj36a"]
+[ext_resource type="Texture2D" uid="uid://bpejtvmvqstin" path="res://assets/sprites/characters/player/Dodge_up/player_dodge_up7.png" id="25_vnd3d"]
+[ext_resource type="Texture2D" uid="uid://ir5qcbs4413f" path="res://assets/sprites/characters/player/Dodge_up/player_dodge_up8.png" id="26_oi1ut"]
 [ext_resource type="Texture2D" uid="uid://d1cp0iic1gbng" path="res://assets/sprites/characters/player/Walk/walk_down/Walk_down1.png" id="27_i78gy"]
+[ext_resource type="Texture2D" uid="uid://y600vkm6vdj" path="res://assets/sprites/characters/player/Dodge_up/player_dodge_up9.png" id="27_s1j05"]
 [ext_resource type="Texture2D" uid="uid://cehfgfktfao8y" path="res://assets/sprites/characters/player/Walk/walk_down/Walk_down2.png" id="28_ts1rd"]
 [ext_resource type="Texture2D" uid="uid://d2dwvn0vrvu13" path="res://assets/sprites/characters/player/Walk/walk_down/Walk_down3.png" id="29_2a6xp"]
 [ext_resource type="Texture2D" uid="uid://4p30h6kjavrh" path="res://assets/sprites/characters/player/Walk/walk_down/Walk_down4.png" id="30_pg6a0"]
@@ -104,6 +113,38 @@ animations = [{
 }],
 "loop": 0,
 "name": &"dodge_right",
+"speed": 13.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("19_l2t0n")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_orc7i")
+}, {
+"duration": 1.0,
+"texture": ExtResource("21_40k2b")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_3j5rn")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_3lbv2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_mj36a")
+}, {
+"duration": 1.0,
+"texture": ExtResource("25_vnd3d")
+}, {
+"duration": 1.0,
+"texture": ExtResource("26_oi1ut")
+}, {
+"duration": 1.0,
+"texture": ExtResource("27_s1j05")
+}],
+"loop": 0,
+"name": &"dodge_up",
 "speed": 13.0
 }, {
 "frames": [{
@@ -261,12 +302,12 @@ shape = SubResource("CapsuleShape2D_5ixxa")
 texture_filter = 1
 position = Vector2(0, -6)
 sprite_frames = SubResource("SpriteFrames_nn08x")
-animation = &"walk_down"
+animation = &"dodge_up"
 
 [node name="ReloadIndicator" type="Node2D" parent="." unique_id=2136498205]
+visible = false
 position = Vector2(0, -28)
 script = ExtResource("1_reload")
-visible = false
 
 [node name="BigGunBTransparent" type="Sprite2D" parent="." unique_id=1371732958]
 modulate = Color(1.8764027, 1.111197, 1.5168338, 1)

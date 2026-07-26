@@ -2,6 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://dayrrci4olhln" path="res://src/ui/hud/o2_timer.tscn" id="2_50hus"]
 [ext_resource type="PackedScene" path="res://src/ui/hud/ammo_counter.tscn" id="3_ammo"]
+[ext_resource type="PackedScene" path="res://src/ui/minimap/minimap.tscn" id="4_minimap"]
 
 [node name="Ui" type="Node2D" unique_id=1505368263]
 
@@ -13,5 +14,7 @@ scale = Vector2(1.2, 1.2)
 
 [node name="AmmoCounter" parent="CanvasLayer" unique_id=164052633 instance=ExtResource("3_ammo")]
 position = Vector2(600, 330)
+
+[node name="Minimap" parent="CanvasLayer" instance=ExtResource("4_minimap")]
 
 [node name="Timer" type="Timer" parent="CanvasLayer" unique_id=755193890]

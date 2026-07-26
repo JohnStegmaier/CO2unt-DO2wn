@@ -68,6 +68,7 @@ var _rng := RandomNumberGenerator.new()
 @onready var _hud: CanvasLayer = $Ui/CanvasLayer
 @onready var _o2_timer: O2Timer = $Ui/CanvasLayer/O2Timer
 @onready var _ammo_counter: AmmoCounter = $Ui/CanvasLayer/AmmoCounter
+@onready var _minimap: Minimap = $Ui/CanvasLayer/Minimap
 ## Deliberately under the camera rather than beside the HUD: the vignette is
 ## world content so the player can out-rank it on z_index and stay lit inside the
 ## closing dark. See death_overlay.gd.
@@ -101,6 +102,9 @@ func _ready() -> void:
 	_o2_timer.air_restored.connect(_on_air_restored)
 	_o2_timer.air_critical_changed.connect(_on_air_critical_changed)
 	_o2_timer.suffocation_changed.connect(_death_overlay.set_vignette_progress)
+	# The letterbox slides down over the corner the map sits in, so the map gets
+	# out of its way rather than being drawn under it.
+	_o2_timer.air_critical_changed.connect(_minimap.set_dimmed)
 	_o2_timer.suffocated.connect(_on_player_died)
 
 	_player.ammo_changed.connect(_ammo_counter.set_ammo)
@@ -205,6 +209,10 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 	_current_room.door_entered.connect(_on_door_entered)
 	_current_room.elevator_entered.connect(_on_elevator_entered)
 	_current_coord = coord
+	# Before the slide, not after: visited and _current_coord are both already
+	# set, and a map that waited for the camera to land would be the one thing on
+	# screen still claiming the player is in the room behind them.
+	_minimap.set_current_room(coord)
 
 	var landing: Vector2 = _current_room.default_spawn_position()
 	if arrive_side >= 0:
@@ -361,6 +369,9 @@ func _on_floor_advanced() -> void:
 ## grid, so there is no adjacency for a camera pan to travel across.
 func _clear_floor() -> void:
 	get_tree().call_group("projectiles", "queue_free")
+	# Above the early return deliberately: the map has to let go of the plan on
+	# every path, or the model keeps a whole discarded floor alive behind it.
+	_minimap.show_floor(null)
 	if _current_room == null:
 		return
 	_current_room.door_entered.disconnect(_on_door_entered)
@@ -481,6 +492,9 @@ func _begin_floor(floor_number: int) -> void:
 	_floor_number = floor_number
 	var floor_seed: int = FloorGenerator.floor_seed_for(run_seed, floor_number)
 	_plan = FloorGenerator.generate(floor_config, floor_number, floor_seed)
+	# Before the awaited _enter_room below, or the spawn room announces itself to
+	# a map that has no floor to place it on.
+	_minimap.show_floor(_plan)
 
 	# Enemy placement shares the floor's seed, so replaying a seed puts the bad
 	# guys back too, not just the walls. Only along the same route, mind: rooms

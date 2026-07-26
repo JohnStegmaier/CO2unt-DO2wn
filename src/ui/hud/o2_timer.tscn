@@ -476,9 +476,9 @@ texture = ExtResource("57_h310o")
 [node name="Label" type="Label" parent="." unique_id=5773688]
 modulate = Color(0.7058824, 0.13333334, 0.13333334, 1)
 offset_left = 199.0
-offset_top = 8.0
+offset_top = 4.0
 offset_right = 260.06
-offset_bottom = 39.0
+offset_bottom = 35.0
 theme_override_font_sizes/font_size = 22
 text = ":)"
 horizontal_alignment = 1

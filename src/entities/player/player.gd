@@ -56,6 +56,46 @@ var f_bombs := 1
 ## Fired whenever the bomb count changes, so the HUD never has to poll for it.
 signal bombs_changed(current: int, max_bombs: int)
 
+
+## Emergency pulse: spends one bomb and wipes every projectile on screen, same
+## group-wide sweep game.gd uses on a room change or death — so this clears the
+## player's own bullets too, not just the enemies'.
+func use_bomb() -> void:
+	if f_bombs <= 0 or _is_dead:
+		return
+	f_bombs -= 1
+	bombs_changed.emit(f_bombs, max_f_bombs)
+	get_tree().call_group("projectiles", "queue_free")
+	_spawn_pulse()
+
+
+## A quick expanding ring so the wipe reads as an event rather than bullets
+## silently vanishing. Built from a radial gradient rather than a new asset,
+## same trick as the bullet glow and the pickup's drop shadow.
+func _spawn_pulse() -> void:
+	var gradient := Gradient.new()
+	gradient.colors = PackedColorArray([Color(0.4, 0.9, 1.0, 0.6), Color(0.4, 0.9, 1.0, 0.0)])
+	var texture := GradientTexture2D.new()
+	texture.gradient = gradient
+	texture.fill = GradientTexture2D.FILL_RADIAL
+	texture.fill_from = Vector2(0.5, 0.5)
+	texture.fill_to = Vector2(1.0, 0.5)
+	texture.width = 128
+	texture.height = 128
+
+	var pulse := Sprite2D.new()
+	pulse.texture = texture
+	pulse.z_index = 5
+	pulse.scale = Vector2(0.1, 0.1)
+	get_tree().current_scene.add_child(pulse)
+	pulse.global_position = global_position
+
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(pulse, "scale", Vector2(4.0, 4.0), 0.4).set_ease(Tween.EASE_OUT)
+	tween.tween_property(pulse, "modulate:a", 0.0, 0.4).set_ease(Tween.EASE_OUT)
+	tween.chain().tween_callback(pulse.queue_free)
+
 @onready var sprite = $AnimatedSprite2D
 @onready var gun: Sprite2D = $BigGunBTransparent
 @onready var _reload_indicator: Label = $ReloadIndicator
@@ -256,6 +296,9 @@ func _physics_process(delta: float) -> void:
 			and ammo < magazine_size:
 		reload()
 
+	if Input.is_action_just_pressed("bomb"):
+		use_bomb()
+
 
 ## Take a hit. Damage type is passed straight through — what blunt and piercing
 ## actually cost is the O2 timer's business, not ours.
@@ -318,6 +361,14 @@ func take_damage(amount: int, type: int = Damage.Type.BLUNT) -> void:
 ## calls take_damage — the pickup does not need to know it is a Player.
 func heal(seconds: float) -> void:
 	healed.emit(seconds)
+
+
+## Called by bomb_pickup.gd on contact. Clamped rather than ignored past the
+## cap, same as gain_seconds clamping oxygen to a full tank — a pickup at max
+## bombs is just wasted, not an error.
+func gain_bomb() -> void:
+	f_bombs = mini(f_bombs + 1, max_f_bombs)
+	bombs_changed.emit(f_bombs, max_f_bombs)
 
 
 ## Out of air. Hand over control and play out.

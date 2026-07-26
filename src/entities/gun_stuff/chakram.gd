@@ -29,10 +29,15 @@ func _on_armed() -> void:
 func _on_body_entered(body: Node2D) -> void:
 	if _passes_through(body):
 		return
+
 	var id := body.get_instance_id()
 	if _already_hit.has(id):
 		return
 	_already_hit[id] = true
-	# Not freed on contact — that is the whole point of it. It stops when it
-	# leaves the screen or its lifetime runs out, same as a bullet that missed.
-	_damage(body)
+
+	# Piercing means piercing things that can BLEED. Anything that cannot take
+	# damage is scenery — a wall — and a blade that sails through a wall and off
+	# into the void reads as one that went nowhere. This is what stops it, and it
+	# is why _damage reports whether it landed rather than returning nothing.
+	if not _damage(body):
+		queue_free()

@@ -1,0 +1,64 @@
+[gd_resource type="SpriteFrames" load_steps=13 format=3]
+
+[ext_resource type="Texture2D" uid="uid://bf4l3hksilt3c" path="res://assets/sprites/characters/bad_guy/licker/licker-facing-right1.png" id="1_licker_facing_right1"]
+[ext_resource type="Texture2D" uid="uid://c2vhkqepb8hwr" path="res://assets/sprites/characters/bad_guy/licker/licker-facing-right2.png" id="2_licker_facing_right2"]
+[ext_resource type="Texture2D" uid="uid://ullq48y71s2b" path="res://assets/sprites/characters/bad_guy/licker/licker-facing-right3.png" id="3_licker_facing_right3"]
+[ext_resource type="Texture2D" uid="uid://cwpik0768tln4" path="res://assets/sprites/characters/bad_guy/licker/licker-facing-right4.png" id="4_licker_facing_right4"]
+[ext_resource type="Texture2D" uid="uid://w2s6ovw8ya2v" path="res://assets/sprites/characters/bad_guy/licker/licker-facing-right5.png" id="5_licker_facing_right5"]
+[ext_resource type="Texture2D" uid="uid://iv5g6dy5dqus" path="res://assets/sprites/characters/bad_guy/licker/licker-facing-right6.png" id="6_licker_facing_right6"]
+[ext_resource type="Texture2D" uid="uid://dm6jujdiu8av4" path="res://assets/sprites/characters/bad_guy/licker/licker-facing-left1.png" id="7_licker_facing_left1"]
+[ext_resource type="Texture2D" uid="uid://cld47ku8q6fw4" path="res://assets/sprites/characters/bad_guy/licker/licker-facing-left2.png" id="8_licker_facing_left2"]
+[ext_resource type="Texture2D" uid="uid://csvsgl41jnm05" path="res://assets/sprites/characters/bad_guy/licker/licker-facing-left3.png" id="9_licker_facing_left3"]
+[ext_resource type="Texture2D" uid="uid://c8s3f0746gty6" path="res://assets/sprites/characters/bad_guy/licker/licker-facing-left4.png" id="10_licker_facing_left4"]
+[ext_resource type="Texture2D" uid="uid://5f70hif7oiyq" path="res://assets/sprites/characters/bad_guy/licker/licker-facing-left5.png" id="11_licker_facing_left5"]
+[ext_resource type="Texture2D" uid="uid://dtdhf1gvnvv5u" path="res://assets/sprites/characters/bad_guy/licker/licker-facing-left6.png" id="12_licker_facing_left6"]
+
+[resource]
+animations = [
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_licker_facing_right1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_licker_facing_right2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_licker_facing_right3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_licker_facing_right4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_licker_facing_right5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_licker_facing_right6")
+}],
+"loop": true,
+"name": &"move_right",
+"speed": 10.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_licker_facing_left1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_licker_facing_left2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_licker_facing_left3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_licker_facing_left4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_licker_facing_left5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_licker_facing_left6")
+}],
+"loop": true,
+"name": &"move_left",
+"speed": 10.0
+}]

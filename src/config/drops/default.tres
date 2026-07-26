@@ -40,13 +40,28 @@ entries = Array[ExtResource("3_43nf4")]([SubResource("Resource_coin"), SubResour
 
 [sub_resource type="Resource" id="Resource_lpvnb"]
 script = ExtResource("1_pb46o")
-source = &"grunt"
+source = &"booger"
 tables = Array[ExtResource("2_oq7eo")]([SubResource("Resource_26s0q")])
 
 [sub_resource type="Resource" id="Resource_hm280"]
 script = ExtResource("1_pb46o")
-source = &"skirmisher"
+source = &"guard"
 tables = Array[ExtResource("2_oq7eo")]([SubResource("Resource_26s0q")])
+
+[sub_resource type="Resource" id="Resource_licker_rule"]
+script = ExtResource("1_pb46o")
+source = &"licker"
+tables = Array[ExtResource("2_oq7eo")]([SubResource("Resource_26s0q")])
+
+[sub_resource type="Resource" id="Resource_turret_table"]
+script = ExtResource("2_oq7eo")
+rolls = 2
+entries = Array[ExtResource("3_43nf4")]([SubResource("Resource_coin"), SubResource("Resource_1fs3a"), SubResource("Resource_gpm7c"), SubResource("Resource_3hph2")])
+
+[sub_resource type="Resource" id="Resource_turret_rule"]
+script = ExtResource("1_pb46o")
+source = &"turret"
+tables = Array[ExtResource("2_oq7eo")]([SubResource("Resource_turret_table")])
 
 [sub_resource type="Resource" id="Resource_wdb8a"]
 script = ExtResource("1_pb46o")
@@ -145,4 +160,4 @@ tables = Array[ExtResource("2_oq7eo")]([SubResource("Resource_chest_upgrades"), 
 
 [resource]
 script = ExtResource("6_u5wx8")
-rules = Array[ExtResource("1_pb46o")]([SubResource("Resource_lpvnb"), SubResource("Resource_hm280"), SubResource("Resource_wdb8a"), SubResource("Resource_crate_rule"), SubResource("Resource_barrel_rule"), SubResource("Resource_shop_rule"), SubResource("Resource_chest_rule")])
+rules = Array[ExtResource("1_pb46o")]([SubResource("Resource_lpvnb"), SubResource("Resource_hm280"), SubResource("Resource_licker_rule"), SubResource("Resource_turret_rule"), SubResource("Resource_wdb8a"), SubResource("Resource_crate_rule"), SubResource("Resource_barrel_rule"), SubResource("Resource_shop_rule"), SubResource("Resource_chest_rule")])

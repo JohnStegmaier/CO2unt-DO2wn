@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="EnemyDef" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://src/systems/enemies/enemy_def.gd" id="1_def"]
+[ext_resource type="Script" path="res://src/systems/enemies/turret_behaviour.gd" id="2_turret"]
+[ext_resource type="SpriteFrames" path="res://src/config/enemies/frames/turret_frames.tres" id="3_frames"]
+[ext_resource type="PackedScene" uid="uid://ckinnty100svf" path="res://src/entities/gun_stuff/bullet.tscn" id="4_bullet"]
+
+[sub_resource type="Resource" id="Resource_turret_sweep"]
+script = ExtResource("2_turret")
+step_degrees = 45.0
+aim_time = 0.7
+turn_time = 0.35
+respects_cover = false
+fire_range = 400.0
+
+[resource]
+script = ExtResource("1_def")
+id = &"turret"
+behaviour = SubResource("Resource_turret_sweep")
+weight = 0.8
+loot_source = &"turret"
+boss_eligible = false
+frames = ExtResource("3_frames")
+facing = 3
+facing_offset_degrees = 0.0
+sprite_offset = Vector2(0, -4)
+sprite_scale = 0.75
+frame_rate = 1.0
+body_radius = 6.0
+body_height = 12.0
+max_hp = 120
+contact_damage = 4
+break_damage = 0
+bullet_scene = ExtResource("4_bullet")
+bullet_damage = 7
+bullet_damage_type = 0
+bullet_speed = 200.0
+fire_interval = 0.3
+aim_spread = 0.05
+muzzle_offset = 12.0
+spawn_grace = 1.2
+placement = 1

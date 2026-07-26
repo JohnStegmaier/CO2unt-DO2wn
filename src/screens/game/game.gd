@@ -19,6 +19,9 @@ const VICTORY_SCENE := "res://src/screens/victory/victory.tscn"
 ## Where a profile's drop configs live, so `[drops] config = "economy"` names a
 ## file without spelling out a path.
 const DROP_CONFIG_DIR := "res://src/config/drops"
+## And where a profile's bestiaries live, so `[enemies] set = "zoo"` names a file
+## without spelling out a path.
+const ENEMY_SET_DIR := "res://src/config/enemies"
 ## Any odd constant would do — this only has to make the loot stream differ from
 ## the placement stream. Same golden-ratio word FloorGenerator.floor_seed_for
 ## uses, for the same reason: it spreads neighbouring seeds apart.
@@ -43,11 +46,18 @@ const LOOT_CLEARANCE := 6.0
 @export var transition_ease: Tween.EaseType = Tween.EASE_OUT
 
 @export_group("Enemies")
+## The run's whole bestiary: which kinds of bad guy exist, how often each turns
+## up, and everything about how they fight. Swap the resource and the game fields
+## a different roster with no code change — see docs/ENEMIES.md. A profile can
+## override which one is loaded without editing this scene; see
+## [method _apply_enemy_overrides].
+##
+## This replaced a preloaded enemy scene and a single skirmisher_chance coin
+## flip. Two archetypes could be a chance; four cannot, because a set of chances
+## that has to sum to one is a thing you retype every time you add a row.
+@export var enemy_set: EnemySet
 @export var enemies_min: int = 1
 @export var enemies_max: int = 6
-## Roughly one in ten hangs back and snipes. Deliberately lopsided — a room of
-## all skirmishers is a shooting gallery, a room of all chasers is a scrum.
-@export_range(0.0, 1.0) var skirmisher_chance: float = 0.1
 
 @export_group("Bosses")
 ## How many bad guys a boss room holds. One by default: a boss is a thing you
@@ -257,6 +267,7 @@ func _ready() -> void:
 		boss_enemies_max = 0
 	run_seed = GameConfig.get_value("floor", "run_seed", run_seed)
 	_apply_drop_overrides()
+	_apply_enemy_overrides()
 
 	_rng.randomize()
 	if run_seed == 0:
@@ -788,32 +799,96 @@ func _populate(data: RoomData) -> bool:
 			_clear_boss_gate()
 		return false
 
-	var player_local: Vector2 = _current_room.to_local(_player.global_position)
-	var spots := EnemyPlacement.points(Room.FLOOR, data.enemies_remaining,
-			player_local, _current_room.open_door_landings(), _rng, _obstacle_field)
+	if enemy_set == null or enemy_set.is_empty():
+		# Same reasoning as the zero-count branch above: a room that stocks
+		# nothing must not seal itself, and a boss room that stocks nothing is a
+		# boss room that is already beaten.
+		push_error("Game: no enemy_set, or every def in it has weight 0")
+		data.enemies_remaining = 0
+		if is_boss:
+			_clear_boss_gate()
+		return false
 
-	for spot in spots:
+	var player_local: Vector2 = _current_room.to_local(_player.global_position)
+
+	# Picked before anything is placed, and all of them at once, because how many
+	# want a wall decides how the floor is divided between the two placements.
+	#
+	# The draw order below — every def, then the roamers' spots, then the
+	# fixtures' — is fixed and load-bearing. _rng is one stream drawn in
+	# room-visit order, so reordering these moves every fight after this one in a
+	# fixed_seed run.
+	var picks: Array[EnemyDef] = []
+	for _i in data.enemies_remaining:
+		var def: EnemyDef = enemy_set.pick(_rng, is_boss)
+		if def != null:
+			picks.append(def)
+
+	# Only reachable in a boss room whose bestiary has nothing promotable, which
+	# tools/check_enemies.gd fails on — but if it ever ships, an unopenable gate
+	# on floor 1 is an unfinishable run, so it is handled rather than asserted.
+	if picks.is_empty():
+		push_error("Game: enemy_set has no boss-eligible def, so this room cannot be stocked")
+		data.enemies_remaining = 0
+		if is_boss:
+			_clear_boss_gate()
+		return false
+	data.enemies_remaining = picks.size()
+
+	var landings := _current_room.open_door_landings()
+	var fixtures := EnemySet.fixture_count(picks)
+	var open_spots := EnemyPlacement.points(Room.FLOOR, picks.size() - fixtures,
+			player_local, landings, _rng, _obstacle_field)
+	var wall_spots := EnemyPlacement.wall_points(Room.FLOOR, fixtures,
+			player_local, landings, _rng, _obstacle_field)
+
+	for def in picks:
 		var enemy: Enemy = ENEMY_SCENE.instantiate()
-		# Set before it enters the tree, so _ready() sees the finished article —
-		# the dodge sensor is only armed for skirmishers, and Health copies its
-		# maximum into its current value.
-		enemy.behaviour = Enemy.Behaviour.SKIRMISHER if _rng.randf() < skirmisher_chance \
-				else Enemy.Behaviour.CHASER
-		enemy.loot_source = _loot_source_for(enemy.behaviour, is_boss)
+		# Everything here happens before it enters the tree, which is the window
+		# configure() and make_boss() both require: the collider is sized from the
+		# def and Health copies its maximum into its current value in its own
+		# _ready(), so both have to be right by then.
+		enemy.configure(def)
 		if is_boss:
 			var hp_scale: float = final_boss_hp_scale if FloorLadder.is_final(_floor_number) \
 					else boss_hp_scale
 			enemy.make_boss(hp_scale, boss_damage_scale, boss_size_scale)
+			# One boss row serves every archetype, rather than four defs each
+			# needing a boss twin in the drop config.
+			enemy.loot_source = &"boss"
 		enemy.set_target(_player)
+		enemy.set_room(_obstacle_field, _current_room.global_position, Room.FLOOR)
 		enemy.died.connect(_on_enemy_died.bind(data))
+		# A fixture that finds no wall spot left takes an open one rather than
+		# being dropped: a turret in the middle of the floor is a poor turret, but
+		# an enemy that never spawned is a room that never unlocks.
+		var spot: Vector2 = _take_spot(wall_spots if def.is_fixture() else open_spots,
+				open_spots, player_local)
 		_current_room.add_entity(enemy, spot)
 
 	# No way out until the room is quiet. The clock does not stop, which is the
 	# point.
 	_current_room.set_locked(true)
-	AudioManager.play_sfx("steel_drip",1,0,0.3)
-	AudioManager.play_sfx("spikes_down",0.8,0,0.3)
+	AudioManager.play_sfx("steel_drip", 1, 0, 0.3)
+	AudioManager.play_sfx("spikes_down", 0.8, 0, 0.3)
 	return true
+
+
+## One spot off the preferred list, falling back to the other one and finally to
+## the far side of the room.
+##
+## The last fallback is never reached on the shipped numbers — both placements
+## return exactly what they were asked for — but "no spot left" would otherwise
+## be an index error mid-spawn, which leaves a room half-stocked and locked
+## forever. The room's own count is what unlocks the doors, so a missing enemy is
+## the one failure here that cannot be walked away from.
+func _take_spot(preferred: Array[Vector2], fallback: Array[Vector2],
+		player_local: Vector2) -> Vector2:
+	if not preferred.is_empty():
+		return preferred.pop_back()
+	if not fallback.is_empty():
+		return fallback.pop_back()
+	return Room.FLOOR.get_center() * 2.0 - player_local
 
 
 func _on_enemy_died(loot_source: StringName, at: Vector2, data: RoomData) -> void:
@@ -1009,17 +1084,25 @@ func _apply_drop_overrides() -> void:
 	drop_config = loaded
 
 
-## Which row of the drop table this enemy's death is looked up under.
+## Let a tuning profile field a different bestiary.
 ##
-## Decided here rather than left on the scene because this is where the enemy is
-## made what it is — the same two lines that choose its behaviour and promote it
-## to a boss. An enemy spawned by anything else keeps the scene's own default.
-func _loot_source_for(behaviour: int, is_boss: bool) -> StringName:
-	if is_boss:
-		return &"boss"
-	if behaviour == Enemy.Behaviour.SKIRMISHER:
-		return &"skirmisher"
-	return &"grunt"
+## The inspector slot is what ships; this only redirects it, the same bargain
+## [method _apply_drop_overrides] makes. No duplicate() needed, unlike the
+## obstacle set: nothing here writes a value INTO the resource, so there is
+## nothing that could follow a developer into a commit.
+func _apply_enemy_overrides() -> void:
+	var named: String = GameConfig.get_value("enemies", "set", "")
+	if named.is_empty():
+		return
+
+	var path := "%s/%s.tres" % [ENEMY_SET_DIR, named]
+	var loaded := load(path) as EnemySet
+	if loaded == null:
+		# Loudly, and without falling back: a mistyped set that quietly ran the
+		# shipped bestiary would waste a whole playtest deciding it felt wrong.
+		push_error("Game: no enemy set '%s' at %s" % [named, path])
+		return
+	enemy_set = loaded
 
 
 ## Pay out a treasure room's chest, once ever.
@@ -1145,7 +1228,11 @@ func _scatter_obstacles(data: RoomData) -> void:
 		obstacle.configure(plan.def, i)
 		obstacle.destroyed.connect(_on_obstacle_destroyed.bind(data))
 		_current_room.add_obstacle(obstacle, plan.position)
-		_obstacle_field.add(plan.position, plan.def.body_radius)
+		# The index goes in with it, because the field skips props that were
+		# already broken on an earlier visit — so from the second visit onward a
+		# field index and a placement index are different numbers, and a break
+		# can only find its prop again by the one the room records.
+		_obstacle_field.add(plan.position, plan.def.body_radius, i)
 
 
 ## Remember a broken prop so it stays broken, and roll its drop table.
@@ -1156,11 +1243,14 @@ func _scatter_obstacles(data: RoomData) -> void:
 ## is — a pickup's collision shape is a node the physics server would reject
 ## mid-flush.
 ##
-## The field is not rebuilt. It is read when a room is stocked, which has already
-## happened by the time anything can be shot, and leaving a broken prop in it
-## costs nothing until the room is next entered and it is rebuilt from scratch.
+## The field IS kept in step, which it did not used to be. It was only read when
+## a room was stocked, so a stale prop in it cost nothing — but every enemy in
+## the room now holds it by reference and steers on it every frame, so a crate
+## that has been shot out has to stop being something they route around and hide
+## behind. One line, and the whole room agrees at once.
 func _on_obstacle_destroyed(index: int, loot_source: StringName, at: Vector2, data: RoomData) -> void:
 	data.obstacles_destroyed |= 1 << index
+	_obstacle_field.remove_id(index)
 	_spawn_loot.call_deferred(loot_source, at)
 
 

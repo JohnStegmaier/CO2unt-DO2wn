@@ -181,6 +181,19 @@ func interior_rect() -> Rect2:
 	return Rect2(global_position + INTERIOR.position, INTERIOR.size)
 
 
+## Where to put a player who arrives without walking through a door — the start of
+## a floor, or anything else that drops them in directly.
+##
+## Deliberately its own method rather than interior_rect().get_center(). That rect
+## is the CAMERA's, and its centre only lands on the floor because an ordinary
+## room's walkable area happens to sit in the middle of its view. A room where
+## that is not true — one whose floor is a strip at the bottom of a tall frame,
+## say — has to answer the two questions differently, and a caller that conflates
+## them stands the player in a wall.
+func default_spawn_position() -> Vector2:
+	return global_position + FLOOR.get_center()
+
+
 func _plug_for(side: int) -> StaticBody2D:
 	return _plugs.get_node("plug_" + GridDirection.side_name(side))
 

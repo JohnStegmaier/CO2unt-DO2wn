@@ -6,10 +6,25 @@
 [sub_resource type="CircleShape2D" id="CircleShape2D_obstacle"]
 radius = 8.0
 
+[sub_resource type="Gradient" id="Gradient_shadow"]
+colors = PackedColorArray(0, 0, 0, 0.6, 0, 0, 0, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_shadow"]
+gradient = SubResource("Gradient_shadow")
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
 [node name="Obstacle" type="StaticBody2D"]
 collision_layer = 1
 collision_mask = 0
 script = ExtResource("1_obstacle")
+
+[node name="Shadow" type="Sprite2D" parent="."]
+z_index = -1
+position = Vector2(0, 12)
+scale = Vector2(0.4, 0.13)
+texture = SubResource("GradientTexture2D_shadow")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture_filter = 1

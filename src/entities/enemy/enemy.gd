@@ -129,6 +129,8 @@ func configure(def: EnemyDef) -> void:
 	sprite.scale = Vector2.ONE * def.sprite_scale
 	sprite.speed_scale = def.frame_rate
 
+	$Shadow.position = def.shadow_offset
+
 	$Health.max_hp = def.max_hp
 	_ctx.radius = def.body_radius
 	loot_source = def.loot_source
@@ -197,6 +199,10 @@ func make_boss(hp_scale: float, damage_scale: float, size_scale: float) -> void:
 	shape.radius *= size_scale
 	shape.height *= size_scale
 	_ctx.radius = shape.radius
+
+	var shadow: Sprite2D = $Shadow
+	shadow.scale *= size_scale
+	shadow.position *= size_scale
 
 
 func _ready() -> void:

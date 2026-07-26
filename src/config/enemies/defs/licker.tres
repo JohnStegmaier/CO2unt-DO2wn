@@ -28,6 +28,7 @@ facing = 1
 facing_offset_degrees = 0.0
 sprite_offset = Vector2(0, -6)
 sprite_scale = 0.75
+shadow_offset = Vector2(0, 2)
 frame_rate = 1.0
 body_radius = 4.0
 body_height = 12.0

@@ -9,6 +9,7 @@ id = &"rocks"
 texture = ExtResource("2_tex")
 offset = Vector2(2, 2.5)
 sprite_scale = 0.625
+shadow_offset = Vector2(0, 11)
 body_radius = 9.0
 max_hp = 1
 indestructible = true

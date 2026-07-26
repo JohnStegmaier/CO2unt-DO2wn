@@ -75,6 +75,15 @@ extends Resource
 ## so this is usually a shrink rather than a blow-up.
 @export_range(0.25, 3.0, 0.05) var sprite_scale: float = 1.0
 
+## Where the ground shadow sits, in the same sibling-of-the-sprite space as
+## [member sprite_offset]. Can't be derived from sprite_offset/sprite_scale
+## alone — a crawling licker's art fills the top of its frame with a lot of
+## dead canvas below it, while a guard's fills the frame edge to edge, so the
+## same "half the frame height" math lands the shadow under a guard's feet and
+## a full body-length below a licker's. Tuned per def against the actual
+## drawn pixels instead.
+@export var shadow_offset: Vector2 = Vector2(0, 8)
+
 ## Applied as AnimatedSprite2D.speed_scale, so per-animation speeds authored in
 ## the SpriteFrames stay relative to each other. That matters for the guard,
 ## whose side-on walk is four frames and whose front-on is eight — the .tres

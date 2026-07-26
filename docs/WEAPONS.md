@@ -50,9 +50,9 @@ Three steps. None of them is a script edit.
    never offered, which is a legitimate place for one to sit while it is tuned.
 3. `godot --headless --script tools/check_weapons.gd`
 
-Nothing else. It gets a pickup, a shop shelf, a HUD icon, a countdown bar and a
-drop table for free, because it is an `ItemDef` and everything downstream of one
-already works.
+Nothing else. It gets a pickup, a shop shelf, a HUD icon, a countdown bar with a
+seconds readout beside it, and a drop table for free, because it is an `ItemDef`
+and everything downstream of one already works.
 
 ### If it needs a new sound
 
@@ -82,10 +82,19 @@ tags.
 
 **`scales_with_player_stats`.** On for the pistol, off for everything picked up.
 On, the weapon draws damage and fire interval from `Player.BULLET_DAMAGE_VALUES`
-and `FIRE_RATE_VALUES`, so power-ups are felt through the gun you own. Off, it
-uses its own numbers, so a shotgun found on floor 1 hits exactly as hard as one
-found on floor 5 — it is a different weapon, not your gun scaled up by whatever
-`POWER_LVL` happens to be.
+and `FIRE_RATE_VALUES`, so power-ups are felt through the gun you own.
+
+Off, it keeps **its own** numbers — a shotgun is a different weapon, not your gun
+renamed — but multiplied by how far `POWER_LVL` and `FIRERATE_LVL` have come from
+level 1. So a shotgun found on floor 5 does hit harder than one found on floor 1,
+in proportion, while the gap between a shotgun and a timmy gun stays as tuned. At
+`POWER_LVL` 7 that factor is 35/10 = ×3.5, the same curve the pistol rides.
+
+The flag was an all-or-nothing swap until upgrades reached the shop. A Damage
+Upgrade that goes invisible for the twenty seconds a borrowed gun is held reads
+as a broken purchase, not as weapon identity — so the scaling lives in
+`WeaponDef.damage_against` / `interval_against`, which is the one place to change
+it and the only place either number is read.
 
 ## Where weapons come from
 

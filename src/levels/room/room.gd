@@ -110,6 +110,13 @@ var _is_exit: bool = false
 ## Is the way off this floor open? Owned by whoever generated the floor — see
 ## [method set_boardable].
 var _boardable: bool = true
+## Doorways held shut for a reason that outlives the fight in this room — see
+## [method set_sealed_sides].
+var _sealed_doors: int = 0
+## Is the room sealed for a fight right now? Kept because the two reasons a door
+## can be shut arrive from different places at different times, and whichever
+## lands second must not undo the first.
+var _fight_locked: bool = false
 
 
 func _ready() -> void:
@@ -189,16 +196,60 @@ func _obstacle_holder() -> Node2D:
 	return holder
 
 
+## Room-local rect anything on foot may stand in.
+##
+## [constant FLOOR] is the answer for the shell, and was for a long time the only
+## answer there was — which is why it used to be read straight off the class by
+## everything that stocked a room. It stopped being the only answer the moment a
+## room could be a different size from its cell: the Basement's board room is one
+## cell in the plan and two cells tall on the screen, and an enemy clamped to
+## FLOOR in there patrols the near half of a room it is standing at the far end
+## of.
+##
+## Ask the room. The constant is still the default, so every ordinary room
+## answers exactly as before.
+func floor_rect() -> Rect2:
+	return FLOOR
+
+
 ## Room-local rect that solid props may be scattered into. An empty rect means
 ## "not this room".
 ##
-## Distinct from [constant FLOOR] for the same reason
+## Distinct from [method floor_rect] for the same reason
 ## [method default_spawn_position] is distinct from the centre of
 ## [method interior_rect]: a room whose walkable area is a shallow strip rather
 ## than the whole floor has to answer differently, and a caller that conflates
 ## them builds a barrel into the back wall.
 func obstacle_rect() -> Rect2:
 	return FLOOR
+
+
+## Add whatever this room built into its own scene to the field of things in the
+## way. Nothing, for a room whose only furniture is scattered into it.
+##
+## The scattered props register themselves as they are placed, because they are
+## chosen at runtime. Furniture that is part of a room's scene is not, and would
+## otherwise be invisible to everything that asks where the floor is free —
+## enemies would walk through the board room table, spawn on it, and shoot each
+## other across it.
+##
+## Circles, because that is what [ObstacleField] holds: a rectangular table is
+## reported as the string of circles that covers it. Approximating one shape with
+## several is the room's business, not the field's.
+func register_solids(field: ObstacleField) -> void:
+	pass
+
+
+## Room-local spots this room wants its enemies stood in, or empty to let
+## [EnemyPlacement] choose.
+##
+## Empty is the right answer for every generated room: a fight whose bad guys
+## always stand in the same four places is a fight you learn once. It is the
+## wrong answer for a room that was drawn by hand around a specific tableau — six
+## men in suits are seated AT the board room table, not scattered near it, and
+## no placement grid is going to work that out from a rect.
+func authored_spawns() -> Array[Vector2]:
+	return []
 
 
 ## Room-local landing spots of the doors that are currently open. Used to keep
@@ -262,8 +313,36 @@ func _place_elevator(data: RoomData) -> void:
 ##
 ## A sealed door is just a plugged one, so this reuses the plug the room already
 ## has for doorways that lead nowhere — same collision, same visual.
+##
+## "Restore" means the doors the plan gave this room MINUS the ones sealed for a
+## reason of their own; see [method set_sealed_sides]. Clearing the fight lock
+## must not open a door the floor never unlocked.
 func set_locked(locked: bool) -> void:
-	_apply_doors(0 if locked else _open_doors)
+	_fight_locked = locked
+	_apply_doors(0 if locked else _open_doors & ~_sealed_doors)
+
+
+## Hold particular doorways shut for a reason outside this room's fight.
+##
+## Today there is one: the way into an exit room the floor has not unlocked yet.
+## Floor 1 hides the Basement behind its boss, and a dead lift was not enough to
+## hide it — the player could still walk into the lobby and find the trick. The
+## doorway itself has to be shut.
+##
+## Deliberately a mask and not a bool, and deliberately not folded into
+## [method set_locked]: the two answer different questions on different clocks —
+## one is "is this fight over", the other is "has the floor opened this way yet"
+## — and a room can be under both at once. They compose because both resolve
+## through [method _apply_doors], which has always taken an arbitrary mask.
+##
+## A sealed side is indistinguishable from a doorway that leads nowhere, which is
+## the point: the room says nothing about what is behind it.
+func set_sealed_sides(sides: int) -> void:
+	_sealed_doors = sides
+	# Nothing to do mid-fight — every door is shut anyway, and set_locked(false)
+	# is what will read the new mask when the fight ends.
+	if not _fight_locked:
+		_apply_doors(_open_doors & ~_sealed_doors)
 
 
 func _apply_doors(doors: int) -> void:

@@ -66,12 +66,6 @@ const LOOT_CLEARANCE := 6.0
 @export var boss_enemies_max: int = 1
 ## Hit points, as a multiple of an ordinary enemy's.
 @export var boss_hp_scale: float = 6.0
-## Hit points of the man in the suit waiting in the Basement, on the same scale.
-## Lower than an ordinary floor boss on purpose: he is the end of the game, not
-## the hardest fight in it, and going out on a wall of hit points would undercut
-## the joke. Kept a separate absolute value rather than a multiplier of the line
-## above, so tuning ordinary bosses cannot silently retune the ending.
-@export var final_boss_hp_scale: float = 2.5
 ## What a boss hits for, as a multiple. Far gentler than the hit point scale on
 ## purpose — see Enemy.make_boss for why the two cannot be the same number.
 @export var boss_damage_scale: float = 1.6
@@ -119,6 +113,28 @@ const LOOT_CLEARANCE := 6.0
 ## — this file names no treasure room implementation, and clearing the slot takes
 ## the feature back out with no code change.
 @export var treasure_room_scene: PackedScene
+
+@export_group("Basement")
+## Stand-in scene for the Basement's boss cell — the board room. Same escape
+## hatch as exit_room_scene and for the same reasons: this file names no board
+## room implementation, and clearing the slot puts the last fight back in an
+## ordinary room with nothing lost but the tableau.
+##
+## Keyed on the floor rather than on a Kind of its own — see
+## [method _basement_room_available]. There is one of these in a run and it is
+## always in the same place, so a whole [enum RoomData.Kind] to say so would buy
+## a tint in an array, a glyph on the map and a second path through the ending.
+@export var basement_room_scene: PackedScene
+
+## Who is around the table, by [member EnemyDef.id]. The guard is the man in the
+## suit: he is the one archetype in the bestiary drawn as a person in a jacket
+## rather than as a thing, which is the entire reason the ending is set in a
+## board room.
+@export var basement_suit_id: StringName = &"guard"
+## How many of them. Six is a board, and it is the number the room has chairs and
+## seats for — see [BoardRoom.SEATS], which is what actually places them. Raise
+## this past the seats on offer and the extras fall back to the placement grid.
+@export var basement_suit_count: int = 6
 
 @export_group("Shop")
 ## Everything about shops, in one slot — the room scene, where its stock comes
@@ -217,6 +233,7 @@ func _ready() -> void:
 	# The player reports hits upward and the O2 timer decides what they cost.
 	# Game is the only node holding both ends, so the wiring belongs here.
 	_player.damaged.connect(_o2_timer.apply_damage)
+	_player.damaged.connect(_on_player_damaged)
 	_player.healed.connect(_o2_timer.gain_seconds)
 	_o2_timer.depleted.connect(_on_air_depleted)
 	_o2_timer.air_restored.connect(_on_air_restored)
@@ -287,7 +304,14 @@ func _ready() -> void:
 
 	_setup_shops()
 
-	_begin_floor(0)
+	# Which floor a run opens on. Zero — the top — for anybody playing, and the
+	# only reason it is a knob at all is the Basement: it is the last room of the
+	# game, reachable only by clearing five floors and a boss, and iterating on it
+	# through six descents a time is how it stays untested. See basement.cfg.
+	#
+	# Read here rather than in _begin_floor, so the value is a property of the run
+	# starting rather than something the elevator could land on.
+	_begin_floor(GameConfig.get_value("floor", "start", 0))
 
 
 ## Called once per run, not once per room — the old per-level version restarted
@@ -315,6 +339,19 @@ func _start_music() -> void:
 
 func _on_global_tick() -> void:
 	AudioManager.play_sfx(TICK_SFX, 1, -5, 0)
+
+
+## The damage counterpart to ItemPickup's "+15s": a red "-Ns" drifting up off
+## the player, priced the same way apply_damage prices the hit for the timer
+## itself — see [member O2Timer.seconds_per_blunt_point].
+##
+## Piercing damage has no such line: it raises the drain rate rather than
+## spending a fixed chunk of air, so there is no single number to show for it.
+func _on_player_damaged(amount: int, type: int) -> void:
+	if type != Damage.Type.BLUNT:
+		return
+	var seconds := amount * _o2_timer.seconds_per_blunt_point
+	FloatingText.spawn(get_tree().current_scene, _player.global_position, "-%ds" % roundi(seconds), Color(1.0, 0.0, 0.055, 1.0))
 
 
 ## The walls are closing in and the player can hear their own pulse. Fired by the
@@ -376,6 +413,8 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 		scene = shop_config.room_scene
 	elif data.kind == RoomData.Kind.TREASURE and treasure_room_scene != null:
 		scene = treasure_room_scene
+	elif data.kind == RoomData.Kind.BOSS and _basement_room_available():
+		scene = basement_room_scene
 	_current_room = scene.instantiate()
 	# Rooms sit at their true grid position rather than all at the origin, so
 	# world space and map space never disagree — which is also what makes the
@@ -395,6 +434,12 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 	# ends, so the player can never be standing in this room at the moment the
 	# answer changes.
 	_current_room.set_boardable(_exit_available())
+	# And the other half of the same answer: a dead lift is not enough to hide a
+	# floor that has not opened yet, because the player can still walk in and see
+	# the lobby. Read here for the same reason as the line above — the exit and
+	# the boss are always different dead ends, so nobody is ever standing in the
+	# room whose door this shuts at the moment it would open.
+	_current_room.set_sealed_sides(_sealed_sides(data))
 	# Here rather than beside _populate, for three reasons: it is before every
 	# await below, so there is no window in which the room could be freed out from
 	# under it; the room slides into view already furnished; and the enemies
@@ -473,7 +518,17 @@ func _is_cut_transition(kind: int) -> bool:
 	# The shop is drawn side-on for the same reason and travels the same way: a
 	# slide assumes the two cells share an edge and are drawn the same way round,
 	# and a belt-scroll room is neither.
-	return kind == RoomData.Kind.SHOP and _shop_room_available()
+	if kind == RoomData.Kind.SHOP and _shop_room_available():
+		return true
+	# The board room shares its edge and is drawn the same way round, and still
+	# cannot be slid to: it is twice as tall as the room in front of it, and
+	# _pan_camera_between travels a clamp's POSITION while keeping the size it
+	# started at. Sliding into it would arrive with the view the wrong shape and
+	# snap on the last frame.
+	#
+	# The wipe is also simply better here. Black, and then you are standing in the
+	# doorway of a long room with six men already looking at you.
+	return kind == RoomData.Kind.BOSS and _basement_room_available()
 
 
 ## Swap rooms behind a wipe instead of travelling between them.
@@ -613,6 +668,42 @@ func _exit_available() -> bool:
 	if FloorLadder.is_final(_floor_number):
 		return false
 	return not FloorLadder.gates_on_boss(_floor_number) or _boss_cleared
+
+
+## Which of this room's doorways must be held shut, as a side mask.
+##
+## The way into an exit room the floor has not unlocked, and nothing else. A dead
+## lift was the whole gate to begin with, and it was not enough: the player could
+## walk into the lobby on floor 1, find a car that would not open, and read the
+## secret off the empty room. Shutting the doorway means the exit room is never
+## seen at all until its boss is dead — the floor simply appears to be one room
+## smaller than it is.
+##
+## Asked of the plan rather than remembered, so a room rebuilt on a revisit gets
+## the answer that is true now rather than the one that was true when the player
+## first walked past.
+func _sealed_sides(data: RoomData) -> int:
+	if _plan == null or _exit_available():
+		return 0
+	var sealed: int = 0
+	for side in GridDirection.SIDES:
+		if not data.has_door(side):
+			continue
+		var neighbour := _plan.get_room(data.coord + GridDirection.offset(side))
+		if neighbour != null and neighbour.kind == RoomData.Kind.EXIT:
+			sealed |= GridDirection.bit(side)
+	return sealed
+
+
+## Is there a board room to swap in for the last fight?
+##
+## Keyed on the floor as well as the slot, unlike the other three room swaps,
+## because this one is not a property of the cell: every floor has a boss room
+## and only the Basement's is the board room. Keyed on the fact rather than on
+## the scene's type, though, for exactly the reason the others are — this file
+## still names no board room implementation and imports nothing from one.
+func _basement_room_available() -> bool:
+	return FloorLadder.is_basement(_floor_number) and basement_room_scene != null
 
 
 ## Throw the current floor away so the next one starts from nothing.
@@ -787,8 +878,7 @@ func _populate(data: RoomData) -> bool:
 	if not (is_boss or data.kind == RoomData.Kind.NORMAL) or data.enemies_remaining == 0:
 		return false
 	if data.enemies_remaining < 0:
-		data.enemies_remaining = _rng.randi_range(boss_enemies_min, boss_enemies_max) if is_boss \
-				else _rng.randi_range(enemies_min, enemies_max)
+		data.enemies_remaining = _roll_enemy_count(is_boss)
 
 	# A room that stocks nothing must not seal itself. The doors are unlocked by
 	# enemies dying, so locking an empty room locks it for good and the floor is
@@ -824,11 +914,7 @@ func _populate(data: RoomData) -> bool:
 	# fixtures' — is fixed and load-bearing. _rng is one stream drawn in
 	# room-visit order, so reordering these moves every fight after this one in a
 	# fixed_seed run.
-	var picks: Array[EnemyDef] = []
-	for _i in data.enemies_remaining:
-		var def: EnemyDef = enemy_set.pick(_rng, is_boss)
-		if def != null:
-			picks.append(def)
+	var picks: Array[EnemyDef] = _roster_for(data.enemies_remaining, is_boss)
 
 	# Only reachable in a boss room whose bestiary has nothing promotable, which
 	# tools/check_enemies.gd fails on — but if it ever ships, an unopenable gate
@@ -841,11 +927,24 @@ func _populate(data: RoomData) -> bool:
 		return false
 	data.enemies_remaining = picks.size()
 
+	# The room's own answer about its own floor, rather than Room.FLOOR: the board
+	# room is one cell in the plan and two cells tall on the screen, and enemies
+	# placed and clamped to the constant would fight in the near half of a room
+	# they are standing at the far end of.
+	var room_floor: Rect2 = _current_room.floor_rect()
+	# Seats this room asked for by name, if it is the kind of room that has an
+	# opinion, and then whoever it has no chair for. The grid is only asked about
+	# the second group — counted off the OVERFLOW rather than off the whole
+	# roster, because a fixture that is already sitting down must not also be
+	# claiming one of the wall spots, which would leave a roamer with nowhere at
+	# all and two bodies stacked on the far-side fallback.
+	var seats: Array[Vector2] = _current_room.authored_spawns()
+	var standing: Array[EnemyDef] = picks.slice(mini(seats.size(), picks.size()))
 	var landings := _current_room.open_door_landings()
-	var fixtures := EnemySet.fixture_count(picks)
-	var open_spots := EnemyPlacement.points(Room.FLOOR, picks.size() - fixtures,
+	var fixtures := EnemySet.fixture_count(standing)
+	var open_spots := EnemyPlacement.points(room_floor, standing.size() - fixtures,
 			player_local, landings, _rng, _obstacle_field)
-	var wall_spots := EnemyPlacement.wall_points(Room.FLOOR, fixtures,
+	var wall_spots := EnemyPlacement.wall_points(room_floor, fixtures,
 			player_local, landings, _rng, _obstacle_field)
 
 	for def in picks:
@@ -855,21 +954,24 @@ func _populate(data: RoomData) -> bool:
 		# def and Health copies its maximum into its current value in its own
 		# _ready(), so both have to be right by then.
 		enemy.configure(def)
-		if is_boss:
-			var hp_scale: float = final_boss_hp_scale if FloorLadder.is_final(_floor_number) \
-					else boss_hp_scale
-			enemy.make_boss(hp_scale, boss_damage_scale, boss_size_scale)
+		if _promotes_to_boss(is_boss):
+			enemy.make_boss(boss_hp_scale, boss_damage_scale, boss_size_scale)
 			# One boss row serves every archetype, rather than four defs each
 			# needing a boss twin in the drop config.
 			enemy.loot_source = &"boss"
 		enemy.set_target(_player)
-		enemy.set_room(_obstacle_field, _current_room.global_position, Room.FLOOR)
+		enemy.set_room(_obstacle_field, _current_room.global_position, room_floor)
 		enemy.died.connect(_on_enemy_died.bind(data))
-		# A fixture that finds no wall spot left takes an open one rather than
-		# being dropped: a turret in the middle of the floor is a poor turret, but
-		# an enemy that never spawned is a room that never unlocks.
-		var spot: Vector2 = _take_spot(wall_spots if def.is_fixture() else open_spots,
-				open_spots, player_local)
+		# A seat if the room named one, otherwise a spot off the grid. A fixture
+		# that finds no wall spot left takes an open one rather than being
+		# dropped: a turret in the middle of the floor is a poor turret, but an
+		# enemy that never spawned is a room that never unlocks.
+		var spot: Vector2
+		if not seats.is_empty():
+			spot = seats.pop_front()
+		else:
+			spot = _take_spot(wall_spots if def.is_fixture() else open_spots,
+					open_spots, player_local, room_floor)
 		_current_room.add_entity(enemy, spot)
 
 	# No way out until the room is quiet. The clock does not stop, which is the
@@ -889,12 +991,87 @@ func _populate(data: RoomData) -> bool:
 ## forever. The room's own count is what unlocks the doors, so a missing enemy is
 ## the one failure here that cannot be walked away from.
 func _take_spot(preferred: Array[Vector2], fallback: Array[Vector2],
-		player_local: Vector2) -> Vector2:
+		player_local: Vector2, room_floor: Rect2) -> Vector2:
 	if not preferred.is_empty():
 		return preferred.pop_back()
 	if not fallback.is_empty():
 		return fallback.pop_back()
-	return Room.FLOOR.get_center() * 2.0 - player_local
+	return room_floor.get_center() * 2.0 - player_local
+
+
+## How many bad guys this room holds.
+##
+## Its own function because the Basement answers it with a constant rather than a
+## roll. Six is a board, and it is the only fight in the game whose size is part
+## of the picture rather than a difficulty knob — a board room with a randomised
+## number of people in it is a room with some chairs pushed in.
+func _roll_enemy_count(is_boss: bool) -> int:
+	if _stocks_the_board_room(is_boss):
+		# A profile that empties the station empties this room too. Read off the
+		# boss ceiling rather than the profile's name, exactly as
+		# _apply_enemy_overrides does — and for its reason: `peaceful` must leave
+		# an empty building, not one with six men still in the last room of it.
+		# _populate's zero branch then treats an empty board room as one already
+		# cleared, which down here simply wins the game.
+		return 0 if boss_enemies_max == 0 else basement_suit_count
+	if is_boss:
+		return _rng.randi_range(boss_enemies_min, boss_enemies_max)
+	return _rng.randi_range(enemies_min, enemies_max)
+
+
+## Which bad guys, in the order they will be placed.
+##
+## The ordinary answer is `count` independent weighted draws from the bestiary,
+## and the draw order is load-bearing: _rng is one stream drawn in room-visit
+## order, so anything that reordered or skipped a draw would move every fight
+## after this one in a fixed_seed run. That path is untouched.
+##
+## The Basement is a cast, not a draw. Six of one named archetype, no rolls at
+## all — which also means the last room of the game plays the same every run,
+## the way the room it is set in is the same every run.
+func _roster_for(count: int, is_boss: bool) -> Array[EnemyDef]:
+	var picks: Array[EnemyDef] = []
+	if _stocks_the_board_room(is_boss):
+		var suit: EnemyDef = enemy_set.by_id(basement_suit_id)
+		if suit != null:
+			for _i in count:
+				picks.append(suit)
+			return picks
+		# Falls through to an ordinary draw rather than returning empty. A boss
+		# room that stocks nothing is a room that never unlocks, and down here it
+		# is also an ending that never fires — so a bestiary that has been swapped
+		# for one without this id gets a worse last fight, not a stuck one.
+		push_warning("Game: no enemy def '%s' for the board room, falling back to a draw"
+				% basement_suit_id)
+
+	for _i in count:
+		var def: EnemyDef = enemy_set.pick(_rng, is_boss)
+		if def != null:
+			picks.append(def)
+	return picks
+
+
+## Does this room's roster get boss stats — bigger, tankier, hitting harder?
+##
+## Every boss room but the Basement's. Down there the fight is six of them, and
+## six oversized bad guys is not the ending this is going for: the last room is
+## meant to read as a board meeting you have interrupted, not as the hardest
+## thing in the building. The threat is the number of them.
+##
+## Stated as the complement of the board room rather than as its own test of the
+## floor, so the two can never come to disagree about which rooms are which.
+func _promotes_to_boss(is_boss: bool) -> bool:
+	return is_boss and not _stocks_the_board_room(is_boss)
+
+
+## Is this the Basement's boss room — the one the board room is drawn for?
+##
+## Deliberately does NOT test whether basement_room_scene is filled. Clearing that
+## slot takes the board room's ART away and leaves the fight, which is the same
+## bargain every other room swap in this file offers; six men in suits in an
+## ordinary room is a worse ending, not a different one.
+func _stocks_the_board_room(is_boss: bool) -> bool:
+	return is_boss and FloorLadder.is_basement(_floor_number)
 
 
 func _on_enemy_died(loot_source: StringName, at: Vector2, data: RoomData) -> void:
@@ -926,11 +1103,23 @@ func _on_enemy_died(loot_source: StringName, at: Vector2, data: RoomData) -> voi
 ## being a soft lock.
 func _clear_boss_gate() -> void:
 	_boss_cleared = true
+	# The room the player is standing in was told the floor was shut, and it no
+	# longer is. Belt and braces on the shipped generator, where the exit and the
+	# boss are always different dead ends and this can therefore change nothing —
+	# but the two are only different by construction, and re-asking is a great
+	# deal cheaper than a floor with a door that never opens again.
+	#
+	# Safe here on every path: the kill path has already lifted the fight lock,
+	# and the three degenerate paths in _populate never set one.
+	if _current_room != null and _plan != null and _plan.has_room(_current_coord):
+		var here := _plan.get_room(_current_coord)
+		_current_room.set_boardable(_exit_available())
+		_current_room.set_sealed_sides(_sealed_sides(here))
 	if FloorLadder.is_final(_floor_number):
 		_win()
 
 
-## Generate a floor and walk into its spawn room.
+## Lay out a floor and walk into its spawn room.
 func _begin_floor(floor_number: int) -> void:
 	if floor_number > FloorLadder.BASEMENT_INDEX:
 		push_warning("Game: asked for floor index %d, below the Basement" % floor_number)
@@ -940,7 +1129,14 @@ func _begin_floor(floor_number: int) -> void:
 	# its own boss had been found.
 	_boss_cleared = false
 	var floor_seed: int = FloorGenerator.floor_seed_for(run_seed, floor_number)
-	_plan = FloorGenerator.generate(floor_config, floor_number, floor_seed)
+	# The Basement is the one floor that is not grown. It is two rooms, always the
+	# same two, because it is the run's secret rather than somewhere to explore —
+	# see BasementPlan, which is also where the fact that the board room overhangs
+	# an empty cell is guaranteed. Everything below this line is unchanged: the
+	# seed is still rolled and still seeds the streams, because the fight and the
+	# drops down there still draw from them.
+	_plan = BasementPlan.build() if FloorLadder.is_basement(floor_number) \
+			else FloorGenerator.generate(floor_config, floor_number, floor_seed)
 	# Before the awaited _enter_room below, or the spawn room announces itself to
 	# a map that has no floor to place it on.
 	_minimap.show_floor(_plan)
@@ -1179,7 +1375,9 @@ func _scattered(local: Vector2) -> Vector2:
 	var offset := Vector2(
 			_loot_rng.randf_range(-LOOT_SCATTER, LOOT_SCATTER),
 			_loot_rng.randf_range(-LOOT_SCATTER, LOOT_SCATTER))
-	var inside := Room.FLOOR.grow(-LOOT_SCATTER)
+	# The room's floor, not the constant: a suit shot at the far end of the board
+	# room drops six cells north of anywhere Room.FLOOR would let a coin land.
+	var inside := _current_room.floor_rect().grow(-LOOT_SCATTER)
 	var spot := (local + offset).clamp(inside.position, inside.end)
 	return _obstacle_field.nudge_clear(spot, LOOT_CLEARANCE) \
 			.clamp(inside.position, inside.end)
@@ -1201,6 +1399,12 @@ func _scattered(local: Vector2) -> Vector2:
 ## seeded per cell is what keeps fixed_seed.cfg honest.
 func _scatter_obstacles(data: RoomData) -> void:
 	_obstacle_field = ObstacleField.new()
+	# Before both early returns, deliberately. Furniture a room built into its own
+	# scene is in the way whether or not that room also takes scattered props —
+	# and the board room, which is the only room that has any, is precisely a room
+	# that takes none. Skipped here, the six men in suits would spawn on the table
+	# and shoot each other through it.
+	_current_room.register_solids(_obstacle_field)
 	if obstacle_set == null or not obstacle_set.allows_kind(data.kind):
 		return
 

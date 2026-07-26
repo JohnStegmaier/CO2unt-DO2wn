@@ -323,6 +323,7 @@ func set_power_level(lvl: int) -> void:
 	POWER_LVL = clampi(lvl, MIN_STAT_LVL, MAX_STAT_LVL)
 	bullet_damage = roundi(BULLET_DAMAGE_VALUES[POWER_LVL - 1] * STAT_SCALE)
 	_loadout.player_damage = bullet_damage
+	_loadout.player_power_mult = _mult_from_base(float(bullet_damage), BULLET_DAMAGE_VALUES)
 	power_level_changed.emit(POWER_LVL)
 
 
@@ -336,6 +337,7 @@ func set_firerate_lvl(lvl: int) -> void:
 	FIRERATE_LVL = clampi(lvl, MIN_STAT_LVL, MAX_STAT_LVL)
 	fire_rate = FIRE_RATE_VALUES[FIRERATE_LVL - 1] * STAT_SCALE
 	_loadout.player_fire_interval = fire_rate
+	_loadout.player_firerate_mult = _mult_from_base(fire_rate, FIRE_RATE_VALUES)
 	firerate_lvl_changed.emit(FIRERATE_LVL)
 
 
@@ -483,7 +485,7 @@ func take_damage(amount: int, type: int = Damage.Type.BLUNT) -> void:
 	_invulnerable_until_msec = Time.get_ticks_msec() + int(invulnerable_time * 1000.0)
 	damaged.emit(amount, type)
 	_flash_hit()
-	AudioManager.play_sfx("gas_escapes")
+	AudioManager.play_sfx("gas_escape")
 	AudioManager.play_sfx("damage_taken_0%d" % [1 if randf() < 0.5 else 2], randf_range(1.3,1.4))
 
 
@@ -659,6 +661,12 @@ func dodge(direction: Vector2) -> void:
 	dodge_timer = 0.0
 	AudioManager.play_sfx("player_grunt_01", randf_range(1.3,1.8))
 
+	# Enemies already deal no damage to a dodging player (take_damage's
+	# is_dodging check); drop the ENEMY bit too so the roll passes through their
+	# CharacterBody2D instead of just no-oping the contact damage while still
+	# getting shoved or blocked by it.
+	collision_mask &= ~CollisionLayers.ENEMY
+
 	if direction == Vector2.DOWN:
 		last_direction = "down"
 		sprite.play("dodge_down")
@@ -684,6 +692,10 @@ func dodge(direction: Vector2) -> void:
 	await sprite.animation_finished
 	is_dodging = false
 	can_move = true
+	# die() may have zeroed collision_mask entirely while this was awaiting the
+	# animation; leave that alone rather than punching ENEMY back into it.
+	if not _is_dead:
+		collision_mask |= CollisionLayers.ENEMY
 
 
 func return_gun() -> void:

@@ -79,5 +79,18 @@ func _on_body_entered(body: Node2D) -> void:
 	# heal that outlives the body — and a sound queued after that never plays.
 	if not item.pickup_sound.is_empty():
 		AudioManager.play_sfx(item.pickup_sound)
+	_spawn_oxygen_text()
 	item.grant_to(body)
 	queue_free()
+
+
+## "+15s" drifting up off an oxygen canister. Reads the RestoreOxygen effect's
+## own seconds rather than item.describe() — "+15s air" is fine in a tooltip but
+## busier than the sprite it is hovering over needs.
+##
+## Parented to the current scene rather than to this: this frees itself the
+## instant grant_to returns, and a popup made a child of it would go with it.
+func _spawn_oxygen_text() -> void:
+	for effect in item.effects:
+		if effect is RestoreOxygen:
+			FloatingText.spawn(get_tree().current_scene, global_position, "+%ds" % int(effect.seconds))

@@ -1,9 +1,8 @@
 [gd_resource type="Resource" script_class="ItemDef" format=3 uid="uid://cbulbyqstlesc"]
 
-[ext_resource type="Texture2D" uid="uid://b2vwww17ku866" path="res://assets/sprites/items/Drop_orb.png" id="1_kq5ve"]
 [ext_resource type="Script" uid="uid://emnui7uyddjn" path="res://src/systems/loot/item_effect.gd" id="2_7lrl4"]
 [ext_resource type="Script" uid="uid://dwgl5qnepcp10" path="res://src/systems/loot/effects/raise_stat_level.gd" id="3_aixv8"]
-[ext_resource type="Texture2D" uid="uid://n3y83gltp0qm" path="res://assets/sprites/ui/firerate.png" id="4_bo700"]
+[ext_resource type="Texture2D" uid="uid://owhmxk1fib0l" path="res://assets/sprites/items/shot-up.png" id="4_bo700"]
 [ext_resource type="Script" uid="uid://dmxi7afktl2qr" path="res://src/systems/loot/item_def.gd" id="5_0iikv"]
 
 [sub_resource type="Resource" id="Resource_eib5m"]
@@ -15,7 +14,6 @@ script = ExtResource("5_0iikv")
 id = &"firerate_up"
 display_name = "Fire Rate Upgrade"
 icon = ExtResource("4_bo700")
-icon_scale = 0.5
-backdrop = ExtResource("1_kq5ve")
+icon_scale = 0.75
 pickup_sound = &"money_jingle_1"
 effects = Array[ExtResource("2_7lrl4")]([SubResource("Resource_eib5m")])

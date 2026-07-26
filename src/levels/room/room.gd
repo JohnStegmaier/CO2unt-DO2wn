@@ -147,6 +147,60 @@ func add_entity(node: Node2D, local_position: Vector2) -> void:
 	node.reset_physics_interpolation()
 
 
+## Put a solid prop on the floor. Same contract as [method add_entity] — position
+## before the tree, interpolation reset after — but a different parent.
+##
+## Entities sit at z_index 2 and the player does not: they are on opposite sides
+## of the scene, so everything in Entities draws in front of her. That is survivable
+## for an enemy the same height as she is, and not survivable for a barrel, which
+## would simply hide her. Obstacles go in a layer that draws with the walls
+## instead.
+##
+## The real answer is y-sorting the room, which would fix the enemy case too. That
+## is a change to how every room draws and belongs on its own branch.
+func add_obstacle(node: Node2D, local_position: Vector2) -> void:
+	node.position = local_position
+	_obstacle_holder().add_child(node)
+	node.reset_physics_interpolation()
+
+
+## The layer props are parented to, made if this room has not got one.
+##
+## Looked up rather than @onready, and made rather than assumed, because a Room
+## subclass is a separate scene and not an inherited one — ElevatorRoom declares
+## its own tree from scratch, as ShopRoom does. An @onready $Obstacles therefore
+## errors on every subclass the moment it enters the tree, whether or not that
+## room ever holds a prop, and the fix cannot be "add the node to their scenes
+## too": that breaks again for the next subclass, in a branch nobody has written
+## yet.
+##
+## room.tscn still authors one, so the ordinary room gets it in the right place in
+## the child list. This is only the fallback.
+func _obstacle_holder() -> Node2D:
+	var holder := get_node_or_null(^"Obstacles") as Node2D
+	if holder != null:
+		return holder
+	holder = Node2D.new()
+	holder.name = "Obstacles"
+	# Explicit, because the whole reason this node exists is to draw beneath the
+	# player rather than in front of her the way Entities does.
+	holder.z_index = 0
+	add_child(holder)
+	return holder
+
+
+## Room-local rect that solid props may be scattered into. An empty rect means
+## "not this room".
+##
+## Distinct from [constant FLOOR] for the same reason
+## [method default_spawn_position] is distinct from the centre of
+## [method interior_rect]: a room whose walkable area is a shallow strip rather
+## than the whole floor has to answer differently, and a caller that conflates
+## them builds a barrel into the back wall.
+func obstacle_rect() -> Rect2:
+	return FLOOR
+
+
 ## Room-local landing spots of the doors that are currently open. Used to keep
 ## spawns clear of the mouths the player walks through.
 func open_door_landings() -> Array[Vector2]:

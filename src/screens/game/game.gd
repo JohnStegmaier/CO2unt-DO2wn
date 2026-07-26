@@ -10,6 +10,7 @@ extends Node2D
 const ROOM_SCENE := preload("res://src/levels/room/room.tscn")
 const ENEMY_SCENE := preload("res://src/entities/enemy/enemy.tscn")
 const ITEM_PICKUP_SCENE := preload("res://src/entities/pickup/item_pickup.tscn")
+const OBSTACLE_SCENE := preload("res://src/entities/obstacle/obstacle.tscn")
 const GAME_OVER_SCENE := "res://src/screens/game_over/game_over.tscn"
 const VICTORY_SCENE := "res://src/screens/victory/victory.tscn"
 ## Where a profile's drop configs live, so `[drops] config = "economy"` names a
@@ -22,6 +23,9 @@ const LOOT_SEED_SALT := 0x9E3779B9
 ## Pixels a drop may be nudged when more than one lands at once. Roughly the
 ## width of a pickup, so they read as a little pile rather than as one item.
 const LOOT_SCATTER := 10.0
+## Half a pickup's sprite, so a drop pushed off a prop clears its edge rather than
+## sitting against it.
+const LOOT_CLEARANCE := 6.0
 
 @export_group("Room Transition")
 ## Seconds to slide from one room to the next.
@@ -98,6 +102,12 @@ const LOOT_SCATTER := 10.0
 ## this scene; see [method _apply_drop_overrides].
 @export var drop_config: DropConfig
 
+@export_group("Obstacles")
+## Which solid props rooms are furnished with, how many, and which kinds of room
+## get them. Swap the resource for a different set of clutter with no code change;
+## untick a room kind to leave it bare.
+@export var obstacle_set: ObstacleSet
+
 @export_group("Floor")
 ## Shape of every floor in the run. Tune it here and each generated floor obeys.
 @export var floor_config: FloorConfig
@@ -111,6 +121,10 @@ var _rng := RandomNumberGenerator.new()
 ## cannot shuffle where the enemies stand. Both are seeded off the same floor
 ## seed, so a replayed seed still replays both.
 var _loot_rng := RandomNumberGenerator.new()
+## What is standing in the room the player is in, so enemies and drops can be
+## kept out of it. Rebuilt with every room; never drawn from an RNG, because a
+## room's props are a function of its coord and the floor seed alone.
+var _obstacle_field := ObstacleField.new()
 
 @onready var _room_container: Node2D = $RoomContainer
 @onready var _player: Player = $Player
@@ -219,6 +233,7 @@ func _ready() -> void:
 		# another scene without it should still generate rather than crash.
 		floor_config = FloorConfig.new()
 	floor_config.apply_overrides()
+	_apply_obstacle_overrides()
 
 	_begin_floor(0)
 
@@ -313,6 +328,11 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 	# ends, so the player can never be standing in this room at the moment the
 	# answer changes.
 	_current_room.set_boardable(_exit_available())
+	# Here rather than beside _populate, for three reasons: it is before every
+	# await below, so there is no window in which the room could be freed out from
+	# under it; the room slides into view already furnished; and the enemies
+	# placed further down can be told what is in the way.
+	_scatter_obstacles(data)
 	_current_room.door_entered.connect(_on_door_entered)
 	_current_room.elevator_entered.connect(_on_elevator_entered)
 	_current_coord = coord
@@ -683,7 +703,7 @@ func _populate(data: RoomData) -> bool:
 
 	var player_local: Vector2 = _current_room.to_local(_player.global_position)
 	var spots := EnemyPlacement.points(Room.FLOOR, data.enemies_remaining,
-			player_local, _current_room.open_door_landings(), _rng)
+			player_local, _current_room.open_door_landings(), _rng, _obstacle_field)
 
 	for spot in spots:
 		var enemy: Enemy = ENEMY_SCENE.instantiate()
@@ -844,10 +864,111 @@ func _spawn_loot(source: StringName, at: Vector2) -> void:
 			AudioManager.play_sfx(item.drop_sound)
 
 
-## A small random nudge off a drop point, kept inside the walkable floor.
+## A small random nudge off a drop point, kept inside the walkable floor and out
+## of anything solid.
+##
+## A pickup inside a crate is not a softlock — the pickup's area still overlaps
+## the player's body, and breaking the crate frees it either way — but it is a
+## coin the player has to walk into a wall to see. Pushed out after the clamp
+## rather than before, because the props all sit well inside the floor rect.
 func _scattered(local: Vector2) -> Vector2:
 	var offset := Vector2(
 			_loot_rng.randf_range(-LOOT_SCATTER, LOOT_SCATTER),
 			_loot_rng.randf_range(-LOOT_SCATTER, LOOT_SCATTER))
 	var inside := Room.FLOOR.grow(-LOOT_SCATTER)
-	return (local + offset).clamp(inside.position, inside.end)
+	var spot := (local + offset).clamp(inside.position, inside.end)
+	return _obstacle_field.nudge_clear(spot, LOOT_CLEARANCE) \
+			.clamp(inside.position, inside.end)
+
+
+## Furnish a room with its solid props.
+##
+## Its own call rather than part of [method _populate], and the difference
+## matters: a room is freed and rebuilt on every entry, but _populate returns
+## early once the room has been cleared. Folding these two together — which is the
+## obvious tidy-up — would silently strip the furniture out of every room the
+## player has already fought through.
+##
+## Everything here is a function of the floor seed and the room's coord, never of
+## _rng and never of where the player is standing. _rng is one stream drawn in
+## room-visit order, so a prop taken from it would move when the player backtracks;
+## and the player arrives through a different door each visit, so a layout that
+## avoided them would rearrange itself for the same reason. A local generator
+## seeded per cell is what keeps fixed_seed.cfg honest.
+func _scatter_obstacles(data: RoomData) -> void:
+	_obstacle_field = ObstacleField.new()
+	if obstacle_set == null or not obstacle_set.allows_kind(data.kind):
+		return
+
+	# The room's own answer about its own floor: the exit room's is a shallow
+	# strip built around the lift, and it returns an empty rect to say "not here".
+	var floor_rect: Rect2 = _current_room.obstacle_rect()
+	if not floor_rect.has_area():
+		return
+
+	var rng := RandomNumberGenerator.new()
+	rng.seed = ObstaclePlacement.seed_for(
+			FloorGenerator.floor_seed_for(run_seed, _floor_number), data.coord)
+
+	# The doorways, plus the middle of the floor — that is where
+	# default_spawn_position puts a player who arrives without a door, which is
+	# every player at the start of every floor.
+	var keep_clear := _current_room.open_door_landings()
+	keep_clear.append(floor_rect.get_center())
+
+	var plans := ObstaclePlacement.points(floor_rect, obstacle_set, keep_clear, rng)
+	for i in plans.size():
+		# Walk the whole list and skip the broken ones rather than filtering it
+		# first: the index IS the identity, so renumbering after a break would
+		# bring back the wrong prop.
+		if (data.obstacles_destroyed & (1 << i)) != 0:
+			continue
+		var plan := plans[i]
+		var obstacle: Obstacle = OBSTACLE_SCENE.instantiate()
+		# Before it enters the tree, the same window make_boss uses: Health copies
+		# max_hp into hp in its own _ready.
+		obstacle.configure(plan.def, i)
+		obstacle.destroyed.connect(_on_obstacle_destroyed.bind(data))
+		_current_room.add_obstacle(obstacle, plan.position)
+		_obstacle_field.add(plan.position, plan.def.body_radius)
+
+
+## Remember a broken prop so it stays broken.
+##
+## Written straight away rather than deferred: this is reached from a bullet's
+## body_entered, so it runs mid physics-flush, but it touches no nodes — the same
+## split _on_enemy_died makes, where the bookkeeping is immediate and only the
+## spawning is put off.
+##
+## The field is not rebuilt. It is read when a room is stocked, which has already
+## happened by the time anything can be shot, and leaving a broken prop in it
+## costs nothing until the room is next entered and it is rebuilt from scratch.
+func _on_obstacle_destroyed(index: int, data: RoomData) -> void:
+	data.obstacles_destroyed |= 1 << index
+
+
+## Fold the active tuning profile into the obstacle set.
+##
+## Here rather than on ObstacleSet itself, which is where FloorConfig puts its
+## equivalent. Naming GameConfig inside a Resource makes that autoload a
+## compile-time dependency of every script that names the Resource's type, and
+## `godot --headless --script` starts no autoloads — which is why check_floors.gd
+## cannot currently load. Doing it from a Node keeps the systems/ side loadable
+## from a terminal, which is the whole point of putting the rules there.
+##
+## Duplicated first, so a profile cannot write itself into the .tres on disk: the
+## set is a shared resource, and editing it in place would follow the developer
+## into a commit — the accident tuning profiles exist to prevent.
+##
+## No fallback when the slot is empty. A Game with no obstacle set is a game with
+## bare rooms, which is a perfectly good game.
+func _apply_obstacle_overrides() -> void:
+	if obstacle_set == null:
+		return
+	obstacle_set = obstacle_set.duplicate()
+	obstacle_set.count_min = GameConfig.get_value(
+			"obstacles", "count_min", obstacle_set.count_min)
+	obstacle_set.count_max = GameConfig.get_value(
+			"obstacles", "count_max", obstacle_set.count_max)
+	obstacle_set.room_kinds = GameConfig.get_value(
+			"obstacles", "room_kinds", obstacle_set.room_kinds)

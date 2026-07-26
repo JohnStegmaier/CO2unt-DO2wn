@@ -61,6 +61,12 @@ const STUCK_IGNORE_RANGE := 24.0
 ## short enough that it is not a second, longer stagger stacked on the silence.
 const PULSE_KNOCKBACK_HOLD := 0.25
 
+## What a stunned enemy is tinted while _stun_timer is running. Pushed well
+## past 1.0 rather than dimmed below it — modulate only scales existing colour,
+## so darkening a already-saturated sprite barely reads, where blowing the
+## channels out toward white is unmissable even at a glance.
+const STUN_TINT := Color(2.4, 2.4, 2.4, 1.0)
+
 ## Seconds between one body's hits on the same prop. The player's own mercy
 ## window rate-limits contact damage TO the player; a crate has no such window,
 ## so without this a booger pressed against a barrel would delete it in two
@@ -98,6 +104,10 @@ var _knockback_hold := 0.0
 ## Set by pulse_stagger. The trigger stays jammed for the whole silence, which is
 ## much longer than the shove.
 var _fire_suppressed := 0.0
+## Set by pulse_stagger. Outlasts _knockback_hold — the shove plays out first,
+## then the enemy stands there unable to steer, shoot, or land contact damage
+## for the rest of this.
+var _stun_timer := 0.0
 
 @onready var _health: Health = $Health
 @onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
@@ -266,6 +276,14 @@ func _tick_timers(delta: float) -> void:
 	_fire_suppressed = maxf(0.0, _fire_suppressed - delta)
 	_break_cooldown = maxf(0.0, _break_cooldown - delta)
 
+	var was_stunned := _stun_timer > 0.0
+	_stun_timer = maxf(0.0, _stun_timer - delta)
+	# Edge-triggered rather than forced every frame: a hit landing mid-stun still
+	# gets to run its own flash tween (see _on_health_damaged) without this
+	# fighting it every physics tick.
+	if was_stunned and _stun_timer <= 0.0:
+		_sprite.modulate = Color.WHITE
+
 
 ## Rewrite the behaviour's view of the world, in the field's space.
 ##
@@ -289,6 +307,8 @@ func _refresh_context(delta: float) -> void:
 func _desired_velocity() -> Vector2:
 	if _dodge_hold > 0.0 or _knockback_hold > 0.0:
 		return velocity
+	if _stun_timer > 0.0:
+		return Vector2.ZERO
 	if _unstick_frames > 0:
 		_unstick_frames -= 1
 		# Assigned outright rather than eased, because the collision has already
@@ -357,7 +377,11 @@ func _damage_on_contact() -> void:
 		if collider == null or not collider.has_method("take_damage"):
 			continue
 		if collider == _target:
-			collider.take_damage(_contact_damage(), Damage.Type.BLUNT)
+			# Stunned means incapacitated, not just quiet — a booger standing
+			# there dazed should not still be able to shove damage into whoever
+			# walks into it.
+			if _stun_timer <= 0.0:
+				collider.take_damage(_contact_damage(), Damage.Type.BLUNT)
 			continue
 		if _def == null or _def.break_damage <= 0 or _break_cooldown > 0.0:
 			continue
@@ -391,7 +415,7 @@ func _draw_facing() -> void:
 ## weapon's rate of fire.
 func _maybe_shoot(delta: float) -> void:
 	_fire_cooldown -= delta
-	if _fire_cooldown > 0.0 or _fire_suppressed > 0.0:
+	if _fire_cooldown > 0.0 or _fire_suppressed > 0.0 or _stun_timer > 0.0:
 		return
 	var aim: Vector2 = _behaviour.aim(_ctx)
 	if aim.is_zero_approx():
@@ -436,16 +460,24 @@ func _on_dodge_sensor_area_entered(area: Area2D) -> void:
 	_dodge_cooldown = _behaviour.dodge_cooldown_seconds()
 
 
-## Hit by the player's pulse bomb: shoved away from the blast and its trigger
-## jammed for silence_duration. Duck-typed the same way take_damage is, so the
-## bomb needs nothing more than has_method to reach every enemy on screen.
-func pulse_stagger(from: Vector2, force: float, silence_duration: float) -> void:
+## Hit by the player's pulse bomb: shoved away from the blast, its trigger
+## jammed for silence_duration, stunned still (no steering, no shooting, no
+## contact damage) for stun_duration, and dealt a little blast damage on top.
+## Duck-typed the same way take_damage is, so the bomb needs nothing more than
+## has_method to reach every enemy on screen.
+func pulse_stagger(from: Vector2, force: float, silence_duration: float, stun_duration: float, damage: int) -> void:
 	var away := global_position - from
 	if away.length() < 0.001:
 		away = Vector2.RIGHT
 	velocity = away.normalized() * force
 	_knockback_hold = PULSE_KNOCKBACK_HOLD
 	_fire_suppressed = silence_duration
+	_stun_timer = stun_duration
+	# Set directly rather than left to the hit-flash tween below: a pulse tuned
+	# with pulse_damage at 0 still stuns, and should still read as stunned.
+	_sprite.modulate = STUN_TINT
+	if damage > 0:
+		take_damage(damage, Damage.Type.BLUNT)
 
 
 ## Bullets duck-type this — see bullet.gd. Damage lands on the body itself
@@ -468,10 +500,19 @@ func _bullet_damage() -> int:
 func _on_health_damaged(_amount: int, _type: int) -> void:
 	var flash := create_tween()
 	flash.tween_property(_sprite, "modulate", Color(4.0, 4.0, 4.0), 0.04)
-	flash.tween_property(_sprite, "modulate", Color.WHITE, 0.08)
+	# Settles on the stun tint rather than a hardcoded white, so a hit landing
+	# mid-stun (the pulse's own damage, or a bullet that follows it) flashes and
+	# comes back to grey instead of snapping back to full colour.
+	flash.tween_property(_sprite, "modulate", _resting_modulate(), 0.08)
 	# Pitch-varied, or a shotgun spread landing on four bodies on one frame is a
 	# single loud click rather than four hits.
 	AudioManager.play_sfx("enemy_take_damage", randf_range(0.92, 1.08), -8.0)
+
+
+## Baseline tint outside of a hit flash: grey while stunned, plain white
+## otherwise.
+func _resting_modulate() -> Color:
+	return STUN_TINT if _stun_timer > 0.0 else Color.WHITE
 
 
 func _on_health_died() -> void:

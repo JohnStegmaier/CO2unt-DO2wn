@@ -65,10 +65,26 @@ script = ExtResource("1_pb46o")
 source = &"turret"
 tables = Array[ExtResource("2_oq7eo")]([SubResource("Resource_turret_table")])
 
+[sub_resource type="Resource" id="Resource_boss_speed"]
+script = ExtResource("3_43nf4")
+item = ExtResource("8_speed_up")
+
+[sub_resource type="Resource" id="Resource_boss_speed_table"]
+script = ExtResource("2_oq7eo")
+entries = Array[ExtResource("3_43nf4")]([SubResource("Resource_boss_speed")])
+
+[sub_resource type="Resource" id="Resource_boss_oxygen"]
+script = ExtResource("3_43nf4")
+item = ExtResource("12_oxygen_big")
+
+[sub_resource type="Resource" id="Resource_boss_oxygen_table"]
+script = ExtResource("2_oq7eo")
+entries = Array[ExtResource("3_43nf4")]([SubResource("Resource_boss_oxygen")])
+
 [sub_resource type="Resource" id="Resource_wdb8a"]
 script = ExtResource("1_pb46o")
 source = &"boss"
-tables = Array[ExtResource("2_oq7eo")]([SubResource("Resource_26s0q")])
+tables = Array[ExtResource("2_oq7eo")]([SubResource("Resource_boss_speed_table"), SubResource("Resource_boss_oxygen_table")])
 
 [sub_resource type="Resource" id="Resource_prop_shotgun"]
 script = ExtResource("3_43nf4")
@@ -122,29 +138,56 @@ weight = 1.0
 script = ExtResource("2_oq7eo")
 entries = Array[ExtResource("3_43nf4")]([SubResource("Resource_chest_shotgun"), SubResource("Resource_chest_timmy"), SubResource("Resource_chest_chakram")])
 
-[sub_resource type="Resource" id="Resource_shop_vinaigrette"]
+[sub_resource type="Resource" id="Resource_shop_oxygen_small"]
 script = ExtResource("3_43nf4")
-item = ExtResource("7_vinaigrette")
-price = 10
+item = ExtResource("4_dc0vh")
+price = 15
 
-[sub_resource type="Resource" id="Resource_shop_speed"]
+[sub_resource type="Resource" id="Resource_shop_oxygen_small_table"]
+script = ExtResource("2_oq7eo")
+entries = Array[ExtResource("3_43nf4")]([SubResource("Resource_shop_oxygen_small")])
+
+[sub_resource type="Resource" id="Resource_shop_oxygen_big"]
 script = ExtResource("3_43nf4")
-item = ExtResource("8_speed_up")
+item = ExtResource("12_oxygen_big")
 price = 25
 
-[sub_resource type="Resource" id="Resource_shop_chakram"]
+[sub_resource type="Resource" id="Resource_shop_oxygen_big_table"]
+script = ExtResource("2_oq7eo")
+entries = Array[ExtResource("3_43nf4")]([SubResource("Resource_shop_oxygen_big")])
+
+[sub_resource type="Resource" id="Resource_shop_bomb"]
+script = ExtResource("3_43nf4")
+item = ExtResource("5_xthlv")
+price = 20
+
+[sub_resource type="Resource" id="Resource_shop_bomb_table"]
+script = ExtResource("2_oq7eo")
+entries = Array[ExtResource("3_43nf4")]([SubResource("Resource_shop_bomb")])
+
+[sub_resource type="Resource" id="Resource_shop_weapon_shotgun"]
+script = ExtResource("3_43nf4")
+item = ExtResource("9_shotgun")
+price = 40
+
+[sub_resource type="Resource" id="Resource_shop_weapon_timmy"]
+script = ExtResource("3_43nf4")
+item = ExtResource("14_timmy")
+price = 40
+
+[sub_resource type="Resource" id="Resource_shop_weapon_chakram"]
 script = ExtResource("3_43nf4")
 item = ExtResource("15_chakram")
 price = 40
 
-[sub_resource type="Resource" id="Resource_shop_table"]
+[sub_resource type="Resource" id="Resource_shop_weapon_table"]
 script = ExtResource("2_oq7eo")
-entries = Array[ExtResource("3_43nf4")]([SubResource("Resource_shop_vinaigrette"), SubResource("Resource_shop_speed"), SubResource("Resource_shop_chakram")])
+entries = Array[ExtResource("3_43nf4")]([SubResource("Resource_shop_weapon_shotgun"), SubResource("Resource_shop_weapon_timmy"), SubResource("Resource_shop_weapon_chakram")])
 
 [sub_resource type="Resource" id="Resource_shop_rule"]
 script = ExtResource("1_pb46o")
 source = &"shop"
-tables = Array[ExtResource("2_oq7eo")]([SubResource("Resource_shop_table")])
+tables = Array[ExtResource("2_oq7eo")]([SubResource("Resource_shop_oxygen_small_table"), SubResource("Resource_shop_oxygen_big_table"), SubResource("Resource_shop_bomb_table"), SubResource("Resource_shop_weapon_table")])
 
 [sub_resource type="Resource" id="Resource_chest_power"]
 script = ExtResource("3_43nf4")

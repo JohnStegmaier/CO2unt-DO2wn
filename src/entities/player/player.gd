@@ -92,6 +92,13 @@ var f_bombs := 1
 ## from the inspector alongside max_f_bombs.
 @export var pulse_knockback_force := 260.0
 @export var pulse_silence_duration := 2.0
+## How long the blast leaves an enemy unable to steer, shoot, or land contact
+## damage — outlasts the knockback itself, which only holds for
+## Enemy.PULSE_KNOCKBACK_HOLD before this takes over.
+@export var pulse_stun_duration := 1.5
+## A little damage, not a kill button — the pulse is crowd control that also
+## chips away at whatever it staggers, not a second bomb.
+@export var pulse_damage := 5
 
 ## Fired whenever the bomb count changes, so the HUD never has to poll for it.
 signal bombs_changed(current: int, max_bombs: int)
@@ -109,7 +116,8 @@ func gain_coin() -> void:
 ## Emergency pulse: spends one bomb, wipes every projectile on screen (same
 ## group-wide sweep game.gd uses on a room change or death — so this clears the
 ## player's own bullets too, not just the enemies'), and staggers every enemy
-## on screen — knocked back and trigger-jammed for pulse_silence_duration.
+## on screen — knocked back, trigger-jammed for pulse_silence_duration, stunned
+## for pulse_stun_duration, and dealt pulse_damage.
 func use_bomb() -> void:
 	if f_bombs <= 0 or _is_dead:
 		return
@@ -124,7 +132,8 @@ func use_bomb() -> void:
 	# the same way bullet.gd only ever asks a body for take_damage.
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if enemy.has_method("pulse_stagger"):
-			enemy.pulse_stagger(global_position, pulse_knockback_force, pulse_silence_duration)
+			enemy.pulse_stagger(global_position, pulse_knockback_force, pulse_silence_duration,
+					pulse_stun_duration, pulse_damage)
 
 	_spawn_pulse()
 

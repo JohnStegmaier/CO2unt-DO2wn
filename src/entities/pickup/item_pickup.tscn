@@ -1,9 +1,6 @@
 [gd_scene format=3 uid="uid://bk8n2vqxwt5ya"]
 
-[ext_resource type="Script" path="res://src/entities/pickup/item_pickup.gd" id="1_pickup"]
-
-[sub_resource type="CircleShape2D" id="CircleShape2D_pickup"]
-radius = 8.0
+[ext_resource type="Script" uid="uid://c6jdel4wqjl2v" path="res://src/entities/pickup/item_pickup.gd" id="1_pickup"]
 
 [sub_resource type="Gradient" id="Gradient_shadow"]
 colors = PackedColorArray(0, 0, 0, 0.45, 0, 0, 0, 0)
@@ -14,28 +11,31 @@ fill = 1
 fill_from = Vector2(0.5, 0.5)
 fill_to = Vector2(1, 0.5)
 
-[node name="ItemPickup" type="Area2D"]
+[sub_resource type="CircleShape2D" id="CircleShape2D_pickup"]
+radius = 8.0
+
+[node name="ItemPickup" type="Area2D" unique_id=177444020]
 collision_layer = 64
 collision_mask = 2
 script = ExtResource("1_pickup")
 
-[node name="Shadow" type="Sprite2D" parent="."]
+[node name="Shadow" type="Sprite2D" parent="." unique_id=1244483770]
 z_index = -1
 position = Vector2(0, 7)
 scale = Vector2(0.35, 0.12)
 texture = SubResource("GradientTexture2D_shadow")
 
-[node name="Visual" type="Node2D" parent="."]
+[node name="Visual" type="Node2D" parent="." unique_id=1882622245]
 
-[node name="Backdrop" type="Sprite2D" parent="Visual"]
+[node name="Backdrop" type="Sprite2D" parent="Visual" unique_id=1586100123]
 scale = Vector2(0.265, 0.265)
 
-[node name="Icon" type="Sprite2D" parent="Visual"]
+[node name="Icon" type="Sprite2D" parent="Visual" unique_id=1071107289]
 scale = Vector2(0.265, 0.265)
 
-[node name="IconAnim" type="AnimatedSprite2D" parent="Visual"]
+[node name="IconAnim" type="AnimatedSprite2D" parent="Visual" unique_id=511058205]
 visible = false
 scale = Vector2(0.265, 0.265)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=628525079]
 shape = SubResource("CircleShape2D_pickup")

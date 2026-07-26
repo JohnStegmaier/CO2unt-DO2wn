@@ -530,8 +530,8 @@ func reload() -> void:
 
 
 ## Maps current movement input to one of the dodge directions we have
-## animations for. Pure up, up-right, and up-left aren't supported yet, so
-## those return Vector2.ZERO and the dodge input is simply ignored.
+## animations for. Up-right and up-left aren't supported yet, so those return
+## Vector2.ZERO and the dodge input is simply ignored.
 func get_dodge_direction(v: Vector2) -> Vector2:
 	if v.y > 0:
 		if v.x > 0:
@@ -544,12 +544,14 @@ func get_dodge_direction(v: Vector2) -> Vector2:
 			return Vector2.RIGHT
 		elif v.x < 0:
 			return Vector2.LEFT
+	elif v.x == 0:
+		return Vector2.UP
 	return Vector2.ZERO
 
 
 ## Dodge in the given direction. "dodge_right" covers right and down-right,
-## mirrored via flip_h for left and down-left; straight down gets its own
-## animation since it isn't just a mirror of anything.
+## mirrored via flip_h for left and down-left; straight down and straight up
+## get their own animations since they aren't just a mirror of anything.
 func dodge(direction: Vector2) -> void:
 	can_move = false
 	is_dodging = true
@@ -560,6 +562,9 @@ func dodge(direction: Vector2) -> void:
 	if direction == Vector2.DOWN:
 		last_direction = "down"
 		sprite.play("dodge_down")
+	elif direction == Vector2.UP:
+		last_direction = "up"
+		sprite.play("dodge_up")
 	else:
 		last_direction = "right"
 		sprite.flip_h = direction.x < 0

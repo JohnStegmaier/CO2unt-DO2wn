@@ -10,6 +10,7 @@ extends Node2D
 const ROOM_SCENE := preload("res://src/levels/room/room.tscn")
 const ENEMY_SCENE := preload("res://src/entities/enemy/enemy.tscn")
 const GAME_OVER_SCENE := "res://src/screens/game_over/game_over.tscn"
+const VICTORY_SCENE := "res://src/screens/victory/victory.tscn"
 
 @export_group("Room Transition")
 ## Seconds to slide from one room to the next.
@@ -26,6 +27,25 @@ const GAME_OVER_SCENE := "res://src/screens/game_over/game_over.tscn"
 ## all skirmishers is a shooting gallery, a room of all chasers is a scrum.
 @export_range(0.0, 1.0) var skirmisher_chance: float = 0.1
 
+@export_group("Bosses")
+## How many bad guys a boss room holds. One by default: a boss is a thing you
+## fight, not a crowd you clear.
+@export var boss_enemies_min: int = 1
+@export var boss_enemies_max: int = 1
+## Hit points, as a multiple of an ordinary enemy's.
+@export var boss_hp_scale: float = 6.0
+## Hit points of the man in the suit waiting in the Basement, on the same scale.
+## Lower than an ordinary floor boss on purpose: he is the end of the game, not
+## the hardest fight in it, and going out on a wall of hit points would undercut
+## the joke. Kept a separate absolute value rather than a multiplier of the line
+## above, so tuning ordinary bosses cannot silently retune the ending.
+@export var final_boss_hp_scale: float = 2.5
+## What a boss hits for, as a multiple. Far gentler than the hit point scale on
+## purpose — see Enemy.make_boss for why the two cannot be the same number.
+@export var boss_damage_scale: float = 1.6
+## How much bigger a boss is drawn, and how much wider its collider is.
+@export var boss_size_scale: float = 1.7
+
 @export_group("Death")
 ## Seconds for the heartbeat to swell up once the air goes critical. Runs
 ## alongside the letterbox slide, so keep it in the same ballpark.
@@ -33,6 +53,12 @@ const GAME_OVER_SCENE := "res://src/screens/game_over/game_over.tscn"
 ## Seconds the corpse is held under the closed vignette before the wipe. Just
 ## long enough to register that the body stopped moving.
 @export var death_hold: float = 0.6
+
+@export_group("Victory")
+## Seconds the last body is left on screen before the wipe to the victory screen.
+## Longer than death_hold: nothing is closing in, and the player has earned a beat
+## to look at the room they finished the game in.
+@export var victory_hold: float = 1.4
 
 @export_group("Exit Room")
 ## Stand-in scene for the floor's exit cell. Empty means the exit is an ordinary
@@ -88,7 +114,19 @@ var _transitioning: bool = false
 var _dying: bool = false
 ## Floors descended. 0 is the first, and it feeds both the seed and the room
 ## count, so every floor of a run is a different size and shape.
+##
+## Counts UP while the game counts DOWN. That is not an oversight — see
+## [FloorLadder], which is the only thing that turns this into the number on the
+## wall, so the generator can keep the value that grows with depth.
 var _floor_number: int = 0
+## This floor's boss room has been emptied. Reset per floor rather than per run,
+## because what it unlocks is a property of the floor: on floor 1 it is the
+## Basement, and on every other floor it is nothing at all.
+var _boss_cleared: bool = false
+## Fires-once guard on the ending, the mirror of _dying. Kept separate so the two
+## terminal states cannot be confused for one another — a won run must not take
+## any of the paths that check _dying to decide the player is suffocating.
+var _won: bool = false
 
 
 func _ready() -> void:
@@ -130,6 +168,16 @@ func _ready() -> void:
 	# A profile that lowers only the ceiling should not leave the floor above it:
 	# `[enemies] max = 0` on its own has to mean an empty room, not one enemy.
 	enemies_min = mini(enemies_min, enemies_max)
+	boss_enemies_min = GameConfig.get_value("enemies", "boss_min", boss_enemies_min)
+	boss_enemies_max = GameConfig.get_value("enemies", "boss_max", boss_enemies_max)
+	boss_enemies_min = mini(boss_enemies_min, boss_enemies_max)
+	# A profile that empties the station has to empty its boss rooms too, or
+	# `peaceful` still puts a boss between the player and the Basement. Keyed on
+	# the ordinary ceiling rather than on the profile's name, so any profile that
+	# turns the enemies off gets the same answer.
+	if enemies_max == 0:
+		boss_enemies_min = 0
+		boss_enemies_max = 0
 	run_seed = GameConfig.get_value("floor", "run_seed", run_seed)
 
 	_rng.randomize()
@@ -153,7 +201,7 @@ func _ready() -> void:
 ## downbeat at the wrong offset for the rest of the run.
 func _start_music() -> void:
 	await get_tree().create_timer(0.25, false).timeout
-	if _dying:
+	if _dying or _won:
 		return
 	AudioManager.play_music("60000 light years", 1, 0, 0)
 
@@ -229,6 +277,11 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 	_room_container.add_child(_current_room)
 	_current_room.reset_physics_interpolation()
 	_current_room.configure(data)
+	# After configure, which is what decides whether this cell holds a car at all.
+	# Read here rather than kept live: the exit and the boss are different dead
+	# ends, so the player can never be standing in this room at the moment the
+	# answer changes.
+	_current_room.set_boardable(_exit_available())
 	_current_room.door_entered.connect(_on_door_entered)
 	_current_room.elevator_entered.connect(_on_elevator_entered)
 	_current_coord = coord
@@ -356,7 +409,13 @@ func _on_elevator_entered() -> void:
 	# can still walk, so without this a body already on its way to the game over
 	# screen could board the elevator and be carried to a floor it has no business
 	# reaching.
-	if _transitioning or _dying:
+	if _transitioning or _dying or _won:
+		return
+	# Belt and braces on top of set_boardable: the Basement's car is never live, so
+	# nothing should be able to report boarding it, and a run that fell off the
+	# bottom of the ladder would generate a floor the plates cannot even name.
+	if FloorLadder.is_final(_floor_number):
+		push_warning("Game: boarded the lift on %s, which has nothing below it" % FloorLadder.long_label(_floor_number))
 		return
 	_transitioning = true
 	# The player is a passenger for the duration. Without this, held movement keys
@@ -364,7 +423,7 @@ func _on_elevator_entered() -> void:
 	_player.is_warping = true
 	_player.velocity = Vector2.ZERO
 
-	await _ride.descend()
+	await _ride.descend(_floor_number)
 
 	_clear_floor()
 	await _begin_floor(_floor_number + 1)
@@ -384,6 +443,18 @@ func _on_elevator_entered() -> void:
 ## air, or air should carry over, this is the one place that changes.
 func _on_floor_advanced() -> void:
 	_o2_timer.refill()
+
+
+## Will this floor's lift take the player anywhere?
+##
+## Two reasons it might not. The Basement is the bottom of the building, so there
+## is never anywhere further down. And floor 1 is where the game's one real secret
+## lives: the panel shows no floor below until its boss is dead, and then it shows
+## a Basement the player had no reason to think was there.
+func _exit_available() -> bool:
+	if FloorLadder.is_final(_floor_number):
+		return false
+	return not FloorLadder.gates_on_boss(_floor_number) or _boss_cleared
 
 
 ## Throw the current floor away so the next one starts from nothing.
@@ -412,6 +483,10 @@ func _clear_floor() -> void:
 ## Nothing is frozen and nothing is torn down here, because this is a state the
 ## player can still get out of. See _on_air_restored.
 func _on_air_depleted() -> void:
+	# _win() has already taken the clock and the track down, and taking them down
+	# twice faults on a connection that is no longer there.
+	if _won:
+		return
 	GlobalTimer.tick.disconnect(_on_global_tick)
 	GlobalTimer.tick.disconnect(_start_music)
 	AudioManager.play_sfx("power_down", 1, 0, 0)
@@ -430,7 +505,7 @@ func _on_air_depleted() -> void:
 ## back on the grid exactly the way it does at the start of a run. The sync hack
 ## is untouched — this only reconnects the same signals it already relies on.
 func _on_air_restored() -> void:
-	if _dying:
+	if _dying or _won:
 		return
 	GlobalTimer.tick.connect(_on_global_tick)
 	GlobalTimer.tick.connect(_start_music)
@@ -445,7 +520,9 @@ func _on_air_restored() -> void:
 ## both have to play, and a tree pause would freeze the very tweens carrying us
 ## to the game over screen. The world is stilled piece by piece instead.
 func _on_player_died() -> void:
-	if _dying:
+	# _won as well: winning on the last breath must not be overtaken by the tank
+	# emptying while the ending plays out. The last thing to happen wins.
+	if _dying or _won:
 		return
 	_dying = true
 
@@ -477,13 +554,69 @@ func _on_player_died() -> void:
 	NavigationManager.go_to_screen(GAME_OVER_SCENE, last_frame)
 
 
-## Stock a room with its bad guys. Only ordinary rooms fight, and a room whose
-## count has reached zero stays quiet forever.
+## The man in the suit is on the Basement floor and the building is behind you.
+##
+## Structured as the mirror of [method _on_player_died] and for the same reasons:
+## the tree is not paused, because the wipe carrying us to the victory screen is a
+## tween and a paused tree would freeze it. The world is stilled piece by piece.
+##
+## What is deliberately NOT here is [method Player.die]. The player walks out of
+## this one, so there is no squash and no vignette — the last frame kept is the
+## room, lit, with the body standing up in it.
+func _win() -> void:
+	if _won or _dying:
+		return
+	_won = true
+
+	# The clock stops. Everywhere else in this file the countdown running through
+	# a cutscene is the point; here it is the one thing that could still kill a
+	# player who has already finished the game.
+	#
+	# Tested rather than disconnected outright: _on_air_depleted drops both of
+	# these when the tank empties, so a player who wins while suffocating would
+	# otherwise fault on a connection that is already gone.
+	if GlobalTimer.tick.is_connected(_on_global_tick):
+		GlobalTimer.tick.disconnect(_on_global_tick)
+	if GlobalTimer.tick.is_connected(_start_music):
+		GlobalTimer.tick.disconnect(_start_music)
+	_o2_timer.process_mode = Node.PROCESS_MODE_DISABLED
+	AudioManager.stop_heartbeat()
+
+	# A paused ending is a soft lock with no way out, same as a paused death.
+	_pause_menu.set_pause_allowed(false)
+
+	# The player is a spectator from here: held keys must not walk them out of the
+	# frame that is about to be kept.
+	_player.is_warping = true
+	_player.velocity = Vector2.ZERO
+	_camera.set_lead_enabled(false)
+	get_tree().call_group("projectiles", "queue_free")
+
+	await get_tree().create_timer(victory_hold, false).timeout
+	if _current_room != null:
+		_current_room.process_mode = Node.PROCESS_MODE_DISABLED
+	_hud.visible = false
+
+	var last_frame: Texture2D = await _death_overlay.capture_screen()
+	AudioManager.stop_music()
+	await _death_overlay.fade_to_black()
+	NavigationManager.go_to_screen(VICTORY_SCENE, last_frame)
+
+
+## Stock a room with its bad guys. Ordinary rooms and boss rooms fight; a room
+## whose count has reached zero stays quiet forever.
+##
+## Boss rooms differ only in how many and how hard, not in how any of this works
+## — same placement, same lock, same count coming back if the player retreats
+## mid-fight. That is deliberate: the climax of a floor should be the same
+## machinery under load, so there is only ever one of these to get right.
 func _populate(data: RoomData) -> void:
-	if data.kind != RoomData.Kind.NORMAL or data.enemies_remaining == 0:
+	var is_boss: bool = data.kind == RoomData.Kind.BOSS
+	if not (is_boss or data.kind == RoomData.Kind.NORMAL) or data.enemies_remaining == 0:
 		return
 	if data.enemies_remaining < 0:
-		data.enemies_remaining = _rng.randi_range(enemies_min, enemies_max)
+		data.enemies_remaining = _rng.randi_range(boss_enemies_min, boss_enemies_max) if is_boss \
+				else _rng.randi_range(enemies_min, enemies_max)
 
 	# A room that stocks nothing must not seal itself. The doors are unlocked by
 	# enemies dying, so locking an empty room locks it for good and the floor is
@@ -492,6 +625,12 @@ func _populate(data: RoomData) -> void:
 	# is 1 — the peaceful profile is what makes a zero roll possible.
 	if data.enemies_remaining <= 0:
 		data.enemies_remaining = 0
+		# A boss room that stocks nothing is a boss room that is already beaten.
+		# Nothing will ever die in it to say so, and the gate it opens is the only
+		# way down off floor 1 — so a profile that turns the enemies off would
+		# otherwise leave the run unfinishable rather than merely quiet.
+		if is_boss:
+			_clear_boss_gate()
 		return
 
 	var player_local: Vector2 = _current_room.to_local(_player.global_position)
@@ -501,9 +640,14 @@ func _populate(data: RoomData) -> void:
 	for spot in spots:
 		var enemy: Enemy = ENEMY_SCENE.instantiate()
 		# Set before it enters the tree, so _ready() sees the finished article —
-		# the dodge sensor is only armed for skirmishers.
+		# the dodge sensor is only armed for skirmishers, and Health copies its
+		# maximum into its current value.
 		enemy.behaviour = Enemy.Behaviour.SKIRMISHER if _rng.randf() < skirmisher_chance \
 				else Enemy.Behaviour.CHASER
+		if is_boss:
+			var hp_scale: float = final_boss_hp_scale if FloorLadder.is_final(_floor_number) \
+					else boss_hp_scale
+			enemy.make_boss(hp_scale, boss_damage_scale, boss_size_scale)
 		enemy.set_target(_player)
 		enemy.died.connect(_on_enemy_died.bind(data))
 		_current_room.add_entity(enemy, spot)
@@ -515,13 +659,38 @@ func _populate(data: RoomData) -> void:
 
 func _on_enemy_died(data: RoomData) -> void:
 	data.enemies_remaining -= 1
-	if data.enemies_remaining <= 0 and _current_room != null:
+	if data.enemies_remaining > 0:
+		return
+	if _current_room != null:
 		_current_room.set_locked(false)
+	if data.kind != RoomData.Kind.BOSS:
+		return
+
+	_clear_boss_gate()
+
+
+## The floor's boss room is empty. On floor 1 that is what puts a Basement under
+## the building; in the Basement itself there is nothing left below, so it is the
+## end of the game.
+##
+## Reached both by killing the last boss and by walking into a boss room that
+## stocked none — see _populate. Sharing one path is what stops the second case
+## being a soft lock.
+func _clear_boss_gate() -> void:
+	_boss_cleared = true
+	if FloorLadder.is_final(_floor_number):
+		_win()
 
 
 ## Generate a floor and walk into its spawn room.
 func _begin_floor(floor_number: int) -> void:
+	if floor_number > FloorLadder.BASEMENT_INDEX:
+		push_warning("Game: asked for floor index %d, below the Basement" % floor_number)
 	_floor_number = floor_number
+	# Per floor, not per run: what a dead boss unlocks belongs to the floor it
+	# died on, and carrying the flag down would open the next floor's lift before
+	# its own boss had been found.
+	_boss_cleared = false
 	var floor_seed: int = FloorGenerator.floor_seed_for(run_seed, floor_number)
 	_plan = FloorGenerator.generate(floor_config, floor_number, floor_seed)
 	# Before the awaited _enter_room below, or the spawn room announces itself to
@@ -533,7 +702,7 @@ func _begin_floor(floor_number: int) -> void:
 	# are stocked as you reach them, so a different path draws differently.
 	_rng.seed = floor_seed
 
-	print("floor %d — run seed %d, %d rooms" % [floor_number + 1, run_seed, _plan.size()])
+	print("%s — run seed %d, %d rooms" % [FloorLadder.long_label(floor_number), run_seed, _plan.size()])
 	print(_plan.to_ascii())
 	# Awaited, so a caller riding the elevator can hold the overlay up until the
 	# spawn room is built and stocked rather than opening onto an empty screen.

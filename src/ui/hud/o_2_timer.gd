@@ -164,6 +164,11 @@ func _ready() -> void:
 	# GlobalTimer's Timer has no wait_time override, so it defaults to Godot's
 	# 1.0 — this is what makes the digital readout tick over once a second
 	# instead of drifting with delta and drain_rate like the needle does.
+	#
+	# GlobalTimer is an AUTOLOAD, so it outlives every scene change. Anything
+	# connected here therefore has to survive being called while this node is on
+	# its way out — see the is_inside_tree() guards below, and keep one on any
+	# new subscriber that reaches for get_tree().
 	GlobalTimer.tick.connect(update_label)
 	GlobalTimer.tick.connect(play_heartbeat)
 	GlobalTimer.tick.connect(flick_needle)
@@ -372,7 +377,14 @@ func set_firerate_lvl(lvl: int) -> void:
 	_set_level_pips(firerate_lv_pips, lvl)
 
 
+## Driven by the GlobalTimer autoload, which keeps ticking through a scene change
+## — so this can be called in the window where the run has been swapped out for
+## the game over or victory screen and this node is no longer in the tree. Reach
+## for get_tree() there and it is null. The same guard is on every tick
+## subscriber below for the same reason.
 func update_label() -> void:
+	if not is_inside_tree():
+		return
 	await get_tree().create_timer(0.2).timeout
 	update_label_color()
 	_update_label_text()
@@ -393,6 +405,9 @@ func _update_label_text() -> void:
 	label.text = new_text
 
 func play_heartbeat():
+	# See update_label — the tick outlives this node.
+	if not is_inside_tree():
+		return
 	if time_left > 0:
 		await get_tree().create_timer(0.15).timeout
 		heartbeat.play("beat")
@@ -403,6 +418,9 @@ func play_heartbeat():
 ## over. Keeps the two groups (1/3/5 and 2/4/6) in lockstep opposition rather
 ## than tracking three independent blink states.
 func _alternate_lights() -> void:
+	# See update_label — the tick outlives this node.
+	if not is_inside_tree():
+		return
 	await get_tree().create_timer(0.2).timeout
 	_lights_alternate = not _lights_alternate
 	var odd_color := LIGHT_ON_COLOR if _lights_alternate else LIGHT_OFF_COLOR
@@ -430,6 +448,9 @@ func update_needle() -> void:
 ## read as dead. It starts again on its own if air comes back, because
 ## _depleted_emitted goes false again with it.
 func flick_needle() -> void:
+	# See update_label — the tick outlives this node.
+	if not is_inside_tree():
+		return
 	if _depleted_emitted:
 		return
 	await get_tree().create_timer(0.3, false).timeout

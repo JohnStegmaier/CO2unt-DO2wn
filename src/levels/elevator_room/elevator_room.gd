@@ -223,8 +223,29 @@ func open_door_landings() -> Array[Vector2]:
 
 ## Seal the way out, or restore it. Same contract as Room's, with a strip of floor
 ## standing in for a doorway.
+##
+## Deliberately NOT the same thing as [method set_boardable]: this governs the way
+## BACK, into the floor the player came from, and has to keep working on a floor
+## whose lift is dead — otherwise a gated exit room is a trap.
 func set_locked(locked: bool) -> void:
 	_exit_armed = not locked
+
+
+## Will the lift take the player anywhere? Room's version hides a top-down car;
+## this room's car is the architecture, so it stays visible and the DOORS are what
+## goes dead. Walking up to a lift that will not open is the whole message on
+## floor 1 — there is nothing below you yet.
+##
+## Room's implementation is still run, so the inherited top-down car stays put
+## away either way.
+func set_boardable(boardable: bool) -> void:
+	super.set_boardable(boardable)
+	if boardable or not _doors_open:
+		return
+	# Gated while the player is already stood in the mouth. Shut the leaves rather
+	# than leave a way in that no longer leads anywhere.
+	_doors_open = false
+	_set_doors_open(false)
 
 
 ## Doors, boarding and the way out are all decided from where the player is
@@ -248,8 +269,9 @@ func _process(_delta: float) -> void:
 		return
 
 	# Hysteresis: opening and shutting at the same line would flutter the leaves
-	# every frame for a player standing exactly on it.
-	if depth <= DOOR_OPEN_Y and not _doors_open:
+	# every frame for a player standing exactly on it. _boardable gates only the
+	# opening half, so a lift that goes dead while open still shuts normally.
+	if _boardable and depth <= DOOR_OPEN_Y and not _doors_open:
 		_doors_open = true
 		_set_doors_open(true)
 	elif depth >= DOOR_SHUT_Y and _doors_open:

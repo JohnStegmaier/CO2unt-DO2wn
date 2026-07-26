@@ -93,6 +93,40 @@ func set_target(target: Node2D) -> void:
 	_target = target
 
 
+## Promote this one to a floor boss: harder to kill, harder to stand next to, and
+## big enough that walking into the room tells you which room it is.
+##
+## Deliberately a buff and not a subclass. A boss with its own attack patterns is
+## a different job; what this buys is a fight that reads as a climax using the
+## enemy that already exists, and it is the one call to delete when that job is
+## done.
+##
+## Call it BEFORE the node enters the tree, the same window [method set_target]
+## and [member behaviour] are set in. Health copies max_hp into hp in its own
+## _ready(), so raising the maximum first is all the healing there is to do.
+##
+## Damage is a separate multiplier from hit points on purpose. The player has no
+## health bar — damage is taken out of the O2 countdown — so scaling what a boss
+## hits for by what it takes to kill one does not make the fight longer, it makes
+## it unsurvivable.
+func make_boss(hp_scale: float, damage_scale: float, size_scale: float) -> void:
+	var health: Health = $Health
+	health.max_hp = maxi(1, roundi(health.max_hp * hp_scale))
+	contact_damage = maxi(1, roundi(contact_damage * damage_scale))
+	bullet_damage = maxi(1, roundi(bullet_damage * damage_scale))
+
+	var sprite: Sprite2D = $Sprite2D
+	sprite.scale *= size_scale
+
+	# The shape is a sub-resource of enemy.tscn and therefore shared by every
+	# enemy instanced from it. Resizing the original would inflate the whole room.
+	var collider: CollisionShape2D = $CollisionShape2D
+	var shape: CapsuleShape2D = collider.shape.duplicate()
+	shape.radius *= size_scale
+	shape.height *= size_scale
+	collider.shape = shape
+
+
 func _physics_process(delta: float) -> void:
 	if _target == null or not is_instance_valid(_target):
 		return

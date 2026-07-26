@@ -138,6 +138,10 @@ const LANDING := Vector2(221, 216)
 @onready var _slots: Node2D = $Depth/Shelves/Slots
 @onready var _frame: SelectionFrame = $Depth/Shelves/SelectionFrame
 @onready var _talk_prompt: Label = $Depth/Shopkeeper/TalkPrompt
+## Sits on the back wall above the shelves rather than over the keeper's head:
+## while browsing, the player is drawn at up to 3x from the counter upward and
+## the centre column is the busiest strip in the frame.
+@onready var _browse_prompt: Label = $Depth/Shelves/BrowsePrompt
 @onready var _keeper: AnimatedSprite2D = $Depth/Shopkeeper/keeper
 
 ## Every plane that slides when the player looks around, gathered from the scene
@@ -184,6 +188,11 @@ var _look: float = 0.0
 ## stays put when the thing inside it is sold.
 var _contents: Array[Node2D] = []
 
+## Which device the prompt text was last written for. Compared every frame so a
+## player who puts the mouse down and picks up a pad sees the glyphs change,
+## without rebuilding two strings sixty times a second to say the same thing.
+var _prompts_for_gamepad: bool = false
+
 
 func _ready() -> void:
 	# Deliberately NOT super._ready(): Room's version wires four doorways and a
@@ -195,6 +204,7 @@ func _ready() -> void:
 		grid = ShopGrid.new()
 	_rebuild_shelves()
 	_refresh_coins()
+	_refresh_prompt_text()
 
 
 func _exit_tree() -> void:
@@ -294,6 +304,11 @@ func set_sealed_sides(_sides: int) -> void:
 ## this room, they are warped in behind a fade, and a body that appears already
 ## inside a zone never emits body_entered. See ElevatorRoom._process.
 func _process(delta: float) -> void:
+	# Ahead of everything else so it covers both prompts in both states: the talk
+	# prompt is on screen while walking, the browse prompt while engaged.
+	if InputPrompt.using_gamepad() != _prompts_for_gamepad:
+		_refresh_prompt_text()
+
 	# Browsing is checked BEFORE the is_warping guard below, because engaging
 	# sets that very flag to freeze the player. Ordered the other way round, the
 	# shop would lock up the instant the player talked to anybody.
@@ -328,6 +343,62 @@ func _process(delta: float) -> void:
 
 func _can_talk(local: Vector2) -> bool:
 	return local.y <= TALK_Y and local.x >= TALK_X.x and local.x <= TALK_X.y
+
+
+## Write both prompts for whichever device the player is on.
+##
+## Rebuilt rather than authored in the scene because the scene can only hold one
+## device's answer, and a prompt naming the wrong button is worse than no prompt:
+## the player presses what she was told, nothing happens, and she decides the
+## shop is broken.
+func _refresh_prompt_text() -> void:
+	_prompts_for_gamepad = InputPrompt.using_gamepad()
+	var confirm: String = InputPrompt.glyph("interact")
+
+	_talk_prompt.text = _clause(confirm, "TALK")
+
+	# Buy and leave only. Browsing with the arrows, the stick or the mouse is
+	# found by trying, and a third clause pushes this past the width of the band
+	# it sits in.
+	var clauses := PackedStringArray()
+	for clause in [_clause(confirm, "BUY"), _clause(InputPrompt.glyph("back"), "LEAVE")]:
+		if not clause.is_empty():
+			clauses.append(clause)
+	_browse_prompt.text = "    ".join(clauses)
+
+
+## "[E] BUY", or nothing at all when nothing is bound on this device. Drawing
+## "[] BUY" reads as a rendering bug, and guessing a key is worse than silence.
+static func _clause(glyph: String, verb: String) -> String:
+	if glyph.is_empty():
+		return ""
+	return "[%s] %s" % [glyph, verb]
+
+
+## The way out of browsing. The one input in this room that is NOT polled.
+##
+## `back` is Escape, which is also `pause`. Leaving browsing therefore has to
+## CONSUME the press, or the same Escape would hand the player back her legs and
+## open the pause menu on top of her in the same frame — and polling cannot
+## consume anything. Godot runs every _input in the tree before any
+## _unhandled_input, as a pass order independent of node and CanvasLayer
+## ordering, so this reliably beats PauseMenu._unhandled_input.
+##
+## [Minimap] documents the mirror image of this rule: a HOLD belongs in a poll.
+##
+## Nothing is globally suppressed to make this work — no set_pause_allowed, no
+## flag to leak if this room is freed mid-conversation. The _engaged guard is
+## read before _disengage() clears it, so the second Escape always reaches the
+## pause menu, and a shop that somehow never engaged never eats a press at all.
+## There is no state this can strand the player in.
+func _input(event: InputEvent) -> void:
+	if not _engaged:
+		return
+	# is_action_pressed ignores echo, so leaning on the key exits once.
+	if not event.is_action_pressed("back"):
+		return
+	_disengage()
+	get_viewport().set_input_as_handled()
 
 
 # -- Looking around ----------------------------------------------------------
@@ -449,6 +520,11 @@ func _release_player() -> void:
 		_player.reset_presentation()
 	_engaged = false
 	_selected = -1
+	# Cleared by hand because this path deliberately does not go through
+	# _disengage(): it must run for a dead player too, and _disengage() refuses
+	# to unfreeze one. Browsing UI left visible here would be drawn over a live
+	# room by whoever the shelves get shown to next.
+	_browse_prompt.visible = false
 	_player = null
 
 
@@ -465,6 +541,10 @@ func _engage() -> void:
 
 	_engaged = true
 	_talk_prompt.visible = false
+	# The talk prompt hands off to this one. A player who has just been frozen in
+	# place needs to be told the way out more than she needed to be told the way
+	# in, and this is the moment the old build stopped saying anything at all.
+	_browse_prompt.visible = true
 	_player.velocity = Vector2.ZERO
 	# is_warping rather than can_move: bomb, shoot and reload are all polled
 	# OUTSIDE player.gd's can_move block, so a can_move freeze would still let
@@ -487,6 +567,7 @@ func _disengage() -> void:
 	_engaged = false
 	_selected = -1
 	_frame.clear_cell()
+	_browse_prompt.visible = false
 	if _player != null and is_instance_valid(_player) and not _player.is_dead():
 		_player.is_warping = false
 
@@ -496,14 +577,17 @@ func _process_browsing() -> void:
 		_disengage()
 		return
 
-	if Input.is_action_just_pressed("back"):
-		_disengage()
-		return
+	# No `back` here: leaving is event-driven so the press can be consumed. See
+	# _input. Everything below stays polled — none of it collides with another
+	# action, so none of it has anything to consume.
 
 	# Hover before the buttons, so a click lands on whatever the cursor is
 	# actually over rather than on last frame's selection.
 	var hovered: int = _update_hover()
 
+	# On a pad this button is also `reload`, which the prompt does not mention and
+	# does not need to: is_warping returns player.gd out of _physics_process
+	# before reload is ever polled, so the press only ever buys.
 	if Input.is_action_just_pressed("interact"):
 		_buy()
 		return

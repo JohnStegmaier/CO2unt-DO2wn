@@ -30,6 +30,12 @@ extends Node
 const PROFILE_DIR := "res://src/config/profiles"
 const PROFILE_ARG := "--profile="
 
+## Bookkeeping for humans, not values for the game: where the profile sits in the
+## toolbar dropdown and a one-line summary of what it is for. No game code reads
+## it, and it is left out of the banner below — a section of overrides should
+## list only things that were actually overridden.
+const META_SECTION := "meta"
+
 ## Written by the editor toolbar dropdown (addons/profile_switcher). Gitignored,
 ## so a switch made while testing cannot follow anyone into a pull request.
 const LOCAL_SELECTION := "res://src/config/local.cfg"
@@ -83,7 +89,12 @@ func _load(profile_name: String) -> void:
 	active_profile = profile_name
 	print_rich("[b][color=orange]=== PROFILE '%s' ACTIVE — these are NOT the shipped values ===[/color][/b]"
 			% profile_name)
+	var summary: String = _values.get_value(META_SECTION, "summary", "")
+	if not summary.is_empty():
+		print_rich("[color=orange]    %s[/color]" % summary)
 	for section in _values.get_sections():
+		if section == META_SECTION:
+			continue
 		for key in _values.get_section_keys(section):
 			print_rich("[color=orange]    %s/%s = %s[/color]"
 					% [section, key, _values.get_value(section, key)])

@@ -28,6 +28,10 @@ const NONE_LABEL := "no profile"
 ## failure mode that would make this worse than typing run args by hand.
 const ACTIVE_TINT := Color(1.0, 0.65, 0.2)
 
+## Where a profile with no `[meta] order` sits. High, so an unlabelled profile
+## lands at the bottom in alphabetical order rather than silently at the top.
+const DEFAULT_ORDER := 1000
+
 var _dropdown: OptionButton
 
 
@@ -54,19 +58,46 @@ func _reload_items() -> void:
 	_dropdown.clear()
 	_dropdown.add_item(NONE_LABEL)
 
-	for profile_name in _profile_names():
-		_dropdown.add_item(profile_name)
+	# Tooltips go on the popup rather than the button: these describe the items in
+	# the open list, not the control, which keeps its own "a profile is active"
+	# warning from _apply_tint.
+	var popup := _dropdown.get_popup()
+	popup.set_item_tooltip(0, "Run the values that ship.")
+
+	for profile in _profiles():
+		_dropdown.add_item(profile["name"])
+		popup.set_item_tooltip(_dropdown.item_count - 1, profile["summary"])
 
 	_select(_saved_selection())
 
 
-func _profile_names() -> PackedStringArray:
-	var names := PackedStringArray()
+## Every profile on disk, in the order they should be offered.
+##
+## Alphabetical put die_quickly at the top and god_mode next to it, which is an
+## order derived from spelling rather than from what the profiles do. Each file
+## states where it belongs instead, in a `[meta]` section the game ignores, so
+## the list reads gentlest-first: get out of my way, then shape the floor, then
+## make it hard. Ties fall back to alphabetical, so the order is always stable.
+func _profiles() -> Array[Dictionary]:
+	var profiles: Array[Dictionary] = []
 	for file in DirAccess.get_files_at(PROFILE_DIR):
-		if file.ends_with(".cfg"):
-			names.append(file.get_basename())
-	names.sort()
-	return names
+		if not file.ends_with(".cfg"):
+			continue
+		var meta := ConfigFile.new()
+		# A profile that will not parse is still listed: it is the one you most
+		# need to be able to select, notice and fix.
+		meta.load("%s/%s" % [PROFILE_DIR, file])
+		profiles.append({
+			"name": file.get_basename(),
+			"order": int(meta.get_value("meta", "order", DEFAULT_ORDER)),
+			"summary": str(meta.get_value("meta", "summary", "")),
+		})
+
+	profiles.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if a["order"] == b["order"]:
+			return a["name"] < b["name"]
+		return a["order"] < b["order"])
+	return profiles
 
 
 func _on_item_selected(index: int) -> void:

@@ -41,6 +41,13 @@ const AIM_DEADZONE := 0.25
 var can_shoot := true
 var ammo := 0
 
+## Debug switches, set from the active tuning profile in _ready and false in any
+## normal run. Deliberately NOT @export: an inspector checkbox is something you
+## can tick, save into player.tscn and commit, which is the exact accident tuning
+## profiles exist to prevent. See docs/TUNING_PROFILES.md.
+var infinite_ammo := false
+var invulnerable := false
+
 ## Fired whenever the magazine count changes — on every shot and when a reload
 ## finishes — so the HUD never has to poll for it.
 signal ammo_changed(current: int, magazine_size: int)
@@ -83,6 +90,8 @@ func _ready() -> void:
 	gun_default_position = gun.position
 	gun_default_scale = gun.scale
 	ammo = magazine_size
+	infinite_ammo = GameConfig.get_value("player", "infinite_ammo", infinite_ammo)
+	invulnerable = GameConfig.get_value("player", "invulnerable", invulnerable)
 
 
 ## Last device to speak wins. Joypad motion is filtered by deadzone because an
@@ -167,6 +176,10 @@ func is_intangible() -> bool:
 func take_damage(amount: int, type: int = Damage.Type.BLUNT) -> void:
 	if is_warping or is_dodging or _is_dead:
 		return
+	# Before the invulnerability stamp, so a profile's god mode also spares us the
+	# hit flash — a body flickering red while nothing happens reads as a bug.
+	if invulnerable:
+		return
 	if Time.get_ticks_msec() < _invulnerable_until_msec:
 		return
 	_invulnerable_until_msec = Time.get_ticks_msec() + int(invulnerable_time * 1000.0)
@@ -241,8 +254,12 @@ func shoot() -> void:
 	bullet.global_position = gun.global_position + spawn_offset
 	bullet.reset_physics_interpolation()
 
-	ammo -= 1
-	ammo_changed.emit(ammo, magazine_size)
+	# Skipping the spend is the whole of infinite ammo: the magazine never reaches
+	# zero, so the reload below is never entered and the counter stays full without
+	# needing a second switch for "no reload".
+	if not infinite_ammo:
+		ammo -= 1
+		ammo_changed.emit(ammo, magazine_size)
 
 	if ammo <= 0:
 		# Empty mag reloads on its own — can_shoot stays false for the whole wait,

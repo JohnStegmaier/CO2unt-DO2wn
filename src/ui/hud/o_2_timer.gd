@@ -36,6 +36,16 @@ var time_left = total_time
 ## than a death sentence.
 var drain_rate: float = 1.0
 
+## Whether the tank empties at all. Only a tuning profile ever turns this off —
+## see the god_mode and peaceful profiles.
+##
+## A flag rather than an enormous total_time, because damage comes off the clock
+## as well as time: a big number still lets a roomful of enemies whittle a run
+## down, and "unlimited health" has to mean the hits themselves cost nothing.
+## infinite_oxygen keeps using the big number on purpose — it wants a run that
+## cannot time out but can still be fought.
+var drain_enabled := true
+
 @export_group("Damage")
 ## Seconds of air a point of blunt damage costs. This single number sets the
 ## lethality of every fight in the game.
@@ -122,6 +132,7 @@ func _ready() -> void:
 	# here rather than editing the number above is the whole point of issue #26 —
 	# a test value in a profile cannot be committed into the game by accident.
 	total_time = GameConfig.get_value("oxygen", "total_time", total_time)
+	drain_enabled = GameConfig.get_value("oxygen", "drain", drain_enabled)
 	GlobalTimer.tick.connect(_setup)
 	needle.rotation_degrees = degrees
 
@@ -186,6 +197,10 @@ func refill() -> void:
 ## GlobalTimer tick plus 0.3s before assigning time_left, and anything spent
 ## before that would be silently overwritten.
 func apply_damage(amount: int, type: int) -> void:
+	# The single gate on damage, because this is the single place a hit becomes a
+	# cost in air. A profile that stops the clock stops hits costing anything too.
+	if not drain_enabled:
+		return
 	if type == Damage.Type.PIERCING:
 		add_drain(amount * drain_per_piercing_point)
 	else:
@@ -205,7 +220,7 @@ func add_drain(amount: float) -> void:
 func _process(delta: float) -> void:
 	if not setup_done:
 		return
-	if time_left > 0:
+	if drain_enabled and time_left > 0:
 		time_left -= delta * drain_rate
 		time_left = max(time_left, 0)
 		update_label()

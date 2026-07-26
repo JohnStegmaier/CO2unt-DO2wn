@@ -1,33 +1,26 @@
 class_name Enemy
 extends CharacterBody2D
 
-## A bad guy.
+## A bad guy — any of them.
 ##
-## Sits on the enemy collision layer so the player's bullets can see it,
-## forwards damage to its Health component, and reports its own death upward so
-## the room can count.
+## One scene for the whole bestiary, dressed at spawn from an [EnemyDef]: art,
+## body, gun, hit points and which [EnemyBehaviour] drives it all arrive in
+## [method configure]. Adding a fifth kind of enemy is a .tres and touches
+## nothing here, which is the same bargain [Obstacle] makes with [ObstacleDef].
 ##
-## No pathfinding and no line-of-sight checks, deliberately. That used to be free:
-## a room was a hollow rectangle and a straight seek plus move_and_slide could
-## never get stuck. Rooms now have solid props in them, so it is not free any
-## more — it is a choice to keep the seek dumb and pay for it with the stuck-guard
-## below, which is a few lines against a nav mesh and a rewrite.
+## This file owns the things only a node can own — the collider, the sprite, the
+## slide collisions, the bullet, the two timing windows that suspend steering —
+## and delegates every decision about where to go and what to shoot. It does not
+## contain the name of a single archetype.
 ##
-## What the guard buys is only that a chaser cannot grind against a barrel
-## forever. It is not steering and not cover: it does not know a prop from a wall,
-## will not take the short way round, and will happily walk back into the thing it
-## just left. Using cover, and breaking what is in the way, are a separate job —
-## see obstacle_field.gd, which is the surface that job will ask its questions of.
-
-## Which row of the drop table this one's death is looked up under. Not a table
-## and not a drop chance: an enemy says what it is and the run's [DropConfig]
-## says what that is worth, so the whole economy — every enemy type, every floor
-## — is read and tuned in one inspector rather than across every enemy scene.
-##
-## Overridden by whoever spawns us when they know better; game.gd sets &"boss"
-## on the one it just promoted. A source with no rule drops nothing, which is
-## what makes an unnamed enemy quiet rather than an error.
-@export var loot_source: StringName = &"grunt"
+## Still no pathfinding, and that is still a choice, but it is no longer the same
+## choice. It steers: [ObstacleField] answers what is in the way, what can be
+## seen, and where there is cover, and the behaviours lean on those. What that
+## buys is a chaser taking the short way round a barrel and a guard putting one
+## between itself and you. What it does not buy is routing — six discs and a
+## look-ahead cannot solve an L of two crates, and are not meant to. The
+## stuck-guard below is what covers the rest, and covers walls, which are not in
+## the field at all.
 
 ## This one is gone, and where. The Game listens so it can tell when a room is
 ## cleared and roll for loot — it owns the seeded RNG, so the roll cannot happen
@@ -37,91 +30,108 @@ extends CharacterBody2D
 ## mid-fade and about to free itself.
 signal died(loot_source: StringName, at: Vector2)
 
-## How this one fights. Declared as an enum for readable call sites but exported
-## and passed as a plain int, for the reason in grid_direction.gd.
-enum Behaviour { CHASER, SKIRMISHER }
-
-@export_enum("chaser", "skirmisher") var behaviour: int = 0
-
-@export_group("Weapon")
-@export var bullet_scene: PackedScene
-@export var bullet_damage: int = 8
-@export_enum("blunt", "piercing") var bullet_damage_type: int = 0
-## How fast their shots travel. The single biggest lever on whether a shot is
-## dodgeable, and independent of the player's — both sides fire the same scene,
-## so this has to live on the shooter to be tunable separately.
-@export var bullet_speed := 180.0
-## Blunt cost of being walked into. Rate-limited by the player's own mercy
-## window, so this needs no timer of its own.
-@export var contact_damage: int = 6
-@export var fire_interval := 1.6
-@export var fire_range := 220.0
-## Radians. They are bad guys, not marksmen.
-@export var aim_spread := 0.2
-## No volley on the frame you walk through the door.
-@export var spawn_grace := 0.8
-
-@export_group("Movement")
-## Deliberately slower than the player's 150, so you can kite them but not
-## ignore them.
-@export var chase_speed := 60.0
-## Exponential smoothing rate, matching player_camera.gd's idiom so acceleration
-## is frame-rate independent.
-@export var chase_acceleration := 6.0
-
-@export_group("Skirmisher")
-## How far a skirmisher likes to stand off, and the dead band around it that
-## stops it jittering back and forth on the ring.
-@export var preferred_range := 140.0
-@export var range_band := 25.0
-@export var strafe_speed := 55.0
-@export var dodge_speed := 180.0
-@export var dodge_time := 0.22
-@export var dodge_cooldown := 1.0
-
-## Where a shot leaves the body. Structural rather than a feel knob.
-const MUZZLE_OFFSET := 10.0
-## Reversing on a timer as well as on walls, so it neither grinds along a wall
-## nor orbits the player hypnotically.
-const STRAFE_FLIP_MIN := 1.5
-const STRAFE_FLIP_MAX := 3.0
+## Which row of the drop table this one's death is looked up under. Not a table
+## and not a drop chance: an enemy says what it is and the run's [DropConfig]
+## says what that is worth, so the whole economy — every enemy type, every floor
+## — is read and tuned in one inspector rather than across every def.
+##
+## Filled from the [EnemyDef] by [method configure]. Left public because game.gd
+## overwrites it with &"boss" on the one it just promoted, which is what lets a
+## single boss drop row serve every archetype instead of needing four of them. A
+## source with no rule drops nothing, which is what makes a new enemy quiet
+## rather than an error.
+var loot_source: StringName = &"grunt"
 
 ## Physics frames a chaser may spend touching something without gaining ground on
 ## the player before it counts as wedged rather than fighting. Frames rather than
 ## seconds so two runs of the same fight make the same decision.
 const STUCK_FRAMES := 12
 ## And how long it walks sideways afterwards. Long enough to clear the widest prop
-## at chase_speed, short enough to read as a shove rather than a patrol.
+## at chase speed, short enough to read as a shove rather than a patrol.
 const UNSTICK_FRAMES := 20
-## Ground gained per frame below which a chaser counts as gaining none. At
-## chase_speed 60 on a 60Hz tick an unobstructed run gains a pixel a frame.
+## Ground gained per frame below which an enemy counts as gaining none. At 60 px/s
+## on a 60Hz tick an unobstructed run gains a pixel a frame.
 const STUCK_PROGRESS := 0.1
-## Inside this a chaser is grinding on the PLAYER, which is the whole job — see
+## Inside this it is grinding on the PLAYER, which is the whole job — see
 ## _damage_on_contact. Never stuckness.
 const STUCK_IGNORE_RANGE := 24.0
-
-var _target: Node2D
-var _fire_cooldown := 0.0
-var _strafe_sign := 1.0
-var _strafe_flip_in := 0.0
-var _dodge_until_msec: int = 0
-var _dodge_ready_at_msec: int = 0
-var _stuck_frames: int = 0
-var _unstick_frames: int = 0
-var _unstick_sign: float = 1.0
-
-## Set by pulse_stagger. Trigger stays jammed until the msec timestamp passes;
-## steering holds the knockback velocity until the (much shorter) other one does.
-var _fire_suppressed_until_msec: int = 0
-var _knockback_until_msec: int = 0
 
 ## How long a pulse knockback holds steering off before the enemy starts
 ## fighting its way back toward the target — long enough to read as a shove,
 ## short enough that it is not a second, longer stagger stacked on the silence.
 const PULSE_KNOCKBACK_HOLD := 0.25
 
+## Seconds between one body's hits on the same prop. The player's own mercy
+## window rate-limits contact damage TO the player; a crate has no such window,
+## so without this a booger pressed against a barrel would delete it in two
+## frames rather than chew through it.
+const BREAK_INTERVAL := 0.3
+
+var _def: EnemyDef
+var _behaviour: EnemyBehaviour
+var _ctx := SteeringContext.new()
+var _target: Node2D
+## Room-local minus global. [ObstacleField] is room-local and we are not; this is
+## the whole of the conversion, applied once a frame — see [method set_room].
+var _field_origin := Vector2.ZERO
+
+## Boss scaling lives on the node rather than being written back into the def.
+## The def is a shared .tres: buffing it in place would promote every enemy of
+## that type for the rest of the run, on every floor after this one. -1 means
+## "not a boss, use the def's own number".
+var _boss_contact_damage: int = -1
+var _boss_bullet_damage: int = -1
+
+var _fire_cooldown := 0.0
+var _break_cooldown := 0.0
+var _stuck_frames: int = 0
+var _unstick_frames: int = 0
+var _unstick_sign: float = 1.0
+
+## Steering is suspended outright while either of these is running, the same
+## shape as the player's own is_dodging early return. Seconds rather than msec
+## timestamps so they pause when the game does, matching
+## [member SteeringContext.phase_remaining].
+var _dodge_hold := 0.0
+var _dodge_cooldown := 0.0
+var _knockback_hold := 0.0
+## Set by pulse_stagger. The trigger stays jammed for the whole silence, which is
+## much longer than the shove.
+var _fire_suppressed := 0.0
+
 @onready var _health: Health = $Health
-@onready var _sprite: Sprite2D = $Sprite2D
+@onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
+@onready var _collider: CollisionShape2D = $CollisionShape2D
+
+
+## Become one particular kind of bad guy.
+##
+## Call it BEFORE the node enters the tree, the same window [method set_target]
+## and [method make_boss] are used in: [Health] copies max_hp into hp in its own
+## _ready(), and _ready() arms the dodge sensor off the behaviour, so both have to
+## already be right by then.
+func configure(def: EnemyDef) -> void:
+	_def = def
+	_behaviour = def.behaviour
+
+	# The capsule is a sub-resource of enemy.tscn and therefore shared by every
+	# enemy instanced from it. Resizing the original would resize the whole room,
+	# which is the bug make_boss used to carry this duplicate() to avoid — it now
+	# happens here, once, for everyone, and make_boss only scales what it is given.
+	var shape := CapsuleShape2D.new()
+	shape.radius = def.body_radius
+	shape.height = def.body_height
+	$CollisionShape2D.shape = shape
+
+	var sprite: AnimatedSprite2D = $AnimatedSprite2D
+	sprite.sprite_frames = def.frames
+	sprite.position = def.sprite_offset
+	sprite.scale = Vector2.ONE * def.sprite_scale
+	sprite.speed_scale = def.frame_rate
+
+	$Health.max_hp = def.max_hp
+	_ctx.radius = def.body_radius
+	loot_source = def.loot_source
 
 
 ## Handed in by whoever spawned us, rather than looked up: the spawner already
@@ -131,59 +141,156 @@ func set_target(target: Node2D) -> void:
 	_target = target
 
 
+## Everything about the room we are fighting in, in one call because the three
+## are useless apart.
+##
+## [ObstacleField] is room-local — every position in it came from an
+## [ObstaclePlan] — and a room sits at coord * STRIDE, so on any floor bigger
+## than one room a global position is thousands of pixels from the space the
+## field answers in. `origin` is that room's global position, and subtracting it
+## once per frame in _physics_process is the entire conversion. No behaviour ever
+## learns that rooms have positions.
+##
+## `floor_rect` is handed in for the same reason it is handed to
+## [method ObstacleField.cover_point] rather than looked up: reading Room.FLOOR
+## from here would compile room.gd, and through it elevator.gd and player.gd, for
+## one Rect2. The caller already holds it.
+##
+## The field is held by reference and shared with game.gd and every other enemy
+## in the room, which is what makes a prop being shot out visible to all of them
+## on the next frame rather than the next visit.
+func set_room(field: ObstacleField, origin: Vector2, floor_rect: Rect2) -> void:
+	_ctx.field = field
+	_ctx.bounds = floor_rect
+	_field_origin = origin
+
+
 ## Promote this one to a floor boss: harder to kill, harder to stand next to, and
 ## big enough that walking into the room tells you which room it is.
 ##
 ## Deliberately a buff and not a subclass. A boss with its own attack patterns is
 ## a different job; what this buys is a fight that reads as a climax using the
-## enemy that already exists, and it is the one call to delete when that job is
+## enemies that already exist, and it is the one call to delete when that job is
 ## done.
 ##
-## Call it BEFORE the node enters the tree, the same window [method set_target]
-## and [member behaviour] are set in. Health copies max_hp into hp in its own
-## _ready(), so raising the maximum first is all the healing there is to do.
+## Call it AFTER [method configure] and before the node enters the tree. The
+## collider it scales is the per-instance one configure() built, so there is
+## nothing shared left to be careful of.
 ##
 ## Damage is a separate multiplier from hit points on purpose. The player has no
 ## health bar — damage is taken out of the O2 countdown — so scaling what a boss
 ## hits for by what it takes to kill one does not make the fight longer, it makes
 ## it unsurvivable.
+##
+## Only ever reaches a def with boss_eligible set, so nothing bolted to a wall is
+## promoted — see [method EnemySet.pick].
 func make_boss(hp_scale: float, damage_scale: float, size_scale: float) -> void:
 	var health: Health = $Health
 	health.max_hp = maxi(1, roundi(health.max_hp * hp_scale))
-	contact_damage = maxi(1, roundi(contact_damage * damage_scale))
-	bullet_damage = maxi(1, roundi(bullet_damage * damage_scale))
+	_boss_contact_damage = maxi(1, roundi(_def.contact_damage * damage_scale))
+	_boss_bullet_damage = maxi(1, roundi(_def.bullet_damage * damage_scale))
 
-	var sprite: Sprite2D = $Sprite2D
-	sprite.scale *= size_scale
+	$AnimatedSprite2D.scale *= size_scale
 
-	# The shape is a sub-resource of enemy.tscn and therefore shared by every
-	# enemy instanced from it. Resizing the original would inflate the whole room.
 	var collider: CollisionShape2D = $CollisionShape2D
-	var shape: CapsuleShape2D = collider.shape.duplicate()
+	var shape: CapsuleShape2D = collider.shape
 	shape.radius *= size_scale
 	shape.height *= size_scale
-	collider.shape = shape
+	_ctx.radius = shape.radius
+
+
+func _ready() -> void:
+	# The single most likely "why do bullets go straight through" failure: player
+	# bullets mask ENEMY, so an enemy left on the default layer is invisible to
+	# them. Cheap to assert while the feature is young.
+	assert(collision_layer == CollisionLayers.ENEMY,
+			"Enemy must sit on the ENEMY layer or bullets pass through it")
+	# So the pulse bomb can reach every enemy on screen without game.gd handing
+	# it a list — same trick bullet.gd's "projectiles" group plays for the sweep.
+	add_to_group("enemies")
+
+	_health.damaged.connect(_on_health_damaged)
+	_health.died.connect(_on_health_died)
+
+	# Undressed. Killable and inert rather than throwing on the first frame —
+	# _physics_process returns early with no behaviour — but loud, because the
+	# only way to get here is a spawner that skipped configure(), and a silently
+	# motionless enemy reads as an AI bug rather than a missing call.
+	if _def == null:
+		push_warning("Enemy entered the tree with no EnemyDef — see Enemy.configure")
+		return
+
+	# One roll, handed to the behaviour, which spends it on whatever it staggers.
+	# A roomful sharing a spawn frame otherwise acts in unison forever after.
+	var roll := randf()
+	_fire_cooldown = _def.spawn_grace + roll * _def.fire_interval
+	if _behaviour != null:
+		_behaviour.on_spawn(_ctx, roll)
+
+	# Only the archetypes that react to incoming fire pay for the sensor; a
+	# roomful of chasers each carrying an Area2D that never fires a signal is
+	# pure cost.
+	var sensor: Area2D = $DodgeSensor
+	sensor.area_entered.connect(_on_dodge_sensor_area_entered)
+	sensor.set_deferred("monitoring", _behaviour != null and _behaviour.watches_bullets())
 
 
 func _physics_process(delta: float) -> void:
-	if _target == null or not is_instance_valid(_target):
+	if _target == null or not is_instance_valid(_target) or _behaviour == null:
 		return
 
+	_tick_timers(delta)
+	_refresh_context(delta)
+
 	var to_target: Vector2 = _target.global_position - global_position
-	velocity = _desired_velocity(to_target, delta)
+	velocity = _desired_velocity()
 	var was_at := global_position
 	move_and_slide()
 	_track_progress(global_position - was_at, to_target)
 	_damage_on_contact()
 
-	if not is_zero_approx(velocity.x):
-		_sprite.flip_h = velocity.x < 0.0
+	_draw_facing()
+	_maybe_shoot(delta)
 
-	_fire_cooldown -= delta
-	var trigger_jammed := Time.get_ticks_msec() < _fire_suppressed_until_msec
-	if not trigger_jammed and _fire_cooldown <= 0.0 and to_target.length() < fire_range:
-		_fire_cooldown = fire_interval
-		_shoot(to_target.normalized())
+
+func _tick_timers(delta: float) -> void:
+	_dodge_hold = maxf(0.0, _dodge_hold - delta)
+	_dodge_cooldown = maxf(0.0, _dodge_cooldown - delta)
+	_knockback_hold = maxf(0.0, _knockback_hold - delta)
+	_fire_suppressed = maxf(0.0, _fire_suppressed - delta)
+	_break_cooldown = maxf(0.0, _break_cooldown - delta)
+
+
+## Rewrite the behaviour's view of the world, in the field's space.
+##
+## The one place global and room-local meet. Everything downstream of here —
+## every behaviour, every field query — is room-local, and everything upstream is
+## global.
+func _refresh_context(delta: float) -> void:
+	_ctx.tick(delta)
+	_ctx.here = global_position - _field_origin
+	_ctx.target = _target.global_position - _field_origin
+	_ctx.velocity = velocity
+	_ctx.touching = get_slide_collision_count() > 0
+
+
+## What the behaviour wants, unless something is overriding it.
+##
+## Three things suspend steering outright, and they are all "a force was applied
+## to this body and it is still playing out": a dodge, a pulse knockback, and the
+## unstick shove. The first two hold the velocity they were given; the third is
+## the only one that still has a direction of its own to walk.
+func _desired_velocity() -> Vector2:
+	if _dodge_hold > 0.0 or _knockback_hold > 0.0:
+		return velocity
+	if _unstick_frames > 0:
+		_unstick_frames -= 1
+		# Assigned outright rather than eased, because the collision has already
+		# taken the velocity we would otherwise be easing out of, and easing back
+		# up from a standstill spends the whole window still pressed against it.
+		var toward := (_target.global_position - global_position).normalized()
+		return toward.orthogonal() * _unstick_sign * _behaviour.top_speed()
+	return _behaviour.steer(_ctx)
 
 
 ## Did that move actually take us anywhere?
@@ -191,13 +298,17 @@ func _physics_process(delta: float) -> void:
 ## Measured after the fact rather than predicted, because the only thing that
 ## knows a slide came to nothing is the slide. move_and_slide handles a glancing
 ## hit by itself; what it cannot handle is a square-on one, where there is no
-## tangent left to give and the whole velocity is eaten. That is also the likeliest
-## geometry, since a chaser walks straight at the player.
+## tangent left to give and the whole velocity is eaten.
 ##
-## Chasers only. A skirmisher holding its range is not stuck, and its own strafe
-## flip already turns it away from anything it runs into.
+## Kept even though the behaviours now steer around props, because it answers a
+## different question. Avoidance is a lean applied to where we WANT to go; this
+## is what happens when we are already wedged, and the commonest thing to be
+## wedged on is a wall, which is not in [ObstacleField] at all.
+##
+## Skipped for anything that does not move under its own steam — a turret is not
+## stuck, it is bolted down.
 func _track_progress(moved: Vector2, to_target: Vector2) -> void:
-	if _unstick_frames > 0 or behaviour != Behaviour.CHASER:
+	if _unstick_frames > 0 or is_zero_approx(_behaviour.top_speed()):
 		return
 	# Touching nothing, or close enough that the thing being ground against is the
 	# player. Neither is being stuck.
@@ -221,115 +332,102 @@ func _track_progress(moved: Vector2, to_target: Vector2) -> void:
 	_unstick_sign = -1.0 if tangent.dot(to_target) < 0.0 else 1.0
 
 
-## Walking into the player costs them air. The player's own mercy window rate
-## limits this, so a chaser pressed against them drains steadily rather than
-## every frame.
+## Everything we shoved this frame, and what that costs it.
+##
+## One walk over the slide collisions rather than two: the player takes contact
+## damage and anything else that can be hurt takes break damage, and splitting
+## them would mean looping the same collisions twice to answer the same question.
+##
+## break_damage defaults to 0 on an [EnemyDef], which is what keeps a shooter
+## inert — it bumps a crate and nothing happens, exactly as every enemy did
+## before this. The behaviour gets the last word on whether this particular frame
+## counts, which is how a licker smashes things only mid-lunge.
+##
+## An indestructible prop needs no test here: [method Obstacle.take_damage]
+## returns early on one, so a booger chewing a rock is already a silent no-op.
 func _damage_on_contact() -> void:
 	for i in get_slide_collision_count():
 		var collider := get_slide_collision(i).get_collider()
-		if collider == _target and collider.has_method("take_damage"):
-			collider.take_damage(contact_damage, Damage.Type.BLUNT)
-			return
+		if collider == null or not collider.has_method("take_damage"):
+			continue
+		if collider == _target:
+			collider.take_damage(_contact_damage(), Damage.Type.BLUNT)
+			continue
+		if _def == null or _def.break_damage <= 0 or _break_cooldown > 0.0:
+			continue
+		if not _behaviour.breaks_on_contact(_ctx):
+			continue
+		_break_cooldown = BREAK_INTERVAL
+		collider.take_damage(_def.break_damage, Damage.Type.BLUNT)
+
+
+func _draw_facing() -> void:
+	if _def == null or _sprite.sprite_frames == null:
+		return
+	var look: Vector2 = _behaviour.facing(_ctx)
+	var animation := EnemyFacing.animation_for(_def.facing, look, _def.facing_offset_degrees)
+	if _sprite.animation != animation:
+		_sprite.play(animation)
+
+	# Art whose frames ARE its bearings is held on one of them rather than played.
+	# The -1 is what keeps the word "rotation" out of this file entirely — see
+	# [method EnemyFacing.frame_for].
+	var frame := EnemyFacing.frame_for(_def.facing, look,
+			_sprite.sprite_frames.get_frame_count(animation), _def.facing_offset_degrees)
+	if frame < 0:
+		return
+	_sprite.pause()
+	_sprite.frame = frame
+
+
+## The behaviour says whether it would fire; the def says how often. Splitting it
+## that way is what lets a turret's sweep decide WHEN without also owning the
+## weapon's rate of fire.
+func _maybe_shoot(delta: float) -> void:
+	_fire_cooldown -= delta
+	if _fire_cooldown > 0.0 or _fire_suppressed > 0.0:
+		return
+	var aim: Vector2 = _behaviour.aim(_ctx)
+	if aim.is_zero_approx():
+		return
+	_fire_cooldown = _def.fire_interval
+	_shoot(aim.normalized())
 
 
 func _shoot(aim: Vector2) -> void:
-	if bullet_scene == null:
+	if _def == null or _def.bullet_scene == null:
 		return
-	var spread := randf_range(-aim_spread, aim_spread)
-	var direction := aim.rotated(spread)
+	var direction := aim.rotated(randf_range(-_def.aim_spread, _def.aim_spread))
 
-	var bullet = bullet_scene.instantiate()
+	var bullet: Area2D = _def.bullet_scene.instantiate()
 	bullet.arm(direction, CollisionLayers.ENEMY_BULLET,
-			CollisionLayers.WORLD | CollisionLayers.PLAYER, bullet_damage, bullet_damage_type,
-			bullet_speed)
+			CollisionLayers.WORLD | CollisionLayers.PLAYER, _bullet_damage(),
+			_def.bullet_damage_type, _def.bullet_speed)
 	# Parented to the run container exactly as the player's shots are, so the
 	# Game's projectiles sweep stays the single owner of bullet lifetime.
 	get_tree().current_scene.add_child(bullet)
 	# Same shot sound as the player's gun, pitched and dimmed down so enemy fire
 	# reads as duller and doesn't compete with the player's own shots.
 	AudioManager.play_sfx("laser_gun_01", 0.7, -6.0)
-	bullet.global_position = global_position + direction * MUZZLE_OFFSET
+	bullet.global_position = global_position + direction * _def.muzzle_offset
 	bullet.reset_physics_interpolation()
 
 
-## Each behaviour is a function of its arguments and its own constants and
-## nothing else, so when a third and fourth arrive these lift straight out into
-## components/steering/ with no untangling.
-func _desired_velocity(to_target: Vector2, delta: float) -> Vector2:
-	# Mid-dodge we are not steering at all — hold the jump, same shape as the
-	# player's own is_dodging early return. A pulse knockback holds the same way.
-	if Time.get_ticks_msec() < _dodge_until_msec:
-		return velocity
-	if Time.get_ticks_msec() < _knockback_until_msec:
-		return velocity
-
-	match behaviour:
-		Behaviour.SKIRMISHER:
-			return _skirmish_velocity(to_target, delta)
-		_:
-			return _chase_velocity(to_target, delta)
-
-
-## Run at the player. Meaningfully slower than the player's WALK_SPEED of 150, so
-## you can kite them but not ignore them.
-##
-## No separation steering: enemies mask each other, so move_and_slide pushes them
-## apart physically. That is what lets this survive thirty of them unchanged.
-func _chase_velocity(to_target: Vector2, delta: float) -> Vector2:
-	var toward := to_target.normalized()
-	# Wedged against something: walk the tangent for a fixed count instead of
-	# steering. Assigned outright rather than lerped, because the collision has
-	# already taken the velocity we would otherwise be easing out of, and easing
-	# back up from a standstill spends the whole window still pressed against it.
-	if _unstick_frames > 0:
-		_unstick_frames -= 1
-		return toward.orthogonal() * _unstick_sign * chase_speed
-	return velocity.lerp(toward * chase_speed, 1.0 - exp(-chase_acceleration * delta))
-
-
-## Hold a firing range and circle. Closes if too far, backs off if too close, and
-## strafes while it is comfortable.
-func _skirmish_velocity(to_target: Vector2, delta: float) -> Vector2:
-	var distance := to_target.length()
-	var toward := to_target.normalized()
-	var desired: Vector2
-
-	if distance > preferred_range + range_band:
-		desired = toward * chase_speed
-	elif distance < preferred_range - range_band:
-		desired = -toward * chase_speed
-	else:
-		_strafe_flip_in -= delta
-		# All three, not just is_on_wall: motion mode is grounded, so a body
-		# sliding along the top or bottom face of a prop reports floor or ceiling
-		# instead, and would grind sideways along a crate forever.
-		if _strafe_flip_in <= 0.0 or is_on_wall() or is_on_ceiling() or is_on_floor():
-			_strafe_sign = -_strafe_sign
-			_strafe_flip_in = randf_range(STRAFE_FLIP_MIN, STRAFE_FLIP_MAX)
-		desired = toward.orthogonal() * strafe_speed * _strafe_sign
-
-	return velocity.lerp(desired, 1.0 - exp(-chase_acceleration * delta))
-
-
-## A player bullet came within reach. Jump perpendicular to where it is actually
-## going — reading its direction rather than its position means a shot that would
-## have missed anyway does not provoke a dodge into its path.
+## A player bullet came within reach, and this one is the sort that reacts. The
+## jump itself is the behaviour's — reading the bullet's direction rather than
+## its position means a shot that would have missed anyway does not provoke a
+## dodge into its path, and that judgement belongs with the archetype.
 func _on_dodge_sensor_area_entered(area: Area2D) -> void:
-	if behaviour != Behaviour.SKIRMISHER:
-		return
-	if Time.get_ticks_msec() < _dodge_ready_at_msec:
+	if _behaviour == null or _dodge_cooldown > 0.0:
 		return
 	if not "direction" in area:
 		return
-
-	var away: Vector2 = area.direction.orthogonal()
-	# Break toward whichever side we were already drifting, so a dodge reads as
-	# a continuation rather than a twitch.
-	if away.dot(velocity) < 0.0:
-		away = -away
-	velocity = away * dodge_speed
-	_dodge_until_msec = Time.get_ticks_msec() + int(dodge_time * 1000.0)
-	_dodge_ready_at_msec = Time.get_ticks_msec() + int(dodge_cooldown * 1000.0)
+	var jump: Vector2 = _behaviour.dodge(_ctx, area.direction)
+	if jump.is_zero_approx():
+		return
+	velocity = jump
+	_dodge_hold = _behaviour.dodge_hold_seconds()
+	_dodge_cooldown = _behaviour.dodge_cooldown_seconds()
 
 
 ## Hit by the player's pulse bomb: shoved away from the blast and its trigger
@@ -340,31 +438,8 @@ func pulse_stagger(from: Vector2, force: float, silence_duration: float) -> void
 	if away.length() < 0.001:
 		away = Vector2.RIGHT
 	velocity = away.normalized() * force
-	_knockback_until_msec = Time.get_ticks_msec() + int(PULSE_KNOCKBACK_HOLD * 1000.0)
-	_fire_suppressed_until_msec = Time.get_ticks_msec() + int(silence_duration * 1000.0)
-
-
-func _ready() -> void:
-	# The single most likely "why do bullets go straight through" failure: player
-	# bullets mask ENEMY, so an enemy left on the default layer is invisible to
-	# them. Cheap to assert while the feature is young.
-	assert(collision_layer == CollisionLayers.ENEMY,
-			"Enemy must sit on the ENEMY layer or bullets pass through it")
-	# So the pulse bomb can reach every enemy on screen without game.gd handing
-	# it a list — same trick bullet.gd's "projectiles" group plays for the sweep.
-	add_to_group("enemies")
-	_health.damaged.connect(_on_health_damaged)
-	_health.died.connect(_on_health_died)
-	# Staggered, or a roomful fires in unison forever after.
-	_fire_cooldown = spawn_grace + randf() * fire_interval
-	_strafe_sign = 1.0 if randf() < 0.5 else -1.0
-	_strafe_flip_in = randf_range(STRAFE_FLIP_MIN, STRAFE_FLIP_MAX)
-
-	# Only skirmishers watch for incoming fire; a chaser paying for the sensor
-	# would be pure cost at thirty of them.
-	var sensor: Area2D = $DodgeSensor
-	sensor.area_entered.connect(_on_dodge_sensor_area_entered)
-	sensor.set_deferred("monitoring", behaviour == Behaviour.SKIRMISHER)
+	_knockback_hold = PULSE_KNOCKBACK_HOLD
+	_fire_suppressed = silence_duration
 
 
 ## Bullets duck-type this — see bullet.gd. Damage lands on the body itself
@@ -373,12 +448,24 @@ func take_damage(amount: int, type: int = Damage.Type.BLUNT) -> void:
 	_health.take_damage(amount, type)
 
 
+## The def's number unless make_boss overrode it. Both of these are only ever
+## reached from a frame that already has a def — _physics_process returns early
+## without one — so neither needs a null branch.
+func _contact_damage() -> int:
+	return _boss_contact_damage if _boss_contact_damage >= 0 else _def.contact_damage
+
+
+func _bullet_damage() -> int:
+	return _boss_bullet_damage if _boss_bullet_damage >= 0 else _def.bullet_damage
+
+
 func _on_health_damaged(_amount: int, _type: int) -> void:
-	# With a single-frame sprite this flash is the only hit confirmation there
-	# is, so it is doing an animation's job rather than being polish.
 	var flash := create_tween()
 	flash.tween_property(_sprite, "modulate", Color(4.0, 4.0, 4.0), 0.04)
 	flash.tween_property(_sprite, "modulate", Color.WHITE, 0.08)
+	# Pitch-varied, or a shotgun spread landing on four bodies on one frame is a
+	# single loud click rather than four hits.
+	AudioManager.play_sfx("enemy_take_damage", randf_range(0.92, 1.08), -8.0)
 
 
 func _on_health_died() -> void:
@@ -386,14 +473,17 @@ func _on_health_died() -> void:
 	# killing blow instead of a tenth of a second later. What our death is worth
 	# is the run's business, not ours.
 	died.emit(loot_source, global_position)
+	AudioManager.play_sfx("enemy_death", randf_range(0.94, 1.06), -4.0)
 	# Stop interacting the instant we die, so the corpse cannot block a shot or
 	# body-check the player while it plays out.
 	set_deferred("collision_layer", 0)
 	set_deferred("collision_mask", 0)
 
+	# Still a tween rather than a death animation: none of the four sets shipped
+	# with death frames. When they land, this becomes _sprite.play("death").
 	var death := create_tween()
 	death.set_parallel(true)
-	death.tween_property(_sprite, "scale", Vector2(1.4, 0.6), 0.12)
+	death.tween_property(_sprite, "scale", _sprite.scale * Vector2(1.4, 0.6), 0.12)
 	death.tween_property(_sprite, "modulate:a", 0.0, 0.12)
 	await death.finished
 	queue_free()

@@ -17,6 +17,16 @@ class_name Player
 ## is no manual reload input — so this is the only cost of running the mag dry.
 @export var reload_time := 1.2
 
+@export_group("Bombs")
+## How many bombs the player can carry unless something raises the cap.
+@export var max_f_bombs := 3
+## Bombs carried right now. Starts at 1 rather than max_f_bombs — a fresh run
+## begins under capacity, same as Isaac.
+var f_bombs := 1
+
+## Fired whenever the bomb count changes, so the HUD never has to poll for it.
+signal bombs_changed(current: int, max_bombs: int)
+
 @onready var sprite = $AnimatedSprite2D
 @onready var gun: Sprite2D = $BigGunBTransparent
 

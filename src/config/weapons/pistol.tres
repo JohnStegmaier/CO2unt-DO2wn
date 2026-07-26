@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="WeaponDef" format=3]
 
 [ext_resource type="Script" path="res://src/systems/weapons/weapon_def.gd" id="1_def"]
-[ext_resource type="Texture2D" uid="uid://cm4a87ahjb7tc" path="res://assets/sprites/items/BigGun_B_Transparent.png" id="2_gun"]
+[ext_resource type="Texture2D" uid="uid://db4b88i3gjg8c" path="res://assets/sprites/weapons/mini-gun.png" id="2_gun"]
 [ext_resource type="PackedScene" uid="uid://ckinnty100svf" path="res://src/entities/gun_stuff/bullet.tscn" id="3_bullet"]
 
 [resource]
@@ -9,15 +9,13 @@ script = ExtResource("1_def")
 id = &"pistol"
 display_name = "Pistol"
 icon = ExtResource("2_gun")
-icon_scale = 0.07
+icon_scale = 0.5
 equip_seconds = 0.0
 held_texture = ExtResource("2_gun")
-held_scale = 0.05
-held_offset = Vector2(200, 0)
+held_scale = 0.375
+held_offset = Vector2(20, -4)
 held_flip_h = true
-held_region = Rect2(8.45491, -63.49489, 233.54509, 227.5741)
-held_modulate = Color(1.8764027, 1.111197, 1.5168338, 1)
-hud_icon_scale = 0.168
+hud_icon_scale = 0.6
 fire_mode = 0
 fire_interval = 0.14
 magazine_size = 6

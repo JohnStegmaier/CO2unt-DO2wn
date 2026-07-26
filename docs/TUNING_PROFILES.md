@@ -53,6 +53,7 @@ then make it hard.
 | `peaceful` | No enemies anywhere, no drain, no damage. An empty station to walk around. |
 | `infinite_oxygen` | 24 hours of air. Damage still costs seconds, so a fight can still kill you. |
 | `tiny_floor` | Six-room floors with the exit two rooms out — for the elevator and the descent. |
+| `basement` | Start in the Basement. The board room, the six men in suits, and the ending. |
 | `fixed_seed` | Pins the run seed, so every launch generates the identical floors. |
 | `swarm` | 8–12 enemies a room. Placement, door locking and frame time under load. |
 | `combat_lab` | Small floor, packed rooms, air that will not run out. For tuning fights. |
@@ -86,6 +87,7 @@ overrides — a section is only listed there if it actually changed something.
 | `enemies` | `min`, `max` | `game.gd` — per-room count. `max = 0` empties the floor |
 | `enemies` | `boss_min`, `boss_max` | `game.gd` — how many the boss room holds. Forced to zero when `max = 0`, so an emptied station has no boss barring the way down |
 | `floor` | `run_seed` | `game.gd` — non-zero pins the whole run |
+| `floor` | `start` | `game.gd` — which descent index a run opens on. Only there for the Basement, which is otherwise five floors and a boss away; see `basement.cfg` |
 | `floor` | `rooms_min`, `rooms_max`, `rooms_per_floor` | `floor_config.gd` — size, and growth per floor |
 | `floor` | `max_depth`, `depth_bias` | `floor_config.gd` — shape |
 | `floor` | `exit_min_depth`, `special_min_depth` | `floor_config.gd` — how far out the specials sit |

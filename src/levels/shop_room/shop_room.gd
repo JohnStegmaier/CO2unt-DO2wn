@@ -282,6 +282,13 @@ func set_locked(locked: bool) -> void:
 	_exit_armed = not locked
 
 
+## Nothing to seal — no doorways here either. Same reasoning as
+## [method ElevatorRoom.set_sealed_sides]: Room's version walks four sides
+## looking for a Doors node this scene does not have.
+func set_sealed_sides(_sides: int) -> void:
+	pass
+
+
 ## Doors, talking and the way out are all decided from where the player is
 ## standing rather than from Area2D crossings — the player does not walk into
 ## this room, they are warped in behind a fade, and a body that appears already

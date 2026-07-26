@@ -357,6 +357,20 @@ func set_reload_speed_lvl(lvl: int) -> void:
 	reload_speed_lvl_changed.emit(RELOAD_SPEED_LVL)
 
 
+## How far a stat has come from level 1, as a factor a picked-up weapon can be
+## scaled by — see WeaponDef.damage_against. STAT_SCALE rides along for free,
+## because `current` has already been multiplied by it and the level-1 entry has
+## not: a tuning profile that halves every stat halves the borrowed guns too.
+##
+## Level 1 is read off the table rather than stored, so retuning the tables is
+## still the only place a stat curve is written down. A table that starts at zero
+## is a broken profile, not a division by zero.
+func _mult_from_base(current: float, values: Array) -> float:
+	if values.is_empty() or is_zero_approx(float(values[0])):
+		return 1.0
+	return current / float(values[0])
+
+
 ## Last device to speak wins. Joypad motion is filtered by deadzone because an
 ## untouched stick still emits events — without the filter a pad sitting on the
 ## desk would take aim back from the mouse every frame.

@@ -209,8 +209,12 @@ func _ready() -> void:
 	_player.reloading_changed.connect(_ammo_counter.set_reloading)
 	_ammo_counter.set_ammo(_player.ammo, _player.magazine_size)
 
-	_player.weapon_changed.connect(_ammo_counter.set_shotgun_equipped)
-	_ammo_counter.set_shotgun_equipped(_player.is_shotgun_equipped())
+	_player.weapon_changed.connect(_ammo_counter.set_weapon)
+	_ammo_counter.set_weapon(_player.equipped_weapon())
+
+	_player.equip_time_changed.connect(_ammo_counter.set_equip_time)
+	var equip_time: Vector2 = _player.equip_time()
+	_ammo_counter.set_equip_time(equip_time.x, equip_time.y)
 
 	_player.bombs_changed.connect(_o2_timer.set_bombs)
 	_o2_timer.set_bombs(_player.f_bombs, _player.max_f_bombs)

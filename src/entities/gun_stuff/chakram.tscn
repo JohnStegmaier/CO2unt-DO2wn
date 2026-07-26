@@ -1,0 +1,81 @@
+[gd_scene load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://src/entities/gun_stuff/chakram.gd" id="1_chakram"]
+[ext_resource type="Texture2D" uid="uid://b2m0po07ogd8q" path="res://assets/sprites/weapons/chakram/chakram1.png" id="2_ch1"]
+[ext_resource type="Texture2D" uid="uid://voenur1ywjy2" path="res://assets/sprites/weapons/chakram/chakram2.png" id="3_ch2"]
+[ext_resource type="Texture2D" uid="uid://cx7wqc4qrbsmw" path="res://assets/sprites/weapons/chakram/chakram3.png" id="4_ch3"]
+[ext_resource type="Texture2D" uid="uid://budcy8uqlvv6v" path="res://assets/sprites/weapons/chakram/chakram4.png" id="5_ch4"]
+[ext_resource type="Texture2D" uid="uid://b76fgmndqsevu" path="res://assets/sprites/weapons/chakram/chakram5.png" id="6_ch5"]
+[ext_resource type="Texture2D" uid="uid://d1fsksdh87scq" path="res://assets/sprites/weapons/chakram/chakram6.png" id="7_ch6"]
+[ext_resource type="Texture2D" uid="uid://b13ws7suq34ww" path="res://assets/sprites/weapons/chakram/chakram7.png" id="8_ch7"]
+[ext_resource type="Texture2D" uid="uid://spxm6ex0lyl0" path="res://assets/sprites/weapons/chakram/chakram8.png" id="9_ch8"]
+[ext_resource type="Texture2D" uid="uid://clk15kljierlm" path="res://assets/sprites/weapons/chakram/chakram9.png" id="10_ch9"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_chakram"]
+radius = 10.0
+
+[sub_resource type="Gradient" id="Gradient_chakram_glow"]
+colors = PackedColorArray(0.65, 0.9, 1, 0.55, 0.65, 0.9, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_chakram_glow"]
+gradient = SubResource("Gradient_chakram_glow")
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_chakram_spin"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_ch1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_ch2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_ch3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_ch4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_ch5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_ch6")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_ch7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_ch8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_ch9")
+}],
+"loop": true,
+"name": &"spin",
+"speed": 24.0
+}]
+
+[node name="Chakram" type="Area2D"]
+collision_layer = 8
+collision_mask = 5
+script = ExtResource("1_chakram")
+lifetime = 3.0
+
+[node name="Glow" type="Sprite2D" parent="."]
+modulate = Color(1, 1, 1, 0.5)
+z_index = -1
+scale = Vector2(0.55, 0.55)
+texture = SubResource("GradientTexture2D_chakram_glow")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_chakram")
+
+[node name="VisibleOnScreenNotifier2D" type="VisibleOnScreenNotifier2D" parent="."]
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+texture_filter = 1
+sprite_frames = SubResource("SpriteFrames_chakram_spin")
+animation = &"spin"
+autoplay = "spin"

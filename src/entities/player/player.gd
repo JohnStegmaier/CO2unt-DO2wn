@@ -2,12 +2,11 @@ extends CharacterBody2D
 
 class_name Player
 
-@export var bullet_scene: PackedScene
+## Where a shot leaves the gun, relative to the gun sprite: along the aim, and
+## across it. What is fired from there — and how fast, how hard and how often —
+## belongs to the held [WeaponDef], not here. See src/components/loadout.
 @export var muzzle_offset := 20
 @export var muzzle_y_offset := 0
-## How fast our shots travel. Lives here rather than on the bullet because the
-## enemies fire the same scene and need their own number — see enemy.gd.
-@export var bullet_speed := 400.0
 
 @export_group("Stats")
 ## Global multiplier on top of every level's table value below — one knob to
@@ -39,26 +38,6 @@ var WALK_SPEED: float
 signal power_level_changed(lvl: int)
 signal speed_lvl_changed(lvl: int)
 signal firerate_lvl_changed(lvl: int)
-
-@export_group("Ammo")
-@export var magazine_size := 6
-## Seconds an empty magazine takes to come back full. Reload is automatic — there
-## is no manual reload input — so this is the only cost of running the mag dry.
-@export var reload_time := 1.2
-
-@export_group("Shotgun")
-## Swapped onto the gun sprite for the whole of a shotgun pickup's window, then
-## swapped back — see grant_temp_shotgun.
-@export var shotgun_texture: Texture2D = preload("res://assets/sprites/weapons/shotgun.png")
-## Replaces magazine_size for the window. Two shots and you are back to reload,
-## which is the whole point of the trade — see grant_temp_shotgun.
-@export var shotgun_magazine_size := 2
-## Replaces reload_time for the window.
-@export var shotgun_reload_time := 1.2
-## Pellets fired per trigger pull while the shotgun is active.
-@export var shotgun_pellet_count := 5
-## Full width of the pellet fan, in degrees, split evenly across shotgun_pellet_count.
-@export var shotgun_spread_degrees := 18.0
 
 ## Money carried. Uncapped — unlike ammo and bombs there is no magazine or carry
 ## limit here.
@@ -180,6 +159,9 @@ func _spawn_pulse() -> void:
 @onready var sprite = $AnimatedSprite2D
 @onready var gun: Sprite2D = $BigGunBTransparent
 @onready var _reload_indicator: Node2D = $ReloadIndicator
+## What we are holding. Everything about firing lives in there; we own the input
+## that pulls the trigger and the arm the gun is drawn on, and nothing else.
+@onready var _loadout: Loadout = $Loadout
 
 const DODGE_SPEED = 200
 const DODGE_DURATION = 0.6
@@ -191,20 +173,11 @@ var is_dodging = false
 var dodge_direction := Vector2.ZERO
 var dodge_timer := 0.0
 var gun_default_position: Vector2
+## What the gun sprite is scaled to for the weapon currently held. Re-derived on
+## every weapon change rather than captured once, because the dodge roll tweens
+## the gun down to a fifth of it and back — a value captured before a swap would
+## put the wrong gun back at the wrong size.
 var gun_default_scale: Vector2
-## What the gun looked like, held how many rounds, and reloaded how fast before
-## any shotgun pickup ever touched them. Captured once in _ready() rather than
-## read back off `gun.texture` when a window ends, because by then that IS the
-## shotgun texture — see grant_temp_shotgun.
-var _gun_default_texture: Texture2D
-var _default_magazine_size: int
-var _default_reload_time: float
-## Whether a shotgun window is currently running.
-var _shotgun_active := false
-## Bumped on every pickup so an earlier window's revert can tell it has been
-## superseded and stand down instead of cutting a fresher one short — see
-## grant_temp_shotgun.
-var _shotgun_grant_id := 0
 ## How we are authored to look. Captured once so that anything which borrows our
 ## appearance — a room drawn in a perspective of its own, say — never has to
 ## remember what it changed. See reset_presentation.
@@ -216,12 +189,15 @@ var _sprite_default_position: Vector2
 ## up — sticks emit a constant trickle of noise even untouched.
 const AIM_DEADZONE := 0.25
 
-var can_shoot := true
-var ammo := 0
-## True for the whole reload wait, whether it started automatically off an empty
-## mag or early from the reload input — distinct from can_shoot, which also
-## covers the ordinary fire-rate gap between shots.
-var is_reloading := false
+## The magazine, read straight off whatever is held. Kept here as well so the HUD
+## can prime itself from the player the way it does for coins and bombs, without
+## having to know a Loadout exists.
+var ammo: int:
+	get: return _loadout.ammo
+var magazine_size: int:
+	get: return _loadout.magazine_size()
+var is_reloading: bool:
+	get: return _loadout.is_reloading
 
 ## Debug switches, set from the active tuning profile in _ready and false in any
 ## normal run. Deliberately NOT @export: an inspector checkbox is something you
@@ -230,15 +206,19 @@ var is_reloading := false
 var infinite_ammo := false
 var invulnerable := false
 
-## Fired whenever the magazine count changes — on every shot and when a reload
-## finishes — so the HUD never has to poll for it.
+## Re-emitted from the Loadout, unchanged.
+##
+## Forwarded rather than letting the HUD connect to the component directly, so
+## that "what does the player tell the world" stays one list on one node, and
+## swapping how weapons work never rewires game.gd. Signals up, calls down.
 signal ammo_changed(current: int, magazine_size: int)
-## Fired at the start and end of a reload, so the HUD can show "RELOADING" even
-## when a manual reload starts with rounds still left in the mag.
 signal reloading_changed(reloading: bool)
-## Fired when a shotgun window starts or ends, so the HUD can swap which gun it
-## shows without polling — see grant_temp_shotgun.
-signal weapon_changed(is_shotgun: bool)
+## Carries the weapon itself, so the HUD reads its own icon off it rather than
+## being told a flag it would have to translate.
+signal weapon_changed(weapon: WeaponDef)
+## How long is left on a timed weapon, and what it started at. Both zero for the
+## permanent starting weapon, which is how the HUD knows to show nothing.
+signal equip_time_changed(remaining: float, total: float)
 ## World-space aim, whichever device supplied it. Bullets and the gun sprite
 ## both read this, so neither has to know how the player is aiming.
 var gun_direction := Vector2.RIGHT
@@ -263,7 +243,18 @@ var move_scale := Vector2.ONE
 ## True while the Game is moving us between rooms. Physics is handed over to the
 ## transition for the duration — a dodge finishing mid-slide would otherwise
 ## re-enable can_move and fight the tween for control of our position.
-var is_warping := false
+##
+## Also the flag rooms use to freeze us for something that is not a transition at
+## all — browsing a shop, riding a lift — because shoot, reload and bomb are all
+## polled outside the can_move block. That second use is why this has a setter:
+## everything the Loadout is counting down has to stop with us, or a
+## twenty-second weapon is spent reading price tags. Whoever sets it owns
+## clearing it, exactly as before; nothing at any call site changes.
+var is_warping := false:
+	set(value):
+		is_warping = value
+		if _loadout != null:
+			_loadout.set_suspended(value)
 
 ## Something landed a hit. We deliberately hold no health of our own — the O2
 ## countdown is the health bar — so this reports upward and lets the run decide
@@ -293,23 +284,36 @@ var _is_dead := false
 func _ready() -> void:
 	gun_default_position = gun.position
 	gun_default_scale = gun.scale
-	_gun_default_texture = gun.texture
-	_default_magazine_size = magazine_size
-	_default_reload_time = reload_time
 	_sprite_default_scale = sprite.scale
 	_sprite_default_position = sprite.position
-	ammo = magazine_size
 	infinite_ammo = GameConfig.get_value("player", "infinite_ammo", infinite_ammo)
 	invulnerable = GameConfig.get_value("player", "invulnerable", invulnerable)
+
+	# Straight through, unchanged — see the signal declarations above.
+	_loadout.ammo_changed.connect(func(a, m): ammo_changed.emit(a, m))
+	_loadout.reloading_changed.connect(_on_reloading_changed)
+	_loadout.weapon_changed.connect(_on_weapon_changed)
+	_loadout.equip_time_changed.connect(func(r, t): equip_time_changed.emit(r, t))
+	# The Loadout says what a shot sounded like; making the noise is ours, so that
+	# it never names an autoload — see its shot_fired.
+	_loadout.shot_fired.connect(func(s, pitch, db): AudioManager.play_sfx(s, pitch, db))
+	_loadout.infinite_ammo = infinite_ammo
 
 	set_power_level(POWER_LVL)
 	set_speed_lvl(SPEED_LVL)
 	set_firerate_lvl(FIRERATE_LVL)
 
+	# A child's _ready runs before its parent's, so the Loadout has ALREADY
+	# equipped the starting weapon and emitted for it — into nothing, because the
+	# connections above did not exist yet. This is that first swap being applied
+	# by hand, and it is why the player is not drawn empty-handed for a frame.
+	_on_weapon_changed(_loadout.weapon)
+
 
 func set_power_level(lvl: int) -> void:
 	POWER_LVL = clampi(lvl, MIN_STAT_LVL, MAX_STAT_LVL)
 	bullet_damage = roundi(BULLET_DAMAGE_VALUES[POWER_LVL - 1] * STAT_SCALE)
+	_loadout.player_damage = bullet_damage
 	power_level_changed.emit(POWER_LVL)
 
 
@@ -322,6 +326,7 @@ func set_speed_lvl(lvl: int) -> void:
 func set_firerate_lvl(lvl: int) -> void:
 	FIRERATE_LVL = clampi(lvl, MIN_STAT_LVL, MAX_STAT_LVL)
 	fire_rate = FIRE_RATE_VALUES[FIRERATE_LVL - 1] * STAT_SCALE
+	_loadout.player_fire_interval = fire_rate
 	firerate_lvl_changed.emit(FIRERATE_LVL)
 
 
@@ -389,12 +394,15 @@ func _physics_process(delta: float) -> void:
 			if dodge_dir != Vector2.ZERO:
 				dodge(dodge_dir)
 
-	if Input.is_action_just_pressed("shoot") and can_shoot and not is_dodging:
-		shoot()
+	# Both trigger readings are handed over rather than one: which of them counts
+	# is the held weapon's business, and an automatic that only ever saw
+	# just_pressed would fire once per click like everything else.
+	if not is_dodging and _loadout.should_fire(
+			Input.is_action_pressed("shoot"), Input.is_action_just_pressed("shoot")):
+		_loadout.fire(_muzzle_position(gun_direction), gun_direction)
 
-	if Input.is_action_just_pressed("reload") and can_shoot and not is_dodging \
-			and ammo < magazine_size:
-		reload()
+	if Input.is_action_just_pressed("reload") and not is_dodging:
+		_loadout.request_reload()
 
 	if Input.is_action_just_pressed("bomb"):
 		use_bomb()
@@ -437,6 +445,10 @@ func reset_presentation() -> void:
 	sprite.scale = _sprite_default_scale
 	sprite.position = _sprite_default_position
 	gun.visible = true
+	# Re-drawn from what is actually held rather than from a remembered texture:
+	# a weapon window can start, end or be replaced while a room has the gun
+	# hidden, and putting the pistol back would be putting back the wrong gun.
+	_apply_weapon_look()
 
 
 func is_intangible() -> bool:
@@ -473,50 +485,68 @@ func gain_bomb() -> void:
 	bombs_changed.emit(f_bombs, max_f_bombs)
 
 
-## Called by GrantTempShotgun on contact. Swaps the gun for a shotgun — fewer,
-## harder-hitting shots per pellet, a magazine of shotgun_magazine_size instead
-## of the usual one, and its own reload_time — for `duration` seconds, then
-## swaps everything back.
+## Called by a [WeaponDef] on contact — from a pickup, a chest, or a shop
+## purchase, all of which grant an item by the same path. Duck-typed exactly like
+## gain_bomb and heal: nothing about a weapon names this scene.
 ##
-## Picking up a second shotgun while one is already running does not stack;
-## it just tops the magazine back up and restarts the clock, the same bargain
-## gain_bomb makes at the cap. The generation counter is what lets the SECOND
-## pickup's timer be the one that actually reverts: without it, the FIRST
-## timer would still fire on schedule and end the window early.
-func grant_temp_shotgun(duration: float) -> void:
-	_shotgun_grant_id += 1
-	var grant_id := _shotgun_grant_id
+## Every rule about the swap — what happens to the magazine, what a second pickup
+## mid-window does, when it hands back — belongs to the Loadout, which is why
+## this is one line. See Loadout.equip.
+func equip_weapon(weapon: WeaponDef) -> void:
+	_loadout.equip(weapon)
 
-	if not _shotgun_active:
-		_shotgun_active = true
-		gun.texture = shotgun_texture
-		magazine_size = shotgun_magazine_size
-		reload_time = shotgun_reload_time
-		weapon_changed.emit(true)
-	ammo = magazine_size
-	ammo_changed.emit(ammo, magazine_size)
 
-	await get_tree().create_timer(duration, false).timeout
-	if grant_id != _shotgun_grant_id:
+## Currently held. Public so the HUD can sync once when it first connects, the
+## same way it primes every other counter — see game.gd.
+func equipped_weapon() -> WeaponDef:
+	return _loadout.weapon
+
+
+## Seconds left on the held weapon and what it started at, as (remaining, total).
+## Both zero for the permanent starting weapon.
+func equip_time() -> Vector2:
+	return _loadout.equip_time()
+
+
+func _on_weapon_changed(weapon: WeaponDef) -> void:
+	_apply_weapon_look()
+	if weapon != null and weapon.equip_sound != &"":
+		AudioManager.play_sfx(weapon.equip_sound)
+	weapon_changed.emit(weapon)
+
+
+## Draw whatever is currently held.
+##
+## The gun sprite is ours, so putting a weapon's art on it is ours too — the
+## Loadout says what is held and never touches a node of ours to prove it. The
+## art in this project is authored at wildly different sizes, so a weapon brings
+## its own scale, offset and crop rather than being squeezed into the pistol's.
+##
+## Reads the weapon back out of the Loadout rather than taking it as an argument,
+## so that redrawing after something else borrowed the gun — see
+## reset_presentation — cannot put back a weapon we are no longer holding.
+func _apply_weapon_look() -> void:
+	if _loadout == null or _loadout.weapon == null:
 		return
-	_revert_shotgun()
+	var weapon: WeaponDef = _loadout.weapon
+	gun.texture = weapon.held_texture
+	gun.scale = Vector2(weapon.held_scale, weapon.held_scale)
+	gun.offset = weapon.held_offset
+	gun.flip_h = weapon.held_flip_h
+	gun.region_enabled = weapon.held_region.has_area()
+	gun.region_rect = weapon.held_region
+	# Not touched while dying: die() is mid-tween on the gun's alpha and this
+	# would stand it back up at full opacity.
+	if not _is_dead:
+		gun.modulate = weapon.held_modulate
+	# What the dodge roll's tween pulls the gun back to. Re-read here rather than
+	# captured once in _ready, so a swap mid-roll still ends up the right size.
+	gun_default_scale = gun.scale
 
 
-func _revert_shotgun() -> void:
-	_shotgun_active = false
-	gun.texture = _gun_default_texture
-	magazine_size = _default_magazine_size
-	reload_time = _default_reload_time
-	ammo = mini(ammo, magazine_size)
-	ammo_changed.emit(ammo, magazine_size)
-	weapon_changed.emit(false)
-
-
-## Whether a shotgun window is currently running. Public the same way
-## is_dead() is — the HUD syncs its weapon icon off this once when it first
-## connects, and off weapon_changed for every change after that.
-func is_shotgun_equipped() -> bool:
-	return _shotgun_active
+func _on_reloading_changed(reloading: bool) -> void:
+	_reload_indicator.visible = reloading
+	reloading_changed.emit(reloading)
 
 
 ## Out of air. Hand over control and play out.
@@ -533,9 +563,12 @@ func die() -> void:
 		return
 	_is_dead = true
 	can_move = false
-	can_shoot = false
 	is_dodging = false
 	velocity = Vector2.ZERO
+	# The trigger is already dead — _physics_process returns on _is_dead before it
+	# is ever read — but the equip countdown is not, and a corpse whose weapon
+	# times out under the vignette would swap guns while the screen closes.
+	_loadout.set_suspended(true)
 
 	# Stop interacting the instant we die, so a stray bullet or a still-moving
 	# enemy cannot shove the corpse around under the vignette.
@@ -567,86 +600,14 @@ func warp_to(target: Vector2) -> void:
 	reset_physics_interpolation()
 
 
-func shoot() -> void:
-	can_shoot = false
-
-	if _shotgun_active:
-		# Fanned out evenly across the spread rather than each pellet rolling its
-		# own jitter, so the same trigger pull always reads as one recognisable
-		# spread instead of a different clump every time.
-		#
-		# Pegged to BULLET_DAMAGE_VALUES[0] rather than to the current
-		# bullet_damage, so a shotgun found early hits exactly as hard as one
-		# found after several power-ups — it is a different weapon, not the
-		# ordinary gun scaled up by whatever POWER_LVL happens to be.
-		var pellet_damage: int = roundi(BULLET_DAMAGE_VALUES[0] * STAT_SCALE)
-		for i in shotgun_pellet_count:
-			var t: float = 0.5 if shotgun_pellet_count == 1 \
-					else float(i) / float(shotgun_pellet_count - 1) - 0.5
-			var pellet_direction := gun_direction.rotated(deg_to_rad(shotgun_spread_degrees) * t)
-			_fire_bullet(pellet_direction, pellet_damage)
-	else:
-		_fire_bullet(gun_direction, bullet_damage)
-
-	var rng = RandomNumberGenerator.new()
-	var shot_sound := "shotgun_blast" if _shotgun_active else "laser_gun_01"
-	AudioManager.play_sfx(shot_sound, rng.randf_range(0.6, 1.5), -6)
-
-	# Skipping the spend is the whole of infinite ammo: the magazine never reaches
-	# zero, so the reload below is never entered and the counter stays full without
-	# needing a second switch for "no reload".
-	if not infinite_ammo:
-		ammo -= 1
-		ammo_changed.emit(ammo, magazine_size)
-
-	if ammo <= 0:
-		# Empty mag reloads on its own — reload() is what blocks the shoot input
-		# until it is back up.
-		await reload()
-	else:
-		await get_tree().create_timer(fire_rate, false).timeout
-		can_shoot = true
-
-
-## One projectile in the given direction, dealing the given damage. Split out
-## of shoot() so a shotgun blast can call it once per pellet without
-## duplicating the spawn/arm boilerplate — everything that happens once per
-## TRIGGER PULL rather than once per pellet (ammo, cooldown, the shot's own
-## sound) stays in shoot().
-func _fire_bullet(direction: Vector2, damage: int) -> void:
-	var bullet = bullet_scene.instantiate()
-
+## Where a shot leaves the gun. The muzzle sits along the aim and, for art whose
+## barrel is off the centre line, across it — mirrored with the sprite so the
+## offset stays on the barrel when the gun is drawn facing left.
+func _muzzle_position(direction: Vector2) -> Vector2:
 	var perpendicular := direction.orthogonal()
 	var flip_sign := -1.0 if direction.x < 0 else 1.0
-	var spawn_offset := direction * muzzle_offset + perpendicular * muzzle_y_offset * flip_sign
-
-	# Armed before it enters the tree, so its layers are settled by the time the
-	# physics server sees it.
-	bullet.arm(direction, CollisionLayers.PLAYER_BULLET,
-			CollisionLayers.WORLD | CollisionLayers.ENEMY, damage, Damage.Type.BLUNT,
-			bullet_speed)
-	get_tree().current_scene.add_child(bullet)
-	bullet.global_position = gun.global_position + spawn_offset
-	bullet.reset_physics_interpolation()
-
-
-## Shared by an empty mag reloading itself and the player reloading early with
-## the reload input. can_shoot stays false for the whole wait, which is what
-## blocks shooting (and a second reload) until it is back up.
-func reload() -> void:
-	can_shoot = false
-	is_reloading = true
-	reloading_changed.emit(true)
-	_reload_indicator.visible = true
-
-	await get_tree().create_timer(reload_time, false).timeout
-
-	ammo = magazine_size
-	ammo_changed.emit(ammo, magazine_size)
-	is_reloading = false
-	reloading_changed.emit(false)
-	_reload_indicator.visible = false
-	can_shoot = true
+	return gun.global_position + direction * muzzle_offset \
+			+ perpendicular * muzzle_y_offset * flip_sign
 
 
 ## Maps current movement input to one of the eight dodge directions we have

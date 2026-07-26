@@ -4,9 +4,6 @@
 [ext_resource type="Texture2D" uid="uid://dwickjareycf3" path="res://assets/sprites/characters/bad_guy/bad_guy_placeholder.png" id="2_sprite"]
 [ext_resource type="PackedScene" uid="uid://bh7kx2mqvn4ea" path="res://src/components/health/health.tscn" id="3_health"]
 [ext_resource type="PackedScene" uid="uid://ckinnty100svf" path="res://src/entities/gun_stuff/bullet.tscn" id="4_bullet"]
-[ext_resource type="PackedScene" path="res://src/entities/pickup/oxygen_pickup.tscn" id="5_pickup"]
-[ext_resource type="PackedScene" path="res://src/entities/pickup/bomb_pickup.tscn" id="6_bomb_pickup"]
-[ext_resource type="PackedScene" path="res://src/entities/pickup/money_pickup.tscn" id="7_money_pickup"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_enemy"]
 radius = 4.0
@@ -20,9 +17,6 @@ collision_layer = 4
 collision_mask = 7
 script = ExtResource("1_enemy")
 bullet_scene = ExtResource("4_bullet")
-pickup_scene = ExtResource("5_pickup")
-bomb_pickup_scene = ExtResource("6_bomb_pickup")
-money_pickup_scene = ExtResource("7_money_pickup")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=540105131]
 shape = SubResource("CapsuleShape2D_enemy")

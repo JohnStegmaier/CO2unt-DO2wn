@@ -65,6 +65,11 @@ var dodge_direction := Vector2.ZERO
 var dodge_timer := 0.0
 var gun_default_position: Vector2
 var gun_default_scale: Vector2
+## How we are authored to look. Captured once so that anything which borrows our
+## appearance — a room drawn in a perspective of its own, say — never has to
+## remember what it changed. See reset_presentation.
+var _sprite_default_scale: Vector2
+var _sprite_default_position: Vector2
 
 ## Right-stick deflection below this counts as the stick being at rest. Also the
 ## threshold for believing a joypad event means the player actually picked a pad
@@ -86,6 +91,17 @@ var aim_deflection := 0.0
 ## Which device last supplied aim. Both can be plugged in, so the most recent
 ## one wins and the player can swap mid-run without touching a settings screen.
 var aiming_with_gamepad := false
+
+## Per-axis multiplier on how fast we move, for rooms that are not drawn top-down.
+##
+## The belt-scroll lobby squashes the vertical axis: there, up and down are depth
+## rather than a second direction to run in, and its walkable band is a fraction
+## of a room's height. At full speed the whole thing is crossed in a third of a
+## second, which turns walking into the lift into a twitch input.
+##
+## Vector2.ONE everywhere else, so a room that says nothing gets today's movement.
+## Whoever sets it owns putting it back — see elevator_room.gd.
+var move_scale := Vector2.ONE
 
 ## True while the Game is moving us between rooms. Physics is handed over to the
 ## transition for the duration — a dodge finishing mid-slide would otherwise
@@ -115,6 +131,8 @@ var _is_dead := false
 func _ready() -> void:
 	gun_default_position = gun.position
 	gun_default_scale = gun.scale
+	_sprite_default_scale = sprite.scale
+	_sprite_default_position = sprite.position
 	ammo = magazine_size
 
 	set_power_level(POWER_LVL)
@@ -178,7 +196,9 @@ func _physics_process(delta: float) -> void:
 		dodge_timer += delta
 		var t: float = clamp(dodge_timer / DODGE_DURATION, 0.0, 1.0)
 		var speed_multiplier: float = 1.0 if t < 0.5 else (1.0 - ((t - 0.5) / 0.5))
-		velocity = dodge_direction * DODGE_SPEED * speed_multiplier
+		# Scaled like the walk below. An undamped roll is 200px/s and would clear a
+		# depth-squashed room in one press, straight past whatever is at the far end.
+		velocity = dodge_direction * DODGE_SPEED * speed_multiplier * move_scale
 		move_and_slide()
 		return
 
@@ -187,7 +207,9 @@ func _physics_process(delta: float) -> void:
 		input_vector.y = Input.get_axis("ui_up", "ui_down")
 		input_vector = input_vector.normalized()
 
-		velocity = input_vector * WALK_SPEED
+		# Scaled after normalising, so the input still reads as a direction and only
+		# the world decides what a step along each axis is worth.
+		velocity = input_vector * WALK_SPEED * move_scale
 		update_animation(input_vector)
 		move_and_slide()
 
@@ -212,6 +234,34 @@ func _physics_process(delta: float) -> void:
 ## check this and skip themselves entirely instead of just being told to deal
 ## no damage, which is why this is its own method rather than folded into
 ## take_damage.
+## Whether the death sequence has started. Public because dying changes what
+## everything else is allowed to do to us — die() tweens the sprite into a
+## flattened pose, so anything driving our appearance has to stand down rather
+## than fight it for the same properties every frame.
+func is_dead() -> bool:
+	return _is_dead
+
+
+## Put our appearance back the way the scene authored it.
+##
+## Owned here rather than by whoever changed it. A room that borrows the player's
+## look has to give it back, and a room can be freed at any moment — mid
+## transition, mid death, mid anything — so "remember what you overwrote and undo
+## it on the way out" is a rule that only has to be missed once to leave a player
+## permanently shrunk or holding no gun for the rest of a run. Asking us instead
+## means there is nothing to remember and nothing to get wrong.
+##
+## Deliberately does nothing while dead: die() is mid-tween on these same
+## properties and a reset would stand the corpse back up.
+func reset_presentation() -> void:
+	if _is_dead:
+		return
+	move_scale = Vector2.ONE
+	sprite.scale = _sprite_default_scale
+	sprite.position = _sprite_default_position
+	gun.visible = true
+
+
 func is_intangible() -> bool:
 	return is_dodging
 

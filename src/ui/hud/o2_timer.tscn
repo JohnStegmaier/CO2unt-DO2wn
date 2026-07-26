@@ -3,8 +3,13 @@
 [ext_resource type="Script" uid="uid://cuvfew0fmywft" path="res://src/ui/hud/o_2_timer.gd" id="1_xm303"]
 [ext_resource type="Texture2D" uid="uid://dexl5mfoum3sb" path="res://assets/sprites/ui/ui-base.png" id="2_rocwj"]
 [ext_resource type="Texture2D" uid="uid://b8oknkk03wikf" path="res://assets/sprites/ui/Needle.png" id="3_rocwj"]
-[ext_resource type="Texture2D" uid="uid://b4i82h77tpx83" path="res://assets/sprites/ui/container-empty-new.png" id="4_awvvu"]
+[ext_resource type="Texture2D" uid="uid://cpfrfk2fm457y" path="res://assets/sprites/ui/bar-A.png" id="4_h310o"]
 [ext_resource type="Texture2D" uid="uid://bltnp51ft3tmp" path="res://assets/sprites/ui/light_on.png" id="4_w10os"]
+[ext_resource type="Texture2D" uid="uid://rfqd0jr37vd1" path="res://assets/sprites/ui/bar-B.png" id="5_nfesf"]
+[ext_resource type="Texture2D" uid="uid://dy3vqjarhgqlt" path="res://assets/sprites/ui/bar-C.png" id="6_nyv3k"]
+[ext_resource type="Texture2D" uid="uid://di4kkburql33s" path="res://assets/sprites/ui/bar-A-on.png" id="7_agmbj"]
+[ext_resource type="Texture2D" uid="uid://dul564rncj0v2" path="res://assets/sprites/ui/bar-B-on.png" id="7_eq5yw"]
+[ext_resource type="Texture2D" uid="uid://bbm8l7r16wj1a" path="res://assets/sprites/ui/bar-C-on.png" id="8_xwudc"]
 [ext_resource type="Texture2D" uid="uid://cjou3rlrpnkyl" path="res://assets/sprites/ui/ekg/ekg7.png" id="11_kykvi"]
 [ext_resource type="Texture2D" uid="uid://cij4moxordjih" path="res://assets/sprites/ui/ekg/ekg8.png" id="12_6dcom"]
 [ext_resource type="Texture2D" uid="uid://brl20ylj2fd7b" path="res://assets/sprites/ui/ekg/ekg9.png" id="13_2v0aa"]
@@ -270,177 +275,217 @@ color = Color(0, 0, 0, 1)
 
 [node name="UIMain" type="Sprite2D" parent="." unique_id=718267611]
 texture_filter = 1
-position = Vector2(167.75, 45.25)
+position = Vector2(168.75, 48.25)
 scale = Vector2(0.5, 0.5)
 texture = ExtResource("2_rocwj")
 
 [node name="Light1" type="Sprite2D" parent="UIMain" unique_id=475850424]
 self_modulate = Color(1, 0.5254902, 0.3647059, 1)
 texture_filter = 1
-position = Vector2(38.00003, -4)
+position = Vector2(38.00004, -10)
 scale = Vector2(1.102938, 1.1029398)
 texture = ExtResource("4_w10os")
 
 [node name="Light2" type="Sprite2D" parent="UIMain" unique_id=1950030570]
 self_modulate = Color(1, 0.5254902, 0.3647059, 1)
 texture_filter = 1
-position = Vector2(72, -4)
+position = Vector2(72.00001, -10)
 scale = Vector2(1.102938, 1.1029398)
 texture = ExtResource("4_w10os")
 
 [node name="Light3" type="Sprite2D" parent="UIMain" unique_id=548059605]
 self_modulate = Color(1, 0.5254902, 0.3647059, 1)
 texture_filter = 1
-position = Vector2(104, -4)
+position = Vector2(104.00001, -10)
 scale = Vector2(1.102938, 1.1029398)
 texture = ExtResource("4_w10os")
 
 [node name="Light4" type="Sprite2D" parent="UIMain" unique_id=191238127]
 self_modulate = Color(1, 0.5254902, 0.3647059, 1)
 texture_filter = 1
-position = Vector2(138, -4)
+position = Vector2(138, -10)
 scale = Vector2(1.102938, 1.1029398)
 texture = ExtResource("4_w10os")
 
 [node name="Light5" type="Sprite2D" parent="UIMain" unique_id=1604904852]
 self_modulate = Color(1, 0.5254902, 0.3647059, 1)
 texture_filter = 1
-position = Vector2(170, -4)
+position = Vector2(170, -10)
 scale = Vector2(1.102938, 1.1029398)
 texture = ExtResource("4_w10os")
 
 [node name="Light6" type="Sprite2D" parent="UIMain" unique_id=1416657362]
 self_modulate = Color(1, 0.5254902, 0.3647059, 1)
 texture_filter = 1
-position = Vector2(204.00003, -4)
+position = Vector2(204.00003, -10)
 scale = Vector2(1.102938, 1.1029398)
 texture = ExtResource("4_w10os")
 
 [node name="StatContainers" type="Sprite2D" parent="UIMain" unique_id=2102348708]
+position = Vector2(7.6293945e-06, -6)
 
-[node name="FireRate1" type="Sprite2D" parent="UIMain/StatContainers" unique_id=504416609]
-position = Vector2(-195.5, 29.5)
-texture = ExtResource("4_awvvu")
+[node name="FireRateBar" type="Sprite2D" parent="UIMain/StatContainers" unique_id=441047105]
+texture_filter = 1
+position = Vector2(-188.77002, 31.5)
+scale = Vector2(0.6888889, 0.74999994)
+texture = ExtResource("4_h310o")
 
-[node name="Strength1" type="Sprite2D" parent="UIMain/StatContainers" unique_id=1138869507]
-position = Vector2(-195.5, 49.5)
-texture = ExtResource("4_awvvu")
+[node name="FireRateBar2" type="Sprite2D" parent="UIMain/StatContainers" unique_id=861312695]
+texture_filter = 1
+position = Vector2(-188.78998, 55.5)
+scale = Vector2(0.6888889, 0.74999994)
+texture = ExtResource("5_nfesf")
 
-[node name="Strength2" type="Sprite2D" parent="UIMain/StatContainers" unique_id=575807466]
-position = Vector2(-187.5, 49.5)
-texture = ExtResource("4_awvvu")
+[node name="FireRateBar3" type="Sprite2D" parent="UIMain/StatContainers" unique_id=833622657]
+texture_filter = 1
+position = Vector2(-188.67499, 79.5)
+scale = Vector2(0.6888889, 0.74999994)
+texture = ExtResource("6_nyv3k")
 
-[node name="Strength3" type="Sprite2D" parent="UIMain/StatContainers" unique_id=1622652051]
-position = Vector2(-179.5, 49.5)
-texture = ExtResource("4_awvvu")
+[node name="FireRateLv1" type="Sprite2D" parent="UIMain/StatContainers" unique_id=1504833385]
+position = Vector2(-201.5, 55.5)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("7_eq5yw")
 
-[node name="Strength4" type="Sprite2D" parent="UIMain/StatContainers" unique_id=1319786435]
-position = Vector2(-171.5, 49.5)
-texture = ExtResource("4_awvvu")
+[node name="FireRateLv2" type="Sprite2D" parent="UIMain/StatContainers" unique_id=896838285]
+position = Vector2(-192, 55.5)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("7_eq5yw")
 
-[node name="Strength5" type="Sprite2D" parent="UIMain/StatContainers" unique_id=1291176056]
-position = Vector2(-163.5, 49.5)
-texture = ExtResource("4_awvvu")
+[node name="FireRateLv3" type="Sprite2D" parent="UIMain/StatContainers" unique_id=455325512]
+position = Vector2(-182.5, 55.5)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("7_eq5yw")
 
-[node name="Strength6" type="Sprite2D" parent="UIMain/StatContainers" unique_id=1845368509]
-position = Vector2(-155.5, 49.5)
-texture = ExtResource("4_awvvu")
+[node name="FireRateLv4" type="Sprite2D" parent="UIMain/StatContainers" unique_id=764349036]
+position = Vector2(-173, 55.5)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("7_eq5yw")
 
-[node name="Strength7" type="Sprite2D" parent="UIMain/StatContainers" unique_id=843817725]
-position = Vector2(-147.5, 49.5)
-texture = ExtResource("4_awvvu")
+[node name="FireRateLv5" type="Sprite2D" parent="UIMain/StatContainers" unique_id=617965172]
+position = Vector2(-163.5, 55.5)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("7_eq5yw")
 
-[node name="Speed1" type="Sprite2D" parent="UIMain/StatContainers" unique_id=1922594118]
-position = Vector2(-195.5, 69.5)
-texture = ExtResource("4_awvvu")
+[node name="FireRateLv6" type="Sprite2D" parent="UIMain/StatContainers" unique_id=655085595]
+position = Vector2(-154, 55.5)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("7_eq5yw")
 
-[node name="Speed2" type="Sprite2D" parent="UIMain/StatContainers" unique_id=419238622]
-position = Vector2(-187.5, 69.5)
-texture = ExtResource("4_awvvu")
+[node name="FireRateLv7" type="Sprite2D" parent="UIMain/StatContainers" unique_id=828779151]
+position = Vector2(-144.5, 55.5)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("7_eq5yw")
 
-[node name="Speed3" type="Sprite2D" parent="UIMain/StatContainers" unique_id=229463926]
-position = Vector2(-179.5, 69.5)
-texture = ExtResource("4_awvvu")
+[node name="SpeedLv1" type="Sprite2D" parent="UIMain/StatContainers" unique_id=350857520]
+position = Vector2(-201.5, 79.5)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("8_xwudc")
 
-[node name="Speed4" type="Sprite2D" parent="UIMain/StatContainers" unique_id=2076428993]
-position = Vector2(-171.5, 69.5)
-texture = ExtResource("4_awvvu")
+[node name="SpeedLv2" type="Sprite2D" parent="UIMain/StatContainers" unique_id=847970837]
+position = Vector2(-192, 79.5)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("8_xwudc")
 
-[node name="Speed5" type="Sprite2D" parent="UIMain/StatContainers" unique_id=378841783]
-position = Vector2(-163.5, 69.5)
-texture = ExtResource("4_awvvu")
+[node name="SpeedLv3" type="Sprite2D" parent="UIMain/StatContainers" unique_id=841097228]
+position = Vector2(-182.5, 79.5)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("8_xwudc")
 
-[node name="Speed6" type="Sprite2D" parent="UIMain/StatContainers" unique_id=1257066591]
-position = Vector2(-155.5, 69.5)
-texture = ExtResource("4_awvvu")
+[node name="SpeedLv4" type="Sprite2D" parent="UIMain/StatContainers" unique_id=1171963034]
+position = Vector2(-173, 79.5)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("8_xwudc")
 
-[node name="Speed7" type="Sprite2D" parent="UIMain/StatContainers" unique_id=835834732]
-position = Vector2(-147.5, 69.5)
-texture = ExtResource("4_awvvu")
+[node name="SpeedLv5" type="Sprite2D" parent="UIMain/StatContainers" unique_id=1584771718]
+position = Vector2(-163.5, 79.5)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("8_xwudc")
 
-[node name="FireRate2" type="Sprite2D" parent="UIMain/StatContainers" unique_id=354387559]
-position = Vector2(-187.5, 29.5)
-texture = ExtResource("4_awvvu")
+[node name="SpeedLv6" type="Sprite2D" parent="UIMain/StatContainers" unique_id=268985838]
+position = Vector2(-154, 79.5)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("8_xwudc")
 
-[node name="FireRate3" type="Sprite2D" parent="UIMain/StatContainers" unique_id=1388322909]
-position = Vector2(-179.5, 29.5)
-texture = ExtResource("4_awvvu")
+[node name="SpeedLv7" type="Sprite2D" parent="UIMain/StatContainers" unique_id=1894585656]
+position = Vector2(-144.5, 79.5)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("8_xwudc")
 
-[node name="FireRate4" type="Sprite2D" parent="UIMain/StatContainers" unique_id=257661196]
-position = Vector2(-171.5, 29.5)
-texture = ExtResource("4_awvvu")
+[node name="PowerLv1" type="Sprite2D" parent="UIMain/StatContainers" unique_id=192002244]
+position = Vector2(-201.5, 31.5)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("7_agmbj")
 
-[node name="FireRate5" type="Sprite2D" parent="UIMain/StatContainers" unique_id=513058693]
-position = Vector2(-163.5, 29.5)
-texture = ExtResource("4_awvvu")
+[node name="PowerLv2" type="Sprite2D" parent="UIMain/StatContainers" unique_id=1147554037]
+position = Vector2(-192, 31.5)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("7_agmbj")
 
-[node name="FireRate6" type="Sprite2D" parent="UIMain/StatContainers" unique_id=968097127]
-position = Vector2(-155.5, 29.5)
-texture = ExtResource("4_awvvu")
+[node name="PowerLv3" type="Sprite2D" parent="UIMain/StatContainers" unique_id=1377955747]
+position = Vector2(-182.5, 31.5)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("7_agmbj")
 
-[node name="FireRate7" type="Sprite2D" parent="UIMain/StatContainers" unique_id=1855316804]
-position = Vector2(-147.5, 29.5)
-texture = ExtResource("4_awvvu")
+[node name="PowerLv4" type="Sprite2D" parent="UIMain/StatContainers" unique_id=1743782330]
+position = Vector2(-173, 31.5)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("7_agmbj")
+
+[node name="PowerLv5" type="Sprite2D" parent="UIMain/StatContainers" unique_id=451020182]
+position = Vector2(-163.5, 31.5)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("7_agmbj")
+
+[node name="PowerLv6" type="Sprite2D" parent="UIMain/StatContainers" unique_id=419685754]
+position = Vector2(-154, 31.5)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("7_agmbj")
+
+[node name="PowerLv7" type="Sprite2D" parent="UIMain/StatContainers" unique_id=2139595619]
+position = Vector2(-144.5, 31.5)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("7_agmbj")
 
 [node name="heartbeat" type="AnimatedSprite2D" parent="UIMain" unique_id=799286964]
-position = Vector2(-184.5, -37.499996)
+position = Vector2(-184.5, -43.499996)
 scale = Vector2(1.0000001, 1.0000001)
 sprite_frames = SubResource("SpriteFrames_u6ckt")
 animation = &"beat"
 
 [node name="bomb_container1" type="Sprite2D" parent="UIMain" unique_id=1219394818]
-position = Vector2(-214.62637, 104.37364)
+position = Vector2(-214.62636, 110.37364)
 rotation = 0.36897877
 scale = Vector2(0.46, 0.46)
 texture = ExtResource("57_h310o")
 
 [node name="bomb_container2" type="Sprite2D" parent="UIMain" unique_id=1807951666]
 self_modulate = Color(1, 1, 1, 0.3137255)
-position = Vector2(-182.62637, 104.37363)
+position = Vector2(-182.62636, 110.37363)
 rotation = 0.36897877
 scale = Vector2(0.46, 0.46)
 texture = ExtResource("57_h310o")
 
 [node name="bomb_container3" type="Sprite2D" parent="UIMain" unique_id=2086904186]
 self_modulate = Color(1, 1, 1, 0.3137255)
-position = Vector2(-150.62637, 104.37363)
+position = Vector2(-150.62636, 110.37363)
 rotation = 0.36897877
 scale = Vector2(0.46, 0.46)
 texture = ExtResource("57_h310o")
 
 [node name="Label" type="Label" parent="." unique_id=5773688]
 modulate = Color(0.7058824, 0.13333334, 0.13333334, 1)
-offset_left = 196.75
-offset_top = 5.25
-offset_right = 257.81
-offset_bottom = 36.25
+offset_left = 199.0
+offset_top = 8.0
+offset_right = 260.06
+offset_bottom = 39.0
 theme_override_font_sizes/font_size = 22
 text = ":)"
 horizontal_alignment = 1
 
 [node name="Needle" type="Sprite2D" parent="." unique_id=684507258]
 texture_filter = 1
-position = Vector2(138.75, 35.25)
+position = Vector2(138.75, 32.25)
 scale = Vector2(1.6027501, 1.5000005)
 texture = ExtResource("3_rocwj")
 offset = Vector2(-5.515, 0)

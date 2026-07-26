@@ -14,6 +14,20 @@ extends Resource
 ## others.
 @export var weight: float = 1.0
 
+## What this costs where a source charges for it. Zero is free, which is what
+## every enemy and chest row is.
+##
+## Here rather than on [ItemDef] because a price is not a property of a thing —
+## the same oxygen canister is a free drop on floor 5 and costs coins in a shop,
+## and an item that carried its own price could only ever have one. Putting it on
+## the row means the [DropRule] that routes an item to a source also says what
+## that source charges, which is the whole point of the source keying described
+## in docs/DROPS.md.
+##
+## Dead weight on rows that are never sold, and deliberately so: one row saying
+## both what an item is and what it costs beats a second table to keep in step.
+@export var price: int = 0
+
 @export_group("Count")
 @export var count_min: int = 1
 @export var count_max: int = 1
@@ -29,6 +43,8 @@ func roll_count(rng: RandomNumberGenerator) -> int:
 
 func describe() -> String:
 	var what: String = item.describe() if item != null else "nothing"
+	if price > 0:
+		what = "%s @ %d" % [what, price]
 	if count_max > count_min:
 		return "%d-%d x %s" % [count_min, count_max, what]
 	if count_min != 1:

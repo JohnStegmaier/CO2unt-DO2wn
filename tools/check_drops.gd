@@ -252,6 +252,15 @@ func _report_rates(config: DropConfig, path: String) -> Array[String]:
 			if floor_number > 0 and tables == config.tables_for(source, floor_number - 1):
 				continue
 
+			# A storefront is stocked, not rolled — see DropTableShopStockProvider.
+			# Sampling it would print a drop rate for something that never drops,
+			# and measuring it against the enemy rates below is meaningless.
+			if _is_storefront(tables):
+				print("  %-12s index %d (%s) — storefront" % [source, floor_number,
+						FloorLadder.long_label(floor_number)])
+				errors.append_array(_report_shelf(path, source, tables))
+				continue
+
 			rng.seed = SAMPLE_SEED
 			var counts := {}
 			for i in ROLLS:
@@ -268,6 +277,57 @@ func _report_rates(config: DropConfig, path: String) -> Array[String]:
 				print("      %-14s %6.2f per 100 kills" % [id, counts[id] / float(ROLLS) * 100.0])
 			errors.append_array(_check_default_rates(path, source, counts))
 	print("")
+	return errors
+
+
+## Is this source a shelf rather than a roll?
+##
+## Derived from the rows rather than from a list of known shop names, so a second
+## kind of storefront — a vending machine, a black market — is recognised without
+## editing this file. A source counts as a storefront when it has rows and every
+## one of them is priced: a mix of priced and free rows is a table someone is
+## halfway through editing, and reporting it as a shelf would hide that.
+func _is_storefront(tables: Array[DropTable]) -> bool:
+	var rows := 0
+	for table in tables:
+		if table == null:
+			continue
+		for entry in table.entries:
+			if entry == null:
+				continue
+			rows += 1
+			if entry.price <= 0:
+				return false
+	return rows > 0
+
+
+## Print a storefront's shelf, and assert it is actually sellable.
+##
+## The equivalent of the rate dump for a source nobody rolls: what is on offer
+## and what it costs. The assertions are the shop's version of "every table pays
+## what it claims" — a shelf with a row that cannot be bought is the failure this
+## catches, and it is invisible in a rate table because it never drops.
+func _report_shelf(path: String, source: StringName, tables: Array[DropTable]) -> Array[String]:
+	var errors: Array[String] = []
+	var seen: Array[StringName] = []
+	for table in tables:
+		if table == null:
+			continue
+		for entry in table.entries:
+			if entry == null:
+				continue
+			if entry.item == null:
+				errors.append("%s: %s has a priced row with no item" % [path.get_file(), source])
+				continue
+			print("      %-14s %4d coins" % [entry.item.id, entry.price])
+			# The same shelf offering one thing twice is almost always a
+			# copy-paste, and it costs the player a cubby either way.
+			if seen.has(entry.item.id):
+				errors.append("%s: %s lists '%s' more than once"
+						% [path.get_file(), source, entry.item.id])
+			seen.append(entry.item.id)
+	if seen.is_empty():
+		errors.append("%s: %s is a storefront with nothing to sell" % [path.get_file(), source])
 	return errors
 
 

@@ -597,18 +597,20 @@ func _make_cubby(cell: Rect2) -> ColorRect:
 func _make_contents(cell: Rect2, offer: ShopOffer) -> Node2D:
 	var content := Node2D.new()
 
-	var icon: Texture2D = offer.icon()
-	if icon != null:
-		var sprite := Sprite2D.new()
-		sprite.texture = icon
-		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		sprite.position = cell.get_center() - Vector2(0.0, 2.0)
-		# Never larger than the cubby it sits in, but never blown up either — a
-		# 2x nearest-neighbour item next to a 1x one looks like a mistake.
-		var size: Vector2 = icon.get_size()
-		if size.x > cell.size.x or size.y > cell.size.y:
-			sprite.scale = Vector2.ONE * minf(cell.size.x / size.x, cell.size.y / size.y)
-		content.add_child(sprite)
+	# Backdrop behind, icon in front, both at the scales the ItemDef authored, and
+	# the pair shrunk together if they would not fit the cubby. Drawing the item
+	# the way a drop draws it is the point: the thing on the shelf has to be
+	# recognisably the thing you find on the floor, so the shop reads icon_scale
+	# and backdrop rather than fitting the bare texture to the cell.
+	var item: ItemDef = offer.item
+	if item != null:
+		var centre: Vector2 = cell.get_center() - Vector2(0.0, 2.0)
+		var fit: float = _cubby_fit(item, cell)
+		if item.backdrop != null:
+			content.add_child(
+				_item_sprite(item.backdrop, item.backdrop_scale * fit, centre))
+		if item.icon != null:
+			content.add_child(_item_sprite(item.icon, item.icon_scale * fit, centre))
 
 	var tag := Label.new()
 	tag.text = str(offer.price)
@@ -624,6 +626,38 @@ func _make_contents(cell: Rect2, offer: ShopOffer) -> Node2D:
 	content.add_child(tag)
 
 	return content
+
+
+## One layer of an item's picture, centred in its cubby.
+func _item_sprite(texture: Texture2D, scale_factor: float, centre: Vector2) -> Sprite2D:
+	var sprite := Sprite2D.new()
+	sprite.texture = texture
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sprite.position = centre
+	sprite.scale = Vector2.ONE * scale_factor
+	return sprite
+
+
+## How much to shrink an item so its widest authored layer fits the cubby.
+##
+## Never above 1.0: the authored scale is the item at the size it is meant to be
+## drawn, and blowing a nearest-neighbour sprite up past that next to one drawn
+## at 1x looks like a mistake. Returns 1.0 when it already fits, which is the
+## common case — this only bites for an item authored larger than the shelf.
+func _cubby_fit(item: ItemDef, cell: Rect2) -> float:
+	var widest := 0.0
+	if item.icon != null:
+		widest = maxf(widest, _longest_side(item.icon) * item.icon_scale)
+	if item.backdrop != null:
+		widest = maxf(widest, _longest_side(item.backdrop) * item.backdrop_scale)
+	if widest <= 0.0:
+		return 1.0
+	return minf(1.0, minf(cell.size.x, cell.size.y) / widest)
+
+
+func _longest_side(texture: Texture2D) -> float:
+	var size: Vector2 = texture.get_size()
+	return maxf(size.x, size.y)
 
 
 func _clear_contents(index: int) -> void:

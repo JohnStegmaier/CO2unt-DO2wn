@@ -41,13 +41,22 @@ and tune while the game is running. It holds no RNG and makes no decisions —
 ### Sources
 
 A `DropRule` is keyed on a **source**, not on "enemy": `&"grunt"`,
-`&"skirmisher"`, `&"boss"`, and later `&"chest"` and `&"shop"`. An enemy carries
+`&"skirmisher"`, `&"boss"`, `&"shop"`, and later `&"chest"`. An enemy carries
 only its `loot_source`; `game.gd` sets it alongside the behaviour and the boss
 promotion, in `_loot_source_for`.
 
 That is what lets the treasure room and the shop use this same table when they
 land, instead of needing a loot system each. A source with no rule drops nothing,
 which is what makes an unnamed source quiet rather than an error.
+
+#### Storefronts
+
+The shop is the first source that does not roll. `DropEntry.price` is what a
+source charges for a row — zero everywhere else — and a source whose rows are
+**all** priced is a storefront: everything on it is offered at once rather than
+sampled, so `weight` means nothing there. `check_drops.gd` recognises one by that
+same all-priced test, prints it as a price list instead of a drop rate, and
+asserts it is actually sellable. See [SHOP.md](SHOP.md).
 
 ### Floors
 

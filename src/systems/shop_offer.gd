@@ -9,25 +9,13 @@ extends Resource
 ## the shelf is what keeps the item catalogue from having to know shops exist.
 
 
-## The catalogue entry being sold. Typed [Resource] rather than ItemDef on
-## purpose — the catalogue is authored on the drops branch and does not exist on
-## master yet. Everything here treats it as opaque and hands it to whoever asked,
-## so when ItemDef lands this annotation tightens by one word and nothing else
-## moves. Declaring a local ItemDef instead would collide with theirs on merge.
-@export var item: Resource
+## The catalogue entry being sold. The shop reads what it looks like off this and
+## hands the whole thing to [method ItemDef.grant_to] on purchase, so buying and
+## picking up run the same code — which is what that method exists for.
+@export var item: ItemDef
 
-## What this shop charges. Coins, whatever they end up being called.
+## What this shop charges. Coins.
 @export var price: int = 10
-
-
-## The art to draw in the cubby, or null if the item has none yet.
-##
-## Duck-typed rather than reaching for a property that is not on master yet, so a
-## stubbed item without an icon draws nothing instead of faulting.
-func icon() -> Texture2D:
-	if item == null or not ("icon" in item):
-		return null
-	return item.icon as Texture2D
 
 
 ## What to call this on a price tag. Falls back to the resource name so a
@@ -35,6 +23,6 @@ func icon() -> Texture2D:
 func display_name() -> String:
 	if item == null:
 		return "?"
-	if "display_name" in item and not String(item.display_name).is_empty():
-		return String(item.display_name)
+	if not item.display_name.is_empty():
+		return item.display_name
 	return item.resource_name

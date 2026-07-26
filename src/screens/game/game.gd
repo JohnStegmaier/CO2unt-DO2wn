@@ -807,13 +807,11 @@ func _setup_shops() -> void:
 	_grant_starting_coins()
 
 
-## Coins live on the Player and are shipped by another branch. Duck-typed so this
-## runs before that lands and needs no edit after it: until add_coins exists, the
-## player simply starts with nothing and every shop refuses them.
+## What the player opens a run with. add_coins rather than touching coins
+## directly, so the HUD's counter hears about it through coins_changed like every
+## other change to the balance.
 func _grant_starting_coins() -> void:
 	if shop_config.starting_coins <= 0:
-		return
-	if not _player.has_method("add_coins"):
 		return
 	_player.add_coins(shop_config.starting_coins)
 
@@ -868,11 +866,11 @@ func _release_clock_hold() -> void:
 func _on_offer_purchased(offer: ShopOffer) -> void:
 	if offer == null or offer.item == null:
 		return
-	if not ("effects" in offer.item):
-		return
-	for effect in offer.item.effects:
-		if effect != null and effect.has_method("apply"):
-			effect.apply(_player)
+	# grant_to rather than walking the effects here: ItemDef says in its own
+	# docstring that it exists so the shop hands an item over by exactly the path
+	# a floor drop does, and a second implementation of "apply every effect" is
+	# the one that would drift.
+	offer.item.grant_to(_player)
 ## Let a tuning profile pick a different drop economy for the run.
 ##
 ## The inspector slot is what ships; this only redirects it, so a profile naming

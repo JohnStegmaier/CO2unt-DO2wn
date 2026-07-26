@@ -146,7 +146,6 @@ func _ready() -> void:
 	GlobalTimer.tick.connect(update_label)
 	GlobalTimer.tick.connect(play_heartbeat)
 	drain_enabled = GameConfig.get_value("oxygen", "drain", drain_enabled)
-	GlobalTimer.tick.connect(_setup)
 	needle.rotation_degrees = degrees
 
 	top_border_end_pos = top_border.position
@@ -223,9 +222,6 @@ func add_drain(amount: float) -> void:
 
 
 func _process(delta: float) -> void:
-	if time_left > 0:
-	if not setup_done:
-		return
 	if drain_enabled and time_left > 0:
 		time_left -= delta * drain_rate
 		time_left = max(time_left, 0)
@@ -352,7 +348,7 @@ func _update_label_text() -> void:
 
 func play_heartbeat():
 	if time_left > 0:
-		await get_tree().create_timer(0.1).timeout
+		await get_tree().create_timer(0.15).timeout
 		heartbeat.play("beat")
 	else:
 		heartbeat.play("flatline")

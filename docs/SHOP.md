@@ -56,6 +56,18 @@ simplest possible implementation to test against.
 cubbies, the items and the price tags all regenerate — nothing is hand-placed.
 `tools/check_shop.gd` covers the indexing and the wrap.
 
+`center_gap` splits every row into two banks with a space between them, which is
+where the shopkeeper stands — product either side of him, so the shelf reads as a
+stall rather than a wall he happens to be in front of. It is purely about where
+cubbies are *drawn*: the index space is unbroken, so stepping right off the last
+cubby of the left bank lands on the first of the right with no special case.
+Planks are drawn one per bank so neither runs behind him.
+
+The shipped shape is 3 × 8 with a 96px gap — four cubbies each side. Two things
+constrain it: the HUD covers roughly the top 40 room units, so `origin.y` has to
+clear that or the top row is clipped; and the shelf has to end above the counter
+at y 165.
+
 ## Drawing an item
 
 The shop draws `backdrop` then `icon`, each at the scale the `ItemDef` authored,

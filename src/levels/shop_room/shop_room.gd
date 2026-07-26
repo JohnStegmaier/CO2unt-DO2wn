@@ -627,7 +627,13 @@ func _rebuild_shelves() -> void:
 		return
 
 	for row in grid.rows:
-		_planks.add_child(_make_plank(row))
+		# One per bank rather than one per row: a single plank would run through
+		# the centre gap and behind the shopkeeper, which is the one stretch of
+		# wall with deliberately no shelf on it.
+		for bank in 2:
+			var rect: Rect2 = grid.bank_rect(row, bank)
+			if rect.size.x > 0.0:
+				_planks.add_child(_make_plank(rect, "plank_%d_%d" % [row, bank]))
 
 	_contents.resize(grid.capacity())
 	for index in grid.capacity():
@@ -644,10 +650,9 @@ func _rebuild_shelves() -> void:
 		_contents[index] = content
 
 
-func _make_plank(row: int) -> ColorRect:
-	var rect: Rect2 = grid.row_rect(row)
+func _make_plank(rect: Rect2, plank_name: String) -> ColorRect:
 	var plank := ColorRect.new()
-	plank.name = "plank_%d" % row
+	plank.name = plank_name
 	# Sat under the row of cubbies rather than behind it, so the items read as
 	# standing ON something.
 	plank.position = rect.position + Vector2(-1.0, rect.size.y)

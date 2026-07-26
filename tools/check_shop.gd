@@ -20,6 +20,7 @@ func _initialize() -> void:
 	_check_grid_geometry()
 	_check_grid_wrap()
 	_check_cell_at()
+	_check_center_gap()
 	_check_degenerate_grids()
 	_check_stock_fill()
 	_check_stock_take()
@@ -156,6 +157,63 @@ func _check_cell_at() -> void:
 
 	var empty := _grid(0, 0)
 	_equal(empty.cell_at(Vector2.ZERO), -1, "an empty grid contains no point")
+
+
+## A shelf split into two banks around the space the shopkeeper stands in.
+func _check_center_gap() -> void:
+	var grid := _grid(3, 8)
+	grid.center_gap = 96.0
+	var step: Vector2 = grid.stride()
+
+	_equal(grid.left_columns(), 4, "eight columns split four and four")
+
+	# The gap sits between the banks and nowhere else.
+	var last_left: Rect2 = grid.cell_rect(3)
+	var first_right: Rect2 = grid.cell_rect(4)
+	_equal(first_right.position.x - last_left.end.x, grid.center_gap + grid.cell_spacing.x,
+			"the banks are a centre gap apart")
+	_equal(grid.cell_rect(1).position.x - grid.cell_rect(0).position.x, step.x,
+			"columns inside a bank are still one stride apart")
+	_equal(grid.cell_rect(5).position.x - grid.cell_rect(4).position.x, step.x,
+			"and so are columns in the right bank")
+
+	# Rows are unaffected, and the gap repeats identically on every row.
+	for row in 3:
+		var a: Rect2 = grid.cell_rect(grid.index_of(row, 3))
+		var b: Rect2 = grid.cell_rect(grid.index_of(row, 4))
+		_equal(b.position.x - a.end.x, grid.center_gap + grid.cell_spacing.x,
+				"row %d has the same gap" % row)
+
+	# Pointing into the gap hits nothing — that is where the shopkeeper is.
+	var mid := Vector2(last_left.end.x + grid.center_gap * 0.5, last_left.get_center().y)
+	_equal(grid.cell_at(mid), -1, "the centre gap points at nothing")
+	# But the cubbies either side of it still resolve.
+	_equal(grid.cell_at(last_left.get_center()), 3, "last cubby of the left bank")
+	_equal(grid.cell_at(first_right.get_center()), 4, "first cubby of the right bank")
+
+	# cell_at still inverts cell_rect for every cubby, gap and all.
+	for index in grid.capacity():
+		_equal(grid.cell_at(grid.cell_rect(index).get_center()), index,
+				"cell_at inverts cell_rect for %d across the gap" % index)
+
+	# Index space is untouched: stepping right off the left bank lands on the
+	# right bank, because the gap is only ever about where things are drawn.
+	_equal(grid.neighbour(3, 1, 0), 4, "stepping across the gap is one step")
+	_equal(grid.neighbour(4, -1, 0), 3, "and back again")
+
+	# Planks are drawn per bank, so neither runs through the gap.
+	var left_plank: Rect2 = grid.bank_rect(0, 0)
+	var right_plank: Rect2 = grid.bank_rect(0, 1)
+	_equal(left_plank.position.x, grid.origin.x, "left plank starts at the origin")
+	_equal(left_plank.end.x, last_left.end.x, "left plank ends with its bank")
+	_equal(right_plank.position.x, first_right.position.x, "right plank starts with its bank")
+	_equal(right_plank.end.x, grid.bounds().end.x, "right plank ends with the shelf")
+	_ok(left_plank.end.x < right_plank.position.x, "the planks do not meet across the gap")
+
+	# With no gap, bank 0 is the whole row and bank 1 is empty of its own accord.
+	var solid := _grid(2, 6)
+	_equal(solid.bank_rect(0, 0).size.x + solid.cell_spacing.x + solid.bank_rect(0, 1).size.x,
+			solid.row_rect(0).size.x, "ungapped banks tile the whole row")
 
 
 ## A 1xN or Nx1 shelf still behaves, and a 0-cell one does not divide by zero.

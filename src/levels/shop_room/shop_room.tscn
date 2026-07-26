@@ -34,11 +34,12 @@ animations = [{
 
 [sub_resource type="Resource" id="Resource_grid"]
 script = ExtResource("7_grid")
-rows = 4
-columns = 12
-origin = Vector2(70, 40)
+rows = 3
+columns = 8
+origin = Vector2(70, 62)
 cell_size = Vector2(24, 24)
 cell_spacing = Vector2(2, 8)
+center_gap = 96.0
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_counter"]
 size = Vector2(343, 12)
@@ -120,7 +121,8 @@ depth_factor = 0.35
 
 [node name="keeper" type="AnimatedSprite2D" parent="Depth/Shopkeeper"]
 texture_filter = 1
-position = Vector2(221, 136)
+position = Vector2(221, 147)
+scale = Vector2(1.35, 1.35)
 sprite_frames = SubResource("SpriteFrames_keeper")
 animation = &"idle"
 autoplay = "idle"
@@ -148,13 +150,17 @@ position = Vector2(221, 213)
 scale = Vector2(0.62, 0.34)
 texture = ExtResource("5_mat")
 
-[node name="table" type="Sprite2D" parent="Depth/Counter"]
+[node name="table" type="NinePatchRect" parent="Depth/Counter"]
 texture_filter = 1
-texture_repeat = 2
-position = Vector2(220.5, 179)
+offset_left = 49.0
+offset_top = 165.0
+offset_right = 392.0
+offset_bottom = 193.0
+mouse_filter = 2
 texture = ExtResource("8_table")
-region_enabled = true
-region_rect = Rect2(0, 0, 343, 28)
+patch_margin_left = 26
+patch_margin_right = 12
+axis_stretch_horizontal = 0
 
 [node name="Foreground" type="Node2D" parent="Depth"]
 script = ExtResource("2_layer")

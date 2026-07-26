@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ObstacleDef" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/systems/obstacles/obstacle_def.gd" id="1_def"]
+[ext_resource type="Texture2D" uid="uid://cdsj472m46wc6" path="res://assets/sprites/environment/rocks.png" id="2_tex"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"rocks"
+texture = ExtResource("2_tex")
+offset = Vector2(2, 2.5)
+sprite_scale = 0.625
+body_radius = 9.0
+max_hp = 1
+indestructible = true
+weight = 1.0

@@ -7,9 +7,17 @@ extends CharacterBody2D
 ## forwards damage to its Health component, and reports its own death upward so
 ## the room can count.
 ##
-## No pathfinding and no line-of-sight checks, deliberately: a room is a hollow
-## rectangle with nothing inside it, so a straight seek plus move_and_slide can
-## never get stuck and nothing can ever stand between us and the player.
+## No pathfinding and no line-of-sight checks, deliberately. That used to be free:
+## a room was a hollow rectangle and a straight seek plus move_and_slide could
+## never get stuck. Rooms now have solid props in them, so it is not free any
+## more — it is a choice to keep the seek dumb and pay for it with the stuck-guard
+## below, which is a few lines against a nav mesh and a rewrite.
+##
+## What the guard buys is only that a chaser cannot grind against a barrel
+## forever. It is not steering and not cover: it does not know a prop from a wall,
+## will not take the short way round, and will happily walk back into the thing it
+## just left. Using cover, and breaking what is in the way, are a separate job —
+## see obstacle_field.gd, which is the surface that job will ask its questions of.
 
 ## Which row of the drop table this one's death is looked up under. Not a table
 ## and not a drop chance: an enemy says what it is and the run's [DropConfig]
@@ -78,12 +86,29 @@ const MUZZLE_OFFSET := 10.0
 const STRAFE_FLIP_MIN := 1.5
 const STRAFE_FLIP_MAX := 3.0
 
+## Physics frames a chaser may spend touching something without gaining ground on
+## the player before it counts as wedged rather than fighting. Frames rather than
+## seconds so two runs of the same fight make the same decision.
+const STUCK_FRAMES := 12
+## And how long it walks sideways afterwards. Long enough to clear the widest prop
+## at chase_speed, short enough to read as a shove rather than a patrol.
+const UNSTICK_FRAMES := 20
+## Ground gained per frame below which a chaser counts as gaining none. At
+## chase_speed 60 on a 60Hz tick an unobstructed run gains a pixel a frame.
+const STUCK_PROGRESS := 0.1
+## Inside this a chaser is grinding on the PLAYER, which is the whole job — see
+## _damage_on_contact. Never stuckness.
+const STUCK_IGNORE_RANGE := 24.0
+
 var _target: Node2D
 var _fire_cooldown := 0.0
 var _strafe_sign := 1.0
 var _strafe_flip_in := 0.0
 var _dodge_until_msec: int = 0
 var _dodge_ready_at_msec: int = 0
+var _stuck_frames: int = 0
+var _unstick_frames: int = 0
+var _unstick_sign: float = 1.0
 
 @onready var _health: Health = $Health
 @onready var _sprite: Sprite2D = $Sprite2D
@@ -136,7 +161,9 @@ func _physics_process(delta: float) -> void:
 
 	var to_target: Vector2 = _target.global_position - global_position
 	velocity = _desired_velocity(to_target, delta)
+	var was_at := global_position
 	move_and_slide()
+	_track_progress(global_position - was_at, to_target)
 	_damage_on_contact()
 
 	if not is_zero_approx(velocity.x):
@@ -146,6 +173,41 @@ func _physics_process(delta: float) -> void:
 	if _fire_cooldown <= 0.0 and to_target.length() < fire_range:
 		_fire_cooldown = fire_interval
 		_shoot(to_target.normalized())
+
+
+## Did that move actually take us anywhere?
+##
+## Measured after the fact rather than predicted, because the only thing that
+## knows a slide came to nothing is the slide. move_and_slide handles a glancing
+## hit by itself; what it cannot handle is a square-on one, where there is no
+## tangent left to give and the whole velocity is eaten. That is also the likeliest
+## geometry, since a chaser walks straight at the player.
+##
+## Chasers only. A skirmisher holding its range is not stuck, and its own strafe
+## flip already turns it away from anything it runs into.
+func _track_progress(moved: Vector2, to_target: Vector2) -> void:
+	if _unstick_frames > 0 or behaviour != Behaviour.CHASER:
+		return
+	# Touching nothing, or close enough that the thing being ground against is the
+	# player. Neither is being stuck.
+	if get_slide_collision_count() == 0 or to_target.length() < STUCK_IGNORE_RANGE:
+		_stuck_frames = 0
+		return
+	# Ground gained toward the player, not distance travelled: an enemy walking
+	# the long way round a crate is moving plenty and is not stuck.
+	if moved.dot(to_target.normalized()) > STUCK_PROGRESS:
+		_stuck_frames = 0
+		return
+
+	_stuck_frames += 1
+	if _stuck_frames < STUCK_FRAMES:
+		return
+	_stuck_frames = 0
+	_unstick_frames = UNSTICK_FRAMES
+	# Which way round is read off the surface rather than rolled — no RNG, and it
+	# picks the side the player is already on, so the detour is the short way.
+	var tangent := get_slide_collision(0).get_normal().orthogonal()
+	_unstick_sign = -1.0 if tangent.dot(to_target) < 0.0 else 1.0
 
 
 ## Walking into the player costs them air. The player's own mercy window rate
@@ -201,8 +263,15 @@ func _desired_velocity(to_target: Vector2, delta: float) -> Vector2:
 ## No separation steering: enemies mask each other, so move_and_slide pushes them
 ## apart physically. That is what lets this survive thirty of them unchanged.
 func _chase_velocity(to_target: Vector2, delta: float) -> Vector2:
-	var desired := to_target.normalized() * chase_speed
-	return velocity.lerp(desired, 1.0 - exp(-chase_acceleration * delta))
+	var toward := to_target.normalized()
+	# Wedged against something: walk the tangent for a fixed count instead of
+	# steering. Assigned outright rather than lerped, because the collision has
+	# already taken the velocity we would otherwise be easing out of, and easing
+	# back up from a standstill spends the whole window still pressed against it.
+	if _unstick_frames > 0:
+		_unstick_frames -= 1
+		return toward.orthogonal() * _unstick_sign * chase_speed
+	return velocity.lerp(toward * chase_speed, 1.0 - exp(-chase_acceleration * delta))
 
 
 ## Hold a firing range and circle. Closes if too far, backs off if too close, and
@@ -218,7 +287,10 @@ func _skirmish_velocity(to_target: Vector2, delta: float) -> Vector2:
 		desired = -toward * chase_speed
 	else:
 		_strafe_flip_in -= delta
-		if _strafe_flip_in <= 0.0 or is_on_wall():
+		# All three, not just is_on_wall: motion mode is grounded, so a body
+		# sliding along the top or bottom face of a prop reports floor or ceiling
+		# instead, and would grind sideways along a crate forever.
+		if _strafe_flip_in <= 0.0 or is_on_wall() or is_on_ceiling() or is_on_floor():
 			_strafe_sign = -_strafe_sign
 			_strafe_flip_in = randf_range(STRAFE_FLIP_MIN, STRAFE_FLIP_MAX)
 		desired = toward.orthogonal() * strafe_speed * _strafe_sign

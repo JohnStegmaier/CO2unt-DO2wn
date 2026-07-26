@@ -10,6 +10,7 @@
 [ext_resource type="PackedScene" path="res://src/levels/elevator_room/elevator_room.tscn" id="8_exit_room"]
 [ext_resource type="PackedScene" path="res://src/ui/screen_fade/screen_fade.tscn" id="9_fade"]
 [ext_resource type="Resource" path="res://src/config/drops/default.tres" id="10_drop_config"]
+[ext_resource type="Resource" path="res://src/config/obstacles/default.tres" id="11_obstacle_set"]
 
 [sub_resource type="Resource" id="Resource_floor_config"]
 script = ExtResource("6_floor_config")
@@ -25,6 +26,7 @@ special_min_depth = 2
 script = ExtResource("1_game")
 exit_room_scene = ExtResource("8_exit_room")
 drop_config = ExtResource("10_drop_config")
+obstacle_set = ExtResource("11_obstacle_set")
 floor_config = SubResource("Resource_floor_config")
 
 [node name="RoomContainer" type="Node2D" parent="."]

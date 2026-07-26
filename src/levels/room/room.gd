@@ -61,6 +61,7 @@ const ELEVATOR_WALL_PREFERENCE: Array[int] = [
 @onready var _doors: Node2D = $Doors
 @onready var _plugs: Node2D = $Walls/Plugs
 @onready var _entities: Node2D = $Entities
+@onready var _obstacles: Node2D = $Obstacles
 @onready var _tint: ColorRect = $Tint
 @onready var _elevator: Elevator = $Elevator
 
@@ -92,6 +93,35 @@ func add_entity(node: Node2D, local_position: Vector2) -> void:
 	node.position = local_position
 	_entities.add_child(node)
 	node.reset_physics_interpolation()
+
+
+## Put a solid prop on the floor. Same contract as [method add_entity] — position
+## before the tree, interpolation reset after — but a different parent.
+##
+## Entities sit at z_index 2 and the player does not: they are on opposite sides
+## of the scene, so everything in Entities draws in front of her. That is survivable
+## for an enemy the same height as she is, and not survivable for a barrel, which
+## would simply hide her. Obstacles go in a layer that draws with the walls
+## instead.
+##
+## The real answer is y-sorting the room, which would fix the enemy case too. That
+## is a change to how every room draws and belongs on its own branch.
+func add_obstacle(node: Node2D, local_position: Vector2) -> void:
+	node.position = local_position
+	_obstacles.add_child(node)
+	node.reset_physics_interpolation()
+
+
+## Room-local rect that solid props may be scattered into. An empty rect means
+## "not this room".
+##
+## Distinct from [constant FLOOR] for the same reason
+## [method default_spawn_position] is distinct from the centre of
+## [method interior_rect]: a room whose walkable area is a shallow strip rather
+## than the whole floor has to answer differently, and a caller that conflates
+## them builds a barrel into the back wall.
+func obstacle_rect() -> Rect2:
+	return FLOOR
 
 
 ## Room-local landing spots of the doors that are currently open. Used to keep

@@ -14,4 +14,5 @@ id = &"oxygen_small"
 display_name = "Oxygen Canister"
 icon = ExtResource("3_25gi2")
 icon_scale = 0.265
+pickup_sound = &"powerup_01"
 effects = Array[ExtResource("1_rx1qe")]([SubResource("Resource_3584m")])

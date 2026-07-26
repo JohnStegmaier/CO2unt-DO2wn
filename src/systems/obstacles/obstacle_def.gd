@@ -31,6 +31,16 @@ extends Resource
 ## 50-100px against a 16x24 enemy. See docs/TUNING_PROFILES.md for the sizes.
 @export var sprite_scale: float = 1.0
 
+## Where the ground shadow sits. X is 0 for every shipped def, not a
+## coincidence: [member offset] exists to cancel out each sprite's own
+## off-centre art, so once it's applied the art's true center already sits at
+## the origin — copying offset.x here would just reintroduce the asymmetry it
+## was correcting for. Y is measured against the drawn pixels, the same
+## reasoning as [member EnemyDef.shadow_offset], with one wrinkle: this offset
+## lives in the Sprite2D's own local space, so unlike a node position it is
+## scaled by sprite_scale along with the art.
+@export var shadow_offset: Vector2 = Vector2(0, 12)
+
 @export_group("Body")
 ## Radius of the solid core, which is deliberately NOT half the sprite: a
 ## top-down barrel is tall but not fat, so its footprint is narrower than its art.

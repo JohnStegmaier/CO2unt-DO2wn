@@ -10,6 +10,15 @@ height = 14.0
 [sub_resource type="CircleShape2D" id="CircleShape2D_dodge"]
 radius = 40.0
 
+[sub_resource type="Gradient" id="Gradient_shadow"]
+colors = PackedColorArray(0, 0, 0, 0.6, 0, 0, 0, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_shadow"]
+gradient = SubResource("Gradient_shadow")
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
 [node name="Enemy" type="CharacterBody2D" unique_id=586325233]
 collision_layer = 4
 collision_mask = 7
@@ -17,6 +26,12 @@ script = ExtResource("1_enemy")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=540105131]
 shape = SubResource("CapsuleShape2D_enemy")
+
+[node name="Shadow" type="Sprite2D" parent="."]
+z_index = -1
+position = Vector2(0, 8)
+scale = Vector2(0.36, 0.12)
+texture = SubResource("GradientTexture2D_shadow")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=367973653]
 texture_filter = 1

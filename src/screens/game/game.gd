@@ -217,6 +217,7 @@ func _ready() -> void:
 	# The player reports hits upward and the O2 timer decides what they cost.
 	# Game is the only node holding both ends, so the wiring belongs here.
 	_player.damaged.connect(_o2_timer.apply_damage)
+	_player.damaged.connect(_on_player_damaged)
 	_player.healed.connect(_o2_timer.gain_seconds)
 	_o2_timer.depleted.connect(_on_air_depleted)
 	_o2_timer.air_restored.connect(_on_air_restored)
@@ -313,6 +314,19 @@ func _start_music() -> void:
 
 func _on_global_tick() -> void:
 	AudioManager.play_sfx(TICK_SFX, 1, -5, 0)
+
+
+## The damage counterpart to ItemPickup's "+15s": a red "-Ns" drifting up off
+## the player, priced the same way apply_damage prices the hit for the timer
+## itself — see [member O2Timer.seconds_per_blunt_point].
+##
+## Piercing damage has no such line: it raises the drain rate rather than
+## spending a fixed chunk of air, so there is no single number to show for it.
+func _on_player_damaged(amount: int, type: int) -> void:
+	if type != Damage.Type.BLUNT:
+		return
+	var seconds := amount * _o2_timer.seconds_per_blunt_point
+	FloatingText.spawn(get_tree().current_scene, _player.global_position, "-%ds" % roundi(seconds), Color(1.0, 0.0, 0.055, 1.0))
 
 
 ## The walls are closing in and the player can hear their own pulse. Fired by the

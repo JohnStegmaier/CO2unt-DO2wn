@@ -26,6 +26,10 @@ const LOOT_SCATTER := 10.0
 @export_group("Room Transition")
 ## Seconds to slide from one room to the next.
 @export var transition_time: float = 0.85
+## Seconds for the camera's pan, kept a touch longer than transition_time so the
+## view is still catching up to the player when they land — a beat of drift
+## rather than the two arriving in lockstep.
+@export var camera_pan_time: float = 1.0
 ## Curve of the slide. QUAD/OUT leaves fast and decelerates into place, which is
 ## the snappy Isaac feel; SINE/IN_OUT eases at both ends and reads as a glide.
 @export var transition_trans: Tween.TransitionType = Tween.TRANS_QUAD
@@ -333,11 +337,22 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 		previous_room.queue_free()
 
 	await get_tree().physics_frame
+	# Lead was never on to begin with for the start-of-run branch above, but
+	# asking again here costs nothing and means every path into _populate goes
+	# through the same held-still window rather than only the two that had a
+	# transition to turn it off for.
+	_camera.set_lead_enabled(false)
 	# After the physics frame, so six collision-shaped bodies cannot be added
 	# mid-flush — the same hazard that forces _enter_room itself to be deferred.
 	# After the slide, so enemies never get a free shot at a player who is still
 	# a tween puppet with physics disabled.
-	_populate(data)
+	var locked: bool = _populate(data)
+	# Lead stays off for the door-shut slide too, not just the room slide that
+	# preceded it — aim lead alone is enough drift to read as the camera
+	# wandering off while the doors are still sealing the room.
+	if locked:
+		await get_tree().create_timer(Room.DOOR_SHUT_TIME, false).timeout
+	_camera.set_lead_enabled(true)
 	_transitioning = false
 
 
@@ -379,7 +394,8 @@ func _cut_to(landing: Vector2, previous_room: Room) -> void:
 
 	await _fade.fade_in()
 
-	_camera.set_lead_enabled(true)
+	# Lead stays off — _enter_room is what turns it back on, once the room
+	# behind this wipe is done locking its doors, not before.
 	_player.is_warping = false
 
 
@@ -406,11 +422,12 @@ func _slide_to(landing: Vector2, previous_room: Room) -> void:
 	tween.set_ease(transition_ease).set_trans(transition_trans)
 	tween.set_parallel(true)
 	tween.tween_property(_player, "global_position", landing, transition_time)
-	tween.tween_method(_pan_camera_between.bind(from_rect, to_rect), 0.0, 1.0, transition_time)
+	tween.tween_method(_pan_camera_between.bind(from_rect, to_rect), 0.0, 1.0, camera_pan_time)
 	await tween.finished
 
 	_camera.set_bounds(to_rect)
-	_camera.set_lead_enabled(true)
+	# Lead stays off — _enter_room is what turns it back on, once the room
+	# behind this slide is done locking its doors, not before.
 	_player.is_warping = false
 
 
@@ -637,10 +654,14 @@ func _win() -> void:
 ## — same placement, same lock, same count coming back if the player retreats
 ## mid-fight. That is deliberate: the climax of a floor should be the same
 ## machinery under load, so there is only ever one of these to get right.
-func _populate(data: RoomData) -> void:
+##
+## Returns whether the room actually got locked — _enter_room uses that to know
+## whether to hold the camera still for the door-shut slide, or free it right
+## away because there was no lock to wait on.
+func _populate(data: RoomData) -> bool:
 	var is_boss: bool = data.kind == RoomData.Kind.BOSS
 	if not (is_boss or data.kind == RoomData.Kind.NORMAL) or data.enemies_remaining == 0:
-		return
+		return false
 	if data.enemies_remaining < 0:
 		data.enemies_remaining = _rng.randi_range(boss_enemies_min, boss_enemies_max) if is_boss \
 				else _rng.randi_range(enemies_min, enemies_max)
@@ -658,7 +679,7 @@ func _populate(data: RoomData) -> void:
 		# otherwise leave the run unfinishable rather than merely quiet.
 		if is_boss:
 			_clear_boss_gate()
-		return
+		return false
 
 	var player_local: Vector2 = _current_room.to_local(_player.global_position)
 	var spots := EnemyPlacement.points(Room.FLOOR, data.enemies_remaining,
@@ -683,6 +704,9 @@ func _populate(data: RoomData) -> void:
 	# No way out until the room is quiet. The clock does not stop, which is the
 	# point.
 	_current_room.set_locked(true)
+	AudioManager.play_sfx("steel_drip",1,0,0.3)
+	AudioManager.play_sfx("spikes_down",0.8,0,0.3)
+	return true
 
 
 func _on_enemy_died(loot_source: StringName, at: Vector2, data: RoomData) -> void:
@@ -698,6 +722,7 @@ func _on_enemy_died(loot_source: StringName, at: Vector2, data: RoomData) -> voi
 		return
 	if _current_room != null:
 		_current_room.set_locked(false)
+		AudioManager.play_sfx("chest_open")
 	if data.kind != RoomData.Kind.BOSS:
 		return
 

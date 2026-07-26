@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://de516cuorh3t3" path="res://src/systems/loot/effects/grant_coins.gd" id="2_v8j6j"]
 [ext_resource type="Texture2D" uid="uid://ba2kiutrlno8t" path="res://assets/sprites/environment/coin.png" id="3_80peg"]
 [ext_resource type="Script" uid="uid://dmxi7afktl2qr" path="res://src/systems/loot/item_def.gd" id="4_ygd3c"]
+[ext_resource type="SpriteFrames" path="res://src/config/items/coin_spin_frames.tres" id="5_spin"]
 
 [sub_resource type="Resource" id="Resource_b2dox"]
 script = ExtResource("2_v8j6j")
@@ -13,6 +14,8 @@ script = ExtResource("4_ygd3c")
 id = &"coin_small"
 display_name = "Loose Change"
 icon = ExtResource("3_80peg")
+icon_frames = ExtResource("5_spin")
+icon_animation = &"spin"
 icon_scale = 0.15
 pickup_sound = &"money_jingle_1"
 drop_sound = &"money_drop_2"

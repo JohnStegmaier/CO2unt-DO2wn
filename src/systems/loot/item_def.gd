@@ -22,6 +22,13 @@ extends Resource
 @export_group("Appearance")
 ## Drawn on top. Every item has one.
 @export var icon: Texture2D
+## Plays instead of the static icon when set — a spinning coin rather than one
+## frame of it. Nullable like backdrop: most items are still a plain icon, and
+## adding animation is opting a specific item into a second way of being drawn
+## rather than something every item must carry.
+@export var icon_frames: SpriteFrames
+## Which animation on icon_frames to play. Unused while icon_frames is null.
+@export var icon_animation: StringName = &"default"
 ## Sprites in this project are authored much larger than they are drawn, so the
 ## scale is part of how an item looks rather than a fudge factor — the orb sits
 ## at 0.265 and the bomb icon at 0.3.

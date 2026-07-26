@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://3opvjgbns0rk"]
 
 [ext_resource type="PackedScene" uid="uid://dayrrci4olhln" path="res://src/ui/hud/o2_timer.tscn" id="2_50hus"]
-[ext_resource type="PackedScene" path="res://src/ui/hud/ammo_counter.tscn" id="3_ammo"]
+[ext_resource type="PackedScene" uid="uid://c6phikmhwfb06" path="res://src/ui/hud/ammo_counter.tscn" id="3_ammo"]
 [ext_resource type="PackedScene" path="res://src/ui/minimap/minimap.tscn" id="4_minimap"]
-[ext_resource type="PackedScene" path="res://src/ui/hud/coin_counter.tscn" id="5_coin"]
+[ext_resource type="PackedScene" uid="uid://8icf0vieiv7i" path="res://src/ui/hud/coin_counter.tscn" id="5_coin"]
 
 [node name="Ui" type="Node2D" unique_id=1505368263]
 
@@ -14,10 +14,9 @@ position = Vector2(-61, -2)
 scale = Vector2(1.2, 1.2)
 
 [node name="AmmoCounter" parent="CanvasLayer" unique_id=164052633 instance=ExtResource("3_ammo")]
-position = Vector2(600, 330)
+position = Vector2(597.955, 336.07)
 
 [node name="CoinCounter" parent="CanvasLayer" unique_id=1019042429 instance=ExtResource("5_coin")]
-position = Vector2(350, 13.395)
 
 [node name="Minimap" parent="CanvasLayer" unique_id=605827228 instance=ExtResource("4_minimap")]
 layout_mode = 3

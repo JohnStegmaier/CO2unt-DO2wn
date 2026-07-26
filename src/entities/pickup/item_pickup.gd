@@ -25,6 +25,7 @@ extends Area2D
 @onready var _visual: Node2D = $Visual
 @onready var _backdrop: Sprite2D = $Visual/Backdrop
 @onready var _icon: Sprite2D = $Visual/Icon
+@onready var _icon_anim: AnimatedSprite2D = $Visual/IconAnim
 
 var _visual_base_y := 0.0
 var _time := 0.0
@@ -53,8 +54,18 @@ func _apply_appearance() -> void:
 		push_error("ItemPickup: no item assigned — nothing to show or grant.")
 		return
 
+	# Animated and static icons are mutually exclusive views of the same slot —
+	# whichever the item carries is shown, the other stays hidden rather than
+	# drawing over it.
+	var animated: bool = item.icon_frames != null
+	_icon.visible = not animated
 	_icon.texture = item.icon
 	_icon.scale = Vector2.ONE * item.icon_scale
+	_icon_anim.visible = animated
+	if animated:
+		_icon_anim.sprite_frames = item.icon_frames
+		_icon_anim.scale = Vector2.ONE * item.icon_scale
+		_icon_anim.play(item.icon_animation)
 	_backdrop.visible = item.backdrop != null
 	_backdrop.texture = item.backdrop
 	_backdrop.scale = Vector2.ONE * item.backdrop_scale

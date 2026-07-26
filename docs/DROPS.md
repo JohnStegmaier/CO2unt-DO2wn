@@ -213,10 +213,19 @@ updating `DEFAULT_RATES` in the checker is how you say you meant it.
   default does not: a guaranteed table beside a chance table, a source that
   differs from the others, and a floor-specific override.
 
+## Weapons
+
+A weapon is an item like any other here — `WeaponDef` extends `ItemDef` and
+equips itself on pickup — so it is a row in a `DropTable` and needs nothing else
+from this system. Crates, barrels, chests and the shop all offer them today; the
+enemy tables deliberately do not, because they are rate-locked by
+`check_drops.gd`. See **docs/WEAPONS.md**.
+
 ## The three candidate economies
 
-Kept here as the roadmap. All three assume chests, a shop and six weapons, none
-of which exist yet — each becomes a `.tres` when its items do.
+Kept here as the roadmap. All three assume chests and a shop. Four of the six
+weapons now exist — pistol, shotgun, timmy gun and chakram, under
+`src/config/weapons/` — and the rest become a `.tres` each when their art does.
 
 Common to all three:
 

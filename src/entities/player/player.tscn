@@ -4,7 +4,8 @@
 [ext_resource type="Script" uid="uid://ccalvfh5rit5y" path="res://src/entities/player/player_camera.gd" id="1_pcam0"]
 [ext_resource type="Script" uid="uid://cyixlj2dyq4hy" path="res://src/entities/player/reload_indicator.gd" id="1_reload"]
 [ext_resource type="Texture2D" uid="uid://dvbkwi18togod" path="res://assets/sprites/characters/player/Dodge_Forward/player_roll1.png" id="2_p2qdy"]
-[ext_resource type="PackedScene" uid="uid://ckinnty100svf" path="res://src/entities/gun_stuff/bullet.tscn" id="2_t8d2k"]
+[ext_resource type="Script" path="res://src/components/loadout/loadout.gd" id="2_loadout"]
+[ext_resource type="Resource" path="res://src/config/weapons/pistol.tres" id="2_pistol"]
 [ext_resource type="Texture2D" uid="uid://goqhekktgk42" path="res://assets/sprites/characters/player/Dodge_Forward/player_roll2.png" id="3_lqdhu"]
 [ext_resource type="Texture2D" uid="uid://u2b3isfhcq6v" path="res://assets/sprites/characters/player/Dodge_Forward/player_roll3.png" id="4_t8d2k"]
 [ext_resource type="Texture2D" uid="uid://bth5a3lqfw6fn" path="res://assets/sprites/characters/player/Dodge_Forward/player_roll4.png" id="5_yi0df"]
@@ -319,7 +320,10 @@ disable_mode = 1
 collision_layer = 2
 collision_mask = 5
 script = ExtResource("1_lkv7d")
-bullet_scene = ExtResource("2_t8d2k")
+
+[node name="Loadout" type="Node" parent="." unique_id=1044213077]
+script = ExtResource("2_loadout")
+starting_weapon = ExtResource("2_pistol")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1811685466]
 shape = SubResource("CapsuleShape2D_5ixxa")

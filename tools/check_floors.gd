@@ -14,8 +14,9 @@ extends SceneTree
 
 const SEEDS := 250
 ## Floor 0 is the first of a run. Later ones are checked too because room count
-## grows with depth, and a bigger floor is a different shape problem.
-const FLOOR_NUMBERS := [0, 1, 3, 6]
+## grows with depth, and a bigger floor is a different shape problem. Stops at the
+## Basement because a run does too — see FloorLadder.
+const FLOOR_NUMBERS := [0, 1, 3, FloorLadder.BASEMENT_INDEX]
 
 
 func _initialize() -> void:

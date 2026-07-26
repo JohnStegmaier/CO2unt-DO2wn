@@ -68,6 +68,12 @@ const ELEVATOR_WALL_PREFERENCE: Array[int] = [
 ## sealed for a fight and restored afterwards without the room having to know
 ## why.
 var _open_doors: int = 0
+## Is this the cell the floor plan marked as its way out? Only an exit room has a
+## car to stand in, and only an exit room can be made boardable.
+var _is_exit: bool = false
+## Is the way off this floor open? Owned by whoever generated the floor — see
+## [method set_boardable].
+var _boardable: bool = true
 
 
 func _ready() -> void:
@@ -105,7 +111,22 @@ func configure(data: RoomData) -> void:
 	_open_doors = data.doors
 	_apply_doors(data.doors)
 	_tint.color = KIND_TINTS[data.kind]
+	_is_exit = data.kind == RoomData.Kind.EXIT
 	_place_elevator(data)
+
+
+## Is there a floor below this one to go to?
+##
+## Separate from [method configure] because it answers a question about the RUN,
+## not about the cell: the plan says which room holds the car, and this says
+## whether the car will move. False leaves it dead — not shown, not monitoring,
+## nothing to walk into — which is how floor 1 keeps the player in the building
+## until its boss is dead, and how the Basement stays the bottom.
+##
+## Called after configure(), and cheap enough to call again at any time.
+func set_boardable(boardable: bool) -> void:
+	_boardable = boardable
+	_elevator.set_active(_is_exit and _boardable)
 
 
 ## Stand the elevator against a bare wall, or put it away if this is not the exit.
@@ -113,8 +134,11 @@ func configure(data: RoomData) -> void:
 ## It must never share a wall with a doorway: arriving through a door places the
 ## player just inside it, and that is deep enough to land in the car and take the
 ## elevator the instant they walk in.
+##
+## Chooses the wall only. Whether the car is live is [method set_boardable]'s
+## business, so the two cannot disagree about it.
 func _place_elevator(data: RoomData) -> void:
-	if data.kind != RoomData.Kind.EXIT:
+	if not _is_exit:
 		_elevator.set_active(false)
 		return
 
@@ -124,7 +148,7 @@ func _place_elevator(data: RoomData) -> void:
 			wall = side
 			break
 	_elevator.position = ELEVATOR_POSITIONS[wall]
-	_elevator.set_active(true)
+	_elevator.set_active(_boardable)
 
 
 ## Seal every doorway, or restore the ones the floor plan gave this room.

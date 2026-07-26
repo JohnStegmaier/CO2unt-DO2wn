@@ -82,6 +82,7 @@ overrides — a section is only listed there if it actually changed something.
 | `player` | `invulnerable` | `player.gd` — hits are ignored outright, no flash |
 | `player` | `infinite_ammo` | `player.gd` — the magazine never empties, so it never reloads |
 | `enemies` | `min`, `max` | `game.gd` — per-room count. `max = 0` empties the floor |
+| `enemies` | `boss_min`, `boss_max` | `game.gd` — how many the boss room holds. Forced to zero when `max = 0`, so an emptied station has no boss barring the way down |
 | `floor` | `run_seed` | `game.gd` — non-zero pins the whole run |
 | `floor` | `rooms_min`, `rooms_max`, `rooms_per_floor` | `floor_config.gd` — size, and growth per floor |
 | `floor` | `max_depth`, `depth_bias` | `floor_config.gd` — shape |

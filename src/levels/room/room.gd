@@ -138,6 +138,10 @@ func set_locked(locked: bool) -> void:
 func _apply_doors(doors: int) -> void:
 	for side in GridDirection.SIDES:
 		var is_open: bool = (doors & GridDirection.bit(side)) != 0
+		# Whether this side has a doorway at all, open or temporarily sealed —
+		# distinct from is_open, which also goes false while the door is merely
+		# locked shut for a fight.
+		var has_door: bool = (_open_doors & GridDirection.bit(side)) != 0
 		var door := door_for(side)
 		# Deferred defensively: the physics server rejects these changes if it is
 		# mid-flush, which is easy to hit when rooms are built in response to a
@@ -151,9 +155,20 @@ func _apply_doors(doors: int) -> void:
 		# deferred for the same reason as monitoring above.
 		plug.set_deferred("collision_layer", 0 if is_open else CollisionLayers.WORLD)
 
+		_open_sprite_for(side).visible = is_open
+		_shut_sprite_for(side).visible = has_door and not is_open
+
 
 func door_for(side: int) -> LevelDoor:
 	return _doors.get_node("door_" + GridDirection.side_name(side))
+
+
+func _open_sprite_for(side: int) -> Sprite2D:
+	return _doors.get_node("door_" + GridDirection.side_name(side) + "_open")
+
+
+func _shut_sprite_for(side: int) -> Sprite2D:
+	return _doors.get_node("door_" + GridDirection.side_name(side) + "_shut")
 
 
 ## Where to put a player who just walked in through the given side.

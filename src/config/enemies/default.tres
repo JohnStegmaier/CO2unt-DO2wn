@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="EnemySet" load_steps=7 format=3]
+[gd_resource type="Resource" script_class="EnemySet" load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://src/systems/enemies/enemy_set.gd" id="1_set"]
 [ext_resource type="Script" path="res://src/systems/enemies/enemy_def.gd" id="2_def"]
@@ -6,7 +6,8 @@
 [ext_resource type="Resource" path="res://src/config/enemies/defs/guard.tres" id="4_guard"]
 [ext_resource type="Resource" path="res://src/config/enemies/defs/licker.tres" id="5_licker"]
 [ext_resource type="Resource" path="res://src/config/enemies/defs/turret.tres" id="6_turret"]
+[ext_resource type="Resource" path="res://src/config/enemies/defs/wideguard.tres" id="7_wideguard"]
 
 [resource]
 script = ExtResource("1_set")
-defs = Array[ExtResource("2_def")]([ExtResource("3_booger"), ExtResource("4_guard"), ExtResource("5_licker"), ExtResource("6_turret")])
+defs = Array[ExtResource("2_def")]([ExtResource("3_booger"), ExtResource("4_guard"), ExtResource("5_licker"), ExtResource("6_turret"), ExtResource("7_wideguard")])

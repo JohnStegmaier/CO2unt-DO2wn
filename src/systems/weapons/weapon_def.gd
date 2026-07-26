@@ -99,12 +99,13 @@ enum SpreadMode {
 ## Seconds an empty magazine takes to come back full.
 @export var reload_time: float = 1.2
 
-## Whether this gun grows with the player's POWER and FIRERATE levels.
+## Whether this gun grows with the player's POWER, FIRERATE and RELOAD_SPEED
+## levels.
 ##
 ## TRUE for the starting pistol only: it is the player's own gun, so power-ups
-## are supposed to be felt through it, and it draws damage and fire interval from
-## Player.BULLET_DAMAGE_VALUES / FIRE_RATE_VALUES instead of from the two fields
-## above.
+## are supposed to be felt through it, and it draws damage, fire interval and
+## reload time from Player.BULLET_DAMAGE_VALUES / FIRE_RATE_VALUES /
+## RELOAD_SPEED_VALUES instead of from the fields above.
 ##
 ## FALSE for everything picked up. A shotgun found on floor 1 should hit exactly
 ## as hard as one found on floor 5 — it is a different weapon, not the ordinary
@@ -202,6 +203,14 @@ func damage_against(player_damage: int) -> int:
 ## See [member scales_with_player_stats].
 func interval_against(player_interval: float) -> float:
 	return player_interval if scales_with_player_stats else fire_interval
+
+
+## Seconds an empty magazine takes to come back full, given the player's own
+## current reload speed. player_reload_speed is a multiplier rather than a
+## seconds value like [param player_interval] above, so scaling divides by it
+## instead of substituting it outright. See [member scales_with_player_stats].
+func reload_time_against(player_reload_speed: float) -> float:
+	return reload_time / player_reload_speed if scales_with_player_stats else reload_time
 
 
 ## Equip on pickup.

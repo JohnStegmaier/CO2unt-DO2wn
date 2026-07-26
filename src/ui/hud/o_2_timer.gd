@@ -102,11 +102,13 @@ var _air_critical := false
 	$UIMain/StatContainers/PowerLv5, $UIMain/StatContainers/PowerLv6,
 	$UIMain/StatContainers/PowerLv7,
 ]
-@onready var speed_lv_pips: Array[Sprite2D] = [
-	$UIMain/StatContainers/SpeedLv1, $UIMain/StatContainers/SpeedLv2,
-	$UIMain/StatContainers/SpeedLv3, $UIMain/StatContainers/SpeedLv4,
-	$UIMain/StatContainers/SpeedLv5, $UIMain/StatContainers/SpeedLv6,
-	$UIMain/StatContainers/SpeedLv7,
+## Shows RELOAD_SPEED_LVL rather than SPEED_LVL — walk speed still levels up in
+## the background (see Player), it just has no row of its own on this HUD.
+@onready var reload_lv_pips: Array[Sprite2D] = [
+	$UIMain/StatContainers/ReloadLv1, $UIMain/StatContainers/ReloadLv2,
+	$UIMain/StatContainers/ReloadLv3, $UIMain/StatContainers/ReloadLv4,
+	$UIMain/StatContainers/ReloadLv5, $UIMain/StatContainers/ReloadLv6,
+	$UIMain/StatContainers/ReloadLv7,
 ]
 @onready var firerate_lv_pips: Array[Sprite2D] = [
 	$UIMain/StatContainers/FireRateLv1, $UIMain/StatContainers/FireRateLv2,
@@ -371,8 +373,8 @@ func set_power_level(lvl: int) -> void:
 	_set_level_pips(power_lv_pips, lvl)
 
 
-func set_speed_lvl(lvl: int) -> void:
-	_set_level_pips(speed_lv_pips, lvl)
+func set_reload_lvl(lvl: int) -> void:
+	_set_level_pips(reload_lv_pips, lvl)
 
 
 func set_firerate_lvl(lvl: int) -> void:

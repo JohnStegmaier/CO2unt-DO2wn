@@ -50,9 +50,9 @@ Three steps. None of them is a script edit.
    never offered, which is a legitimate place for one to sit while it is tuned.
 3. `godot --headless --script tools/check_weapons.gd`
 
-Nothing else. It gets a pickup, a shop shelf, a HUD icon, a countdown bar and a
-drop table for free, because it is an `ItemDef` and everything downstream of one
-already works.
+Nothing else. It gets a pickup, a shop shelf, a HUD icon, a countdown bar with a
+seconds readout beside it, and a drop table for free, because it is an `ItemDef`
+and everything downstream of one already works.
 
 ### If it needs a new sound
 

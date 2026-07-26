@@ -1,13 +1,18 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://src/levels/elevator_room/elevator_room.gd" id="1_lobby"]
+[ext_resource type="Texture2D" uid="uid://bruj02dwo1cn3" path="res://assets/sprites/environment/Elevator_blank.png" id="2_plate"]
+[ext_resource type="Texture2D" uid="uid://byqrq0r1ecj5h" path="res://assets/sprites/environment/temple-A.png" id="4_brick"]
 [ext_resource type="PackedScene" path="res://src/components/elevator/elevator.tscn" id="3_elevator"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_back_side"]
-size = Vector2(189, 190)
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_back_left"]
+size = Vector2(149, 190)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_back_right"]
+size = Vector2(145, 190)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_car_back"]
-size = Vector2(64, 94)
+size = Vector2(148, 42)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_band"]
 size = Vector2(28, 50)
@@ -15,8 +20,11 @@ size = Vector2(28, 50)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_near_lip"]
 size = Vector2(343, 10)
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_leaf"]
-size = Vector2(32, 30)
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_leaf_left"]
+size = Vector2(72, 30)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_leaf_right"]
+size = Vector2(76, 30)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_lobby"]
 size = Vector2(442, 240)
@@ -39,12 +47,33 @@ offset_bottom = 190.0
 color = Color(0.2, 0.23, 0.29, 1)
 mouse_filter = 2
 
+[node name="back_wall_brick" type="Sprite2D" parent="Art"]
+texture_filter = 1
+position = Vector2(49, 14)
+scale = Vector2(0.31249997, 0.33888888)
+modulate = Color(0.87, 0.89, 0.94, 1)
+centered = false
+texture = ExtResource("4_brick")
+region_enabled = true
+region_rect = Rect2(80, 70, 1098, 519)
+
 [node name="floor" type="ColorRect" parent="Art"]
 offset_top = 190.0
 offset_right = 442.0
 offset_bottom = 240.0
 color = Color(0.3, 0.32, 0.36, 1)
 mouse_filter = 2
+
+[node name="floor_brick" type="Sprite2D" parent="Art"]
+texture_filter = 1
+position = Vector2(49, 190)
+scale = Vector2(0.31249997, 0.33888888)
+modulate = Color(1.4, 1.36, 1.26, 1)
+centered = false
+flip_v = true
+texture = ExtResource("4_brick")
+region_enabled = true
+region_rect = Rect2(110, 505, 1098, 148)
 
 [node name="skirting" type="ColorRect" parent="Art"]
 offset_top = 186.0
@@ -70,57 +99,54 @@ mouse_filter = 2
 
 [node name="Alcove" type="Node2D" parent="."]
 
-[node name="door_frame" type="ColorRect" parent="Alcove"]
-offset_left = 177.0
-offset_top = 82.0
-offset_right = 265.0
-offset_bottom = 190.0
-color = Color(0.38, 0.41, 0.47, 1)
-mouse_filter = 2
+[node name="plate" type="Sprite2D" parent="Alcove"]
+texture_filter = 1
+position = Vector2(121, 20)
+scale = Vector2(2, 2)
+centered = false
+texture = ExtResource("2_plate")
 
 [node name="car_interior" type="ColorRect" parent="Alcove"]
-offset_left = 189.0
-offset_top = 94.0
-offset_right = 253.0
-offset_bottom = 190.0
+offset_left = 149.0
+offset_top = 42.0
+offset_right = 297.0
+offset_bottom = 196.0
 color = Color(0.04, 0.05, 0.08, 1)
 mouse_filter = 2
 
-[node name="LeftLeaf" type="Node2D" parent="Alcove"]
-position = Vector2(205, 180)
+[node name="LeftLeaf" type="Sprite2D" parent="Alcove"]
+texture_filter = 1
+position = Vector2(149, 42)
+scale = Vector2(2, 2)
+centered = false
+texture = ExtResource("2_plate")
+region_enabled = true
+region_rect = Rect2(14, 11, 36, 77)
 
-[node name="panel" type="ColorRect" parent="Alcove/LeftLeaf"]
-offset_left = -16.0
-offset_top = -86.0
-offset_right = 16.0
-offset_bottom = 10.0
-color = Color(0.55, 0.6, 0.66, 1)
-mouse_filter = 2
+[node name="RightLeaf" type="Sprite2D" parent="Alcove"]
+texture_filter = 1
+position = Vector2(221, 42)
+scale = Vector2(2, 2)
+centered = false
+texture = ExtResource("2_plate")
+region_enabled = true
+region_rect = Rect2(50, 11, 38, 77)
 
-[node name="body" type="StaticBody2D" parent="Alcove/LeftLeaf"]
+[node name="LeafBodies" type="Node2D" parent="Alcove"]
+
+[node name="left" type="StaticBody2D" parent="Alcove/LeafBodies"]
 collision_mask = 0
 
-[node name="shape" type="CollisionShape2D" parent="Alcove/LeftLeaf/body"]
-position = Vector2(0, -5)
-shape = SubResource("RectangleShape2D_leaf")
+[node name="shape" type="CollisionShape2D" parent="Alcove/LeafBodies/left"]
+position = Vector2(185, 175)
+shape = SubResource("RectangleShape2D_leaf_left")
 
-[node name="RightLeaf" type="Node2D" parent="Alcove"]
-position = Vector2(237, 180)
-
-[node name="panel" type="ColorRect" parent="Alcove/RightLeaf"]
-offset_left = -16.0
-offset_top = -86.0
-offset_right = 16.0
-offset_bottom = 10.0
-color = Color(0.55, 0.6, 0.66, 1)
-mouse_filter = 2
-
-[node name="body" type="StaticBody2D" parent="Alcove/RightLeaf"]
+[node name="right" type="StaticBody2D" parent="Alcove/LeafBodies"]
 collision_mask = 0
 
-[node name="shape" type="CollisionShape2D" parent="Alcove/RightLeaf/body"]
-position = Vector2(0, -5)
-shape = SubResource("RectangleShape2D_leaf")
+[node name="shape" type="CollisionShape2D" parent="Alcove/LeafBodies/right"]
+position = Vector2(259, 175)
+shape = SubResource("RectangleShape2D_leaf_right")
 
 [node name="CarMarker" type="Marker2D" parent="Alcove"]
 position = Vector2(221, 182)
@@ -140,15 +166,15 @@ debug_color = Color(0.4, 0.4, 0.9, 0.1)
 collision_mask = 0
 
 [node name="back_left" type="CollisionShape2D" parent="Walls/WallBody"]
-position = Vector2(94.5, 95)
-shape = SubResource("RectangleShape2D_back_side")
+position = Vector2(74.5, 95)
+shape = SubResource("RectangleShape2D_back_left")
 
 [node name="back_right" type="CollisionShape2D" parent="Walls/WallBody"]
-position = Vector2(347.5, 95)
-shape = SubResource("RectangleShape2D_back_side")
+position = Vector2(369.5, 95)
+shape = SubResource("RectangleShape2D_back_right")
 
 [node name="car_back" type="CollisionShape2D" parent="Walls/WallBody"]
-position = Vector2(221, 47)
+position = Vector2(223, 21)
 shape = SubResource("RectangleShape2D_car_back")
 
 [node name="wall_left" type="CollisionShape2D" parent="Walls/WallBody"]

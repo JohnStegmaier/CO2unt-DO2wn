@@ -20,7 +20,10 @@ var sounds = {
 	"damage_taken_01": preload("res://assets/audio/sfx/damage_taken_1.mp3"),
 	"damage_taken_02": preload("res://assets/audio/sfx/damage_taken_2.mp3"),
 	"money_jingle_1": preload("res://assets/audio/sfx/money_jingle_1.mp3"),
-	"money_drop_2": preload("res://assets/audio/sfx/money_drop_2.mp3")
+	"money_drop_2": preload("res://assets/audio/sfx/money_drop_2.mp3"),
+	"elevator_ding": preload("res://assets/audio/sfx/Elevator_dingdong.mp3"),
+	"elevator_whir": preload("res://assets/audio/sfx/Elevator_whir.mp3"),
+	"elevator_rattle": preload("res://assets/audio/sfx/Elevator_rattle.mp3")
 }
 
 ## Endgame sounds the artists have not delivered yet. They are loaded at runtime

@@ -25,6 +25,47 @@ extends Room
 ## for the whole tween and would pop against a different one.
 const FRAME := Rect2(0, 0, 442, 240)
 
+## The zoom the player's Camera2D is authored at, in player.tscn.
+##
+## Written down here because the match cut below is a function of it: this room is
+## drawn at world scale and the ride is drawn in screen space, and the only reason the
+## two line up is that this number relates them. Change the zoom and the doors stop
+## agreeing across the cut — which is exactly what _assert_match_cut is for.
+const CAMERA_ZOOM := 1.5
+
+## How much the ride's 100x100 plate is blown up in HERE.
+##
+## [constant ElevatorRide.PLATE_SCALE] over [constant CAMERA_ZOOM] — 3 / 1.5. That is
+## the whole trick: at 2, the door this room draws in the world is the same size on
+## screen as the door the ride draws in screen space. Still an integer, so the pixel
+## art survives.
+const PLATE_SCALE := 2
+## Where plate pixel (0, 0) sits in room-local space.
+##
+## x centres the 200 pixel plate in the 442 pixel frame; y is the ride's own
+## PLATE_ORIGIN.y taken back out of screen space (30 / 1.5). Between them, the door
+## opening lands on screen 212..434 x 63..294 — the ride's opening, to the pixel — so
+## the cross-fade between the two is one door being looked at from the other side
+## rather than a cut to a different lift.
+const PLATE_ORIGIN := Vector2(121, 20)
+
+## What the camera is allowed to show, as opposed to what is drawn.
+##
+## Narrower than FRAME on purpose, and this is load-bearing: PlayerCamera._clamp_axis
+## has no valid range when the view is not smaller than the room, and centres on the
+## room instead. FRAME is 240 tall against a 240 tall view, so the vertical axis already
+## degenerates that way and is pinned exactly. 442 is WIDER than the 426.67 the view
+## covers, so the horizontal axis does not — it leaves a 15 pixel window that the
+## camera's mouse aim lead swings the picture around inside, up to 11 screen pixels,
+## nearly four plate texels. That is enough to break the match cut, and hiding the gun
+## does not stop it because aim lead reads the cursor, not the weapon.
+##
+## 424 wide centred on 221 makes the horizontal axis degenerate too, so the camera sits
+## on the room's centre forever whatever the mouse is doing. The cost is the outermost
+## 8 pixels down each side, which are inside the flat side walls and were only ever
+## reachable by panning — a fair price for the frame this room's docstring claims to be.
+const CLAMP := Rect2(9, 0, 424, 240)
+
 ## Room-local rect anything on foot may stand in. A shallow strip at the bottom of
 ## a tall wall: that ratio is what makes the room read side-on rather than tilted.
 const LOBBY_FLOOR := Rect2(49, 190, 343, 50)
@@ -41,13 +82,14 @@ const DOOR_OPEN_Y := 212.0
 ## And back to here before they shut again. The gap between the two is hysteresis:
 ## without it, standing exactly on the threshold flutters the doors every frame.
 const DOOR_SHUT_Y := 219.0
-## Step this far into the alcove with the doors open and you have boarded.
-const BOARD_Y := 188.0
+## Step this far into the alcove with the doors open and you have boarded. Two pixels
+## inside the sill, which is the opening's bottom edge — so it moves when the door does.
+const BOARD_Y := 194.0
 ## The mouth of the car, in room-local x. Boarding tests against this as well as
 ## depth: "far enough up the screen" alone would also be true of anywhere the
 ## walls happen not to reach, and a rule that only holds because of the geometry
 ## around it is one bad edit away from being wrong.
-const CAR_X := Vector2(189.0, 253.0)
+const CAR_X := Vector2(149.0, 297.0)
 ## Push down to here and you leave. Almost against the lip, so leaving is a
 ## deliberate walk into the bottom of the frame rather than a drift.
 const EXIT_Y := 231.0
@@ -61,8 +103,6 @@ const LANDING := Vector2(221, 220)
 ## Curve of the slide. SINE/IN_OUT reads as motorised; QUAD/OUT reads as sprung.
 @export var door_slide_trans: Tween.TransitionType = Tween.TRANS_SINE
 @export var door_slide_ease: Tween.EaseType = Tween.EASE_IN_OUT
-## How far each leaf travels. Half the opening, so fully open is fully clear.
-@export var door_travel: float = 32.0
 ## How far open the leaves must be before they stop being solid. Below 1.0 so the
 ## way is walkable a moment before it looks completely clear, which feels
 ## responsive; too low and you can squeeze through a crack.
@@ -73,12 +113,14 @@ const LANDING := Vector2(221, 220)
 @export var board_walk_time: float = 0.35
 ## The beat between the doors sealing and the floor advancing.
 ##
-## Kept short: Game's ElevatorRide plays straight after this and has its own doors
-## and fades, so a long hold here is dead air in front of the ride, not drama.
-@export var board_hold_time: float = 0.4
+## Kept short, and shorter than it was: the ride no longer shuts the doors a second
+## time, it just fades up on the ones sealed here. So this is the pause before a
+## 0.18 second dissolve rather than before a whole second door animation, and 0.4 of
+## holding on a still frame was most of what made the wait feel like a wait.
+@export var board_hold_time: float = 0.2
 ## Named SFX from AudioManager. Empty plays nothing, so this cannot break a build
 ## that has not recorded one yet.
-@export var board_sfx: String = ""
+@export var board_sfx: String = "elevator_ding"
 
 @export_group("Cutscene")
 ## Played between the doors sealing and the floor advancing. Empty by default and
@@ -110,10 +152,15 @@ const LANDING := Vector2(221, 220)
 ## twitch input; this is what buys the slow, deliberate trudge into the distance.
 @export_range(0.1, 1.0) var depth_move_scale: float = 0.28
 
-@onready var _leaf_left: Node2D = $Alcove/LeftLeaf
-@onready var _leaf_right: Node2D = $Alcove/RightLeaf
-@onready var _leaf_left_body: StaticBody2D = $Alcove/LeftLeaf/body
-@onready var _leaf_right_body: StaticBody2D = $Alcove/RightLeaf/body
+@onready var _leaf_left: Sprite2D = $Alcove/LeftLeaf
+@onready var _leaf_right: Sprite2D = $Alcove/RightLeaf
+@onready var _leaf_left_body: StaticBody2D = $Alcove/LeafBodies/left
+@onready var _leaf_right_body: StaticBody2D = $Alcove/LeafBodies/right
+## The colliders are siblings of the leaves rather than children of them, because the
+## left leaf's sprite never moves — it grows — and a body parented to it could not
+## retract. See _apply_door_open.
+@onready var _leaf_left_shape: CollisionShape2D = $Alcove/LeafBodies/left/shape
+@onready var _leaf_right_shape: CollisionShape2D = $Alcove/LeafBodies/right/shape
 @onready var _car_marker: Marker2D = $Alcove/CarMarker
 @onready var _cutscene_layer: CanvasLayer = $Cutscene
 
@@ -157,13 +204,16 @@ var _sprite_offset: Vector2 = Vector2.ZERO
 ## on the floor.
 var _foot_offset: float = -16.0
 
-@onready var _leaf_home_left: Vector2 = _leaf_left.position
-@onready var _leaf_home_right: Vector2 = _leaf_right.position
+## Where each leaf's collider sits with the door shut, and how far it slides to clear
+## the opening. Read off the scene so the authored band is the one that moves.
+@onready var _shape_home_left: float = _leaf_left_shape.position.x
+@onready var _shape_home_right: float = _leaf_right_shape.position.x
 
 
 func _ready() -> void:
 	# Deliberately NOT super._ready(): Room's version wires four doorways and a
 	# top-down car, none of which this scene has. The rest is inherited untouched.
+	_assert_match_cut()
 	_apply_door_open(0.0)
 
 
@@ -195,11 +245,13 @@ func configure(data: RoomData) -> void:
 	push_warning("ElevatorRoom: configured with no doors, defaulting the way back to north")
 
 
-## The camera clamp. Overridden because this room is shorter than a standard cell:
-## at 240 the view cannot be smaller than the room, so PlayerCamera._clamp_axis
-## centres vertically and the frame stops drifting with the player.
+## The camera clamp. Overridden because this room is shorter than a standard cell, and
+## NARROWER than the room it draws: at 240 tall and 424 wide the view cannot be smaller
+## than this rect on either axis, so PlayerCamera._clamp_axis centres on both and the
+## frame is pinned however the player moves and wherever the cursor is. See CLAMP for
+## why the width matters as much as the height.
 func interior_rect() -> Rect2:
-	return Rect2(global_position + FRAME.position, FRAME.size)
+	return Rect2(global_position + CLAMP.position, CLAMP.size)
 
 
 ## Where to put a player who just walked in. There is one way in and out whatever
@@ -391,10 +443,48 @@ func _set_doors_open(open: bool) -> void:
 	_door_tween.tween_method(_apply_door_open, _open_amount, target, duration)
 
 
+## Put the leaves where a given openness says they should be.
+##
+## The pixels are [ElevatorRide]'s own door maths, in room space instead of screen space:
+## the leaves are regions cropped out of the plate and grown back across the opening,
+## rather than panels that slide over it. Three things come from that, and only the first
+## is what was asked for:
+##
+## 1. They retract INTO the jamb they were cropped from, because a region cannot exist
+##    outside the hole it is a region of. No clipping, no panel overhanging the wall.
+## 2. A shut door is the plate exactly as drawn — the same pixels the ride shuts.
+## 3. The widths are whole plate pixels times a whole scale, so a leaf always lands on
+##    the plate's own pixel grid. A leaf whose position was a float would sit on
+##    fractional screen pixels and shimmer against a nearest-filtered plate all the way
+##    through the slide, which is what the old position tween did.
+##
+## The colliders cannot do the same trick, because a region has nothing to do with
+## physics — so they keep their authored size and SLIDE the whole way into the jamb,
+## where being invisible means overlapping the wall body costs nothing.
 func _apply_door_open(amount: float) -> void:
 	_open_amount = amount
-	_leaf_left.position.x = _leaf_home_left.x - door_travel * amount
-	_leaf_right.position.x = _leaf_home_right.x + door_travel * amount
+
+	var shut: float = 1.0 - amount
+	var door: Rect2i = ElevatorRide.DOOR_RECT
+	var seam: int = ElevatorRide.DOOR_SEAM
+	var top: int = door.position.y
+	var height: int = door.size.y
+
+	var left_width: int = roundi((seam - door.position.x) * shut)
+	_leaf_left.region_rect = Rect2i(door.position.x, top, left_width, height)
+	_leaf_left.position = _plate_to_room(Vector2i(door.position.x, top))
+
+	var right_width: int = roundi((door.end.x - seam) * shut)
+	var right_x: int = door.end.x - right_width
+	_leaf_right.region_rect = Rect2i(right_x, top, right_width, height)
+	_leaf_right.position = _plate_to_room(Vector2i(right_x, top))
+
+	# Each collider slides by its own full width, so at fully open it is exactly one
+	# leaf clear of the opening. The two are not the same width: the art's seam sits one
+	# pixel right of the plate's centre, which makes the left leaf 72 room pixels and the
+	# right 76.
+	_leaf_left_shape.position.x = _shape_home_left - (seam - door.position.x) * PLATE_SCALE * amount
+	_leaf_right_shape.position.x = _shape_home_right + (door.end.x - seam) * PLATE_SCALE * amount
 
 	# The leaves stay solid until they are nearly clear, so you cannot squeeze
 	# through a crack. Touched on the crossing rather than every step: this runs on
@@ -439,7 +529,11 @@ func _board(player: Player) -> void:
 		await _door_tween.finished
 
 	_play_board_sfx()
-	await get_tree().create_timer(board_hold_time).timeout
+	# process_always false, so a pause taken between the doors sealing and the floor
+	# advancing freezes the boarding with everything else. The default true runs this
+	# out behind the pause menu and hands the floor over while the player is not
+	# looking — the same reason ElevatorRide's descent timer passes it.
+	await get_tree().create_timer(board_hold_time, false).timeout
 	await _play_cutscene()
 
 	_restore_player()
@@ -468,8 +562,39 @@ func _play_cutscene() -> void:
 	if cutscene.has_signal("finished"):
 		await cutscene.finished
 	else:
-		await get_tree().create_timer(cutscene_fallback_time).timeout
+		await get_tree().create_timer(cutscene_fallback_time, false).timeout
 	cutscene.queue_free()
+
+
+## A pixel of the plate art, in room-local space. The counterpart of
+## ElevatorRide._plate_to_screen, and the reason the two agree.
+func _plate_to_room(plate_pixel: Vector2i) -> Vector2:
+	return PLATE_ORIGIN + Vector2(plate_pixel) * PLATE_SCALE
+
+
+## The tripwire on the match cut.
+##
+## Every number this room and [ElevatorRide] share is a literal in one file or the other,
+## and nothing about a broken match FAILS — the doors just stop lining up across the
+## dissolve, which is invisible in a screenshot and easy to blame on the fade. So the
+## relationships get asserted where they are cheapest to check.
+##
+## Read this as the list of things that break the seam: the camera zoom, the plate scale,
+## the frame's width, and the opening the boarding test is measured against.
+func _assert_match_cut() -> void:
+	assert(PLATE_SCALE * CAMERA_ZOOM == float(ElevatorRide.PLATE_SCALE),
+			"ElevatorRoom: the plate is no longer the ride's plate size on screen")
+	assert(PLATE_ORIGIN.y * CAMERA_ZOOM == ElevatorRide.PLATE_ORIGIN.y,
+			"ElevatorRoom: the plate no longer sits at the ride's height on screen")
+	assert(PLATE_ORIGIN.x == (FRAME.size.x - ElevatorRide.PLATE_BLANK.get_width() * PLATE_SCALE) * 0.5,
+			"ElevatorRoom: the plate is no longer centred in the frame")
+	assert(CLAMP.size.x * CAMERA_ZOOM <= 640.0 and CLAMP.get_center().x == FRAME.get_center().x,
+			"ElevatorRoom: the camera clamp no longer pins the frame to the room's centre")
+	assert(CAR_X.x == _plate_to_room(ElevatorRide.DOOR_RECT.position).x
+			and CAR_X.y == _plate_to_room(ElevatorRide.DOOR_RECT.end).x,
+			"ElevatorRoom: CAR_X is no longer the door opening")
+	assert(BOARD_Y < _plate_to_room(ElevatorRide.DOOR_RECT.end).y,
+			"ElevatorRoom: boarding fires before the player reaches the sill")
 
 
 ## Guarded because audio_manager.gd indexes its dictionary directly and will hard

@@ -209,6 +209,9 @@ func _ready() -> void:
 	_player.reloading_changed.connect(_ammo_counter.set_reloading)
 	_ammo_counter.set_ammo(_player.ammo, _player.magazine_size)
 
+	_player.weapon_changed.connect(_ammo_counter.set_shotgun_equipped)
+	_ammo_counter.set_shotgun_equipped(_player.is_shotgun_equipped())
+
 	_player.bombs_changed.connect(_o2_timer.set_bombs)
 	_o2_timer.set_bombs(_player.f_bombs, _player.max_f_bombs)
 
@@ -1105,18 +1108,20 @@ func _scatter_obstacles(data: RoomData) -> void:
 		_obstacle_field.add(plan.position, plan.def.body_radius)
 
 
-## Remember a broken prop so it stays broken.
+## Remember a broken prop so it stays broken, and roll its drop table.
 ##
-## Written straight away rather than deferred: this is reached from a bullet's
-## body_entered, so it runs mid physics-flush, but it touches no nodes — the same
-## split _on_enemy_died makes, where the bookkeeping is immediate and only the
-## spawning is put off.
+## The bookkeeping is written straight away rather than deferred: this is
+## reached from a bullet's body_entered, so it runs mid physics-flush, but it
+## touches no nodes. The loot spawn is deferred for the reason _on_enemy_died's
+## is — a pickup's collision shape is a node the physics server would reject
+## mid-flush.
 ##
 ## The field is not rebuilt. It is read when a room is stocked, which has already
 ## happened by the time anything can be shot, and leaving a broken prop in it
 ## costs nothing until the room is next entered and it is rebuilt from scratch.
-func _on_obstacle_destroyed(index: int, data: RoomData) -> void:
+func _on_obstacle_destroyed(index: int, loot_source: StringName, at: Vector2, data: RoomData) -> void:
 	data.obstacles_destroyed |= 1 << index
+	_spawn_loot.call_deferred(loot_source, at)
 
 
 ## Fold the active tuning profile into the obstacle set.

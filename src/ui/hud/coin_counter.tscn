@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://8icf0vieiv7i"]
 
 [ext_resource type="Script" uid="uid://ednuuotnap2f" path="res://src/ui/hud/coin_counter.gd" id="1_coin"]
-[ext_resource type="SpriteFrames" uid="uid://sksbnhk7mofk" path="res://src/config/items/coin_spin_frames.tres" id="2_coin_frames"]
+[ext_resource type="SpriteFrames" uid="uid://sksbnhk7mofk" path="res://assets/sprites/items/coin/coin_spin_frames.tres" id="2_coin_frames"]
 
 [node name="CoinCounter" type="Node2D" unique_id=248369830]
 script = ExtResource("1_coin")

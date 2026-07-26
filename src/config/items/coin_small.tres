@@ -4,7 +4,7 @@
 [ext_resource type="Script" uid="uid://de516cuorh3t3" path="res://src/systems/loot/effects/grant_coins.gd" id="2_v8j6j"]
 [ext_resource type="Texture2D" uid="uid://ba2kiutrlno8t" path="res://assets/sprites/environment/coin.png" id="3_80peg"]
 [ext_resource type="Script" uid="uid://dmxi7afktl2qr" path="res://src/systems/loot/item_def.gd" id="4_ygd3c"]
-[ext_resource type="SpriteFrames" path="res://src/config/items/coin_spin_frames.tres" id="5_spin"]
+[ext_resource type="SpriteFrames" uid="uid://sksbnhk7mofk" path="res://assets/sprites/items/coin/coin_spin_frames.tres" id="5_spin"]
 
 [sub_resource type="Resource" id="Resource_b2dox"]
 script = ExtResource("2_v8j6j")

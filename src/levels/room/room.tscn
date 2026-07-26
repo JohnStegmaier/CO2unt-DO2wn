@@ -2,18 +2,19 @@
 
 [ext_resource type="Script" uid="uid://dff0ryoaalsux" path="res://src/levels/room/room.gd" id="1_room"]
 [ext_resource type="Texture2D" uid="uid://byqrq0r1ecj5h" path="res://assets/sprites/environment/temple-A.png" id="2_8woux"]
-[ext_resource type="Texture2D" uid="uid://dndxj5us5bnvi" path="res://assets/sprites/environment/isaac_template_standard.png" id="2_bg"]
 [ext_resource type="PackedScene" uid="uid://c1g6yvd4ortv1" path="res://src/components/level_door.tscn" id="3_door"]
 [ext_resource type="PackedScene" path="res://src/components/elevator/elevator.tscn" id="4_elevator"]
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_wf81e"]
-load_path = "res://.godot/imported/isaac_template_standard.png-387ec9706ca26b574271ef296a230183.ctex"
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_lksmk"]
-load_path = "res://.godot/imported/isaac_template_standard.png-387ec9706ca26b574271ef296a230183.ctex"
+[ext_resource type="Texture2D" uid="uid://14hv5p12w8xi" path="res://assets/sprites/environment/door-north-open.png" id="5_1v0vj"]
+[ext_resource type="Texture2D" uid="uid://du4xx0vwwra5l" path="res://assets/sprites/environment/door-west-open.png" id="6_n7g72"]
+[ext_resource type="Texture2D" uid="uid://kr05k7l8tpb1" path="res://assets/sprites/environment/door-south-open.png" id="7_db2fs"]
+[ext_resource type="Texture2D" uid="uid://c3va6xw63j1mx" path="res://assets/sprites/environment/door-east-open.png" id="8_x0ohj"]
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/door-north-shut.png" id="9_north_shut"]
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/door-west-shut.png" id="10_west_shut"]
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/door-south-shut.png" id="11_south_shut"]
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/door-east-shut.png" id="12_east_shut"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_h"]
-size = Vector2(176, 17)
+size = Vector2(183, 17)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_v"]
 size = Vector2(16, 99)
@@ -29,42 +30,11 @@ script = ExtResource("1_room")
 
 [node name="background" type="Sprite2D" parent="." unique_id=1431768455]
 z_index = -1
+texture_filter = 1
 position = Vector2(20.999998, 20.999998)
 scale = Vector2(0.31249997, 0.33888888)
 texture = ExtResource("2_8woux")
 centered = false
-
-[node name="background2" type="Sprite2D" parent="." unique_id=1163069282]
-z_index = 1
-position = Vector2(0, 111)
-texture = ExtResource("2_bg")
-centered = false
-region_enabled = true
-region_rect = Rect2(0, 110.87772, 25.963879, 59.355965)
-
-[node name="background3" type="Sprite2D" parent="." unique_id=1416418679]
-z_index = 1
-position = Vector2(416, 113)
-texture = SubResource("CompressedTexture2D_wf81e")
-centered = false
-region_enabled = true
-region_rect = Rect2(416.13782, 112.869835, 25.963879, 59.355965)
-
-[node name="background4" type="Sprite2D" parent="." unique_id=2133699843]
-z_index = 1
-position = Vector2(196, 0)
-texture = SubResource("CompressedTexture2D_lksmk")
-centered = false
-region_enabled = true
-region_rect = Rect2(196.07303, 0.15426254, 52.72165, 25.772905)
-
-[node name="background5" type="Sprite2D" parent="." unique_id=665944089]
-z_index = 1
-position = Vector2(194, 260)
-texture = SubResource("CompressedTexture2D_lksmk")
-centered = false
-region_enabled = true
-region_rect = Rect2(193.82161, 260.3779, 52.72165, 25.772905)
 
 [node name="Walls" type="Node2D" parent="." unique_id=1847111286]
 
@@ -72,11 +42,11 @@ region_rect = Rect2(193.82161, 260.3779, 52.72165, 25.772905)
 collision_mask = 0
 
 [node name="wall_north_west" type="CollisionShape2D" parent="Walls/WallBody" unique_id=262429740]
-position = Vector2(109, 29.5)
+position = Vector2(111, 29.5)
 shape = SubResource("RectangleShape2D_wall_h")
 
 [node name="wall_north_east" type="CollisionShape2D" parent="Walls/WallBody" unique_id=541482655]
-position = Vector2(332, 29.5)
+position = Vector2(330.5, 29.5)
 shape = SubResource("RectangleShape2D_wall_h")
 
 [node name="wall_south_west" type="CollisionShape2D" parent="Walls/WallBody" unique_id=655154354]
@@ -104,6 +74,7 @@ position = Vector2(413.5, 215.5)
 shape = SubResource("RectangleShape2D_wall_v")
 
 [node name="Plugs" type="Node2D" parent="Walls" unique_id=376354447]
+visible = false
 
 [node name="plug_north" type="StaticBody2D" parent="Walls/Plugs" unique_id=245918299]
 position = Vector2(221, 35)
@@ -163,8 +134,9 @@ color = Color(0.2196078, 0.3294118, 0.4, 1)
 
 [node name="Tint" type="ColorRect" parent="." unique_id=2045664420]
 z_index = 1
+offset_top = 1.0
 offset_right = 442.0
-offset_bottom = 286.0
+offset_bottom = 287.0
 mouse_filter = 2
 color = Color(0, 0, 0, 0)
 
@@ -178,16 +150,76 @@ z_index = 2
 [node name="Doors" type="Node2D" parent="." unique_id=1801665672]
 
 [node name="door_north" parent="Doors" unique_id=478506567 instance=ExtResource("3_door")]
+visible = false
 position = Vector2(221, 35)
 
 [node name="door_east" parent="Doors" unique_id=1576405422 instance=ExtResource("3_door")]
+visible = false
 position = Vector2(406, 143)
 side = 1
 
 [node name="door_south" parent="Doors" unique_id=1856126186 instance=ExtResource("3_door")]
+visible = false
 position = Vector2(221, 250)
 side = 2
 
 [node name="door_west" parent="Doors" unique_id=1305475667 instance=ExtResource("3_door")]
+visible = false
 position = Vector2(35, 143)
 side = 3
+
+[node name="door_north_open" type="Sprite2D" parent="Doors" unique_id=1407089581]
+visible = false
+texture_filter = 1
+position = Vector2(221.5, 29.500002)
+scale = Vector2(0.33606583, 0.33999994)
+texture = ExtResource("5_1v0vj")
+
+[node name="door_west_open" type="Sprite2D" parent="Doors" unique_id=657319331]
+visible = false
+texture_filter = 1
+position = Vector2(28.82, 143)
+scale = Vector2(0.315, 0.319)
+texture = ExtResource("6_n7g72")
+
+[node name="door_south_open" type="Sprite2D" parent="Doors" unique_id=420658545]
+visible = false
+texture_filter = 1
+position = Vector2(219.385, 256.51)
+scale = Vector2(0.34, 0.34)
+texture = ExtResource("7_db2fs")
+
+[node name="door_east_open" type="Sprite2D" parent="Doors" unique_id=1632148204]
+visible = false
+texture_filter = 1
+position = Vector2(412.934, 142.71)
+scale = Vector2(0.335, 0.344)
+texture = ExtResource("8_x0ohj")
+
+[node name="door_north_shut" type="Sprite2D" parent="Doors" unique_id=1407089582]
+visible = false
+texture_filter = 1
+position = Vector2(221.5, 29.500002)
+scale = Vector2(0.33606583, 0.33999994)
+texture = ExtResource("9_north_shut")
+
+[node name="door_west_shut" type="Sprite2D" parent="Doors" unique_id=657319332]
+visible = false
+texture_filter = 1
+position = Vector2(28.82, 143)
+scale = Vector2(0.315, 0.319)
+texture = ExtResource("10_west_shut")
+
+[node name="door_south_shut" type="Sprite2D" parent="Doors" unique_id=420658546]
+visible = false
+texture_filter = 1
+position = Vector2(219.385, 256.51)
+scale = Vector2(0.34, 0.34)
+texture = ExtResource("11_south_shut")
+
+[node name="door_east_shut" type="Sprite2D" parent="Doors" unique_id=1632148205]
+visible = false
+texture_filter = 1
+position = Vector2(412.934, 142.71)
+scale = Vector2(0.335, 0.344)
+texture = ExtResource("12_east_shut")

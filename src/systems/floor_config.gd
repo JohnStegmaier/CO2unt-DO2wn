@@ -35,6 +35,22 @@ extends Resource
 @export var special_min_depth: int = 2
 
 
+## Fold in whatever the active tuning profile's [code][floor][/code] section says.
+##
+## Called by the run rather than from the constructor, so a config built by a
+## tool or a test is exactly what its caller asked for and nothing else. Every
+## default stays in the exports above — a profile that names none of these keys
+## changes nothing. See docs/TUNING_PROFILES.md.
+func apply_overrides() -> void:
+	rooms_min = GameConfig.get_value("floor", "rooms_min", rooms_min)
+	rooms_max = GameConfig.get_value("floor", "rooms_max", rooms_max)
+	rooms_per_floor = GameConfig.get_value("floor", "rooms_per_floor", rooms_per_floor)
+	max_depth = GameConfig.get_value("floor", "max_depth", max_depth)
+	depth_bias = GameConfig.get_value("floor", "depth_bias", depth_bias)
+	exit_min_depth = GameConfig.get_value("floor", "exit_min_depth", exit_min_depth)
+	special_min_depth = GameConfig.get_value("floor", "special_min_depth", special_min_depth)
+
+
 ## Rooms to aim for on the given floor, as a (min, max) pair for the caller to
 ## roll. Returning the range rather than a rolled value keeps this side-effect
 ## free, so the same config cannot produce two different floors from one seed.

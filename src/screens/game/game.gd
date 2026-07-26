@@ -34,6 +34,22 @@ const GAME_OVER_SCENE := "res://src/screens/game_over/game_over.tscn"
 ## long enough to register that the body stopped moving.
 @export var death_hold: float = 0.6
 
+@export_group("Exit Room")
+## Stand-in scene for the floor's exit cell. Empty means the exit is an ordinary
+## room with the wall-mounted elevator in it, exactly as if this had never been
+## added; point it at a room scene and that scene is used for the exit instead.
+##
+## Deliberately an injected scene rather than a preloaded const or a bool: this
+## file names no alternative implementation and imports nothing from one, so the
+## exit room is swapped, added or removed entirely from the inspector. Anything
+## satisfying Room's contract — configure, spawn_position, interior_rect,
+## door_entered, elevator_entered — can be dropped in, and clearing the slot takes
+## it back out with no code change and nothing left behind.
+##
+## Wired in game.tscn. When the feature-flag system lands, this becomes one line
+## here and the slot can stay as the registry of what the flag chooses between.
+@export var exit_room_scene: PackedScene
+
 @export_group("Floor")
 ## Shape of every floor in the run. Tune it here and each generated floor obeys.
 @export var floor_config: FloorConfig
@@ -52,12 +68,16 @@ var _rng := RandomNumberGenerator.new()
 @onready var _hud: CanvasLayer = $Ui/CanvasLayer
 @onready var _o2_timer: O2Timer = $Ui/CanvasLayer/O2Timer
 @onready var _ammo_counter: AmmoCounter = $Ui/CanvasLayer/AmmoCounter
+@onready var _minimap: Minimap = $Ui/CanvasLayer/Minimap
 ## Deliberately under the camera rather than beside the HUD: the vignette is
 ## world content so the player can out-rank it on z_index and stay lit inside the
 ## closing dark. See death_overlay.gd.
 @onready var _death_overlay: DeathOverlay = $Player/Camera2D/DeathOverlay
 @onready var _pause_menu: PauseMenu = $PauseMenu
 @onready var _ride: ElevatorRide = $ElevatorRide
+## The wipe used for room changes that cannot be slid across. Distinct from the
+## ride, which is a whole sequence, and from the death wipe, which never reopens.
+@onready var _fade: ScreenFade = $ScreenFade
 
 var _plan: FloorPlan
 var _current_room: Room
@@ -82,11 +102,27 @@ func _ready() -> void:
 	_o2_timer.air_restored.connect(_on_air_restored)
 	_o2_timer.air_critical_changed.connect(_on_air_critical_changed)
 	_o2_timer.suffocation_changed.connect(_death_overlay.set_vignette_progress)
+	# The letterbox slides down over the corner the map sits in, so the map gets
+	# out of its way rather than being drawn under it.
+	_o2_timer.air_critical_changed.connect(_minimap.set_dimmed)
 	_o2_timer.suffocated.connect(_on_player_died)
 
 	_player.ammo_changed.connect(_ammo_counter.set_ammo)
 	_player.reloading_changed.connect(_ammo_counter.set_reloading)
 	_ammo_counter.set_ammo(_player.ammo, _player.magazine_size)
+
+	_player.bombs_changed.connect(_o2_timer.set_bombs)
+	_o2_timer.set_bombs(_player.f_bombs, _player.max_f_bombs)
+
+	# Profile overrides, all of them landing before anything reads the values.
+	# Defaults stay on the exports above, so a profile that names none of these
+	# keys runs the shipped numbers — see docs/TUNING_PROFILES.md.
+	enemies_min = GameConfig.get_value("enemies", "min", enemies_min)
+	enemies_max = GameConfig.get_value("enemies", "max", enemies_max)
+	# A profile that lowers only the ceiling should not leave the floor above it:
+	# `[enemies] max = 0` on its own has to mean an empty room, not one enemy.
+	enemies_min = mini(enemies_min, enemies_max)
+	run_seed = GameConfig.get_value("floor", "run_seed", run_seed)
 
 	_rng.randomize()
 	if run_seed == 0:
@@ -95,6 +131,7 @@ func _ready() -> void:
 		# Belt and braces: the scene supplies one, but a Game dropped into
 		# another scene without it should still generate rather than crash.
 		floor_config = FloorConfig.new()
+	floor_config.apply_overrides()
 
 	_begin_floor(0)
 
@@ -151,7 +188,9 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 	# The room we are leaving stays in the tree until the slide finishes — both
 	# rooms have to be on screen at once for the view to travel between them.
 	var previous_room := _current_room
+	var previous_kind: int = -1
 	if previous_room != null:
+		previous_kind = _plan.get_room(_current_coord).kind
 		previous_room.door_entered.disconnect(_on_door_entered)
 		previous_room.elevator_entered.disconnect(_on_elevator_entered)
 
@@ -161,7 +200,14 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 	var data := _plan.get_room(coord)
 	data.visited = true
 
-	_current_room = ROOM_SCENE.instantiate()
+	# The exit can be a room of its own — see exit_room_scene. Whatever comes back
+	# is a Room and reports boarding through the same elevator_entered signal an
+	# ordinary exit room does, so every line below this is unchanged and the ride
+	# never learns which kind of elevator called it.
+	var scene: PackedScene = ROOM_SCENE
+	if data.kind == RoomData.Kind.EXIT and exit_room_scene != null:
+		scene = exit_room_scene
+	_current_room = scene.instantiate()
 	# Rooms sit at their true grid position rather than all at the origin, so
 	# world space and map space never disagree — which is also what makes the
 	# slide below a plain camera pan instead of a compositing trick.
@@ -178,8 +224,12 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 	_current_room.door_entered.connect(_on_door_entered)
 	_current_room.elevator_entered.connect(_on_elevator_entered)
 	_current_coord = coord
+	# Before the slide, not after: visited and _current_coord are both already
+	# set, and a map that waited for the camera to land would be the one thing on
+	# screen still claiming the player is in the room behind them.
+	_minimap.set_current_room(coord)
 
-	var landing: Vector2 = _current_room.interior_rect().get_center()
+	var landing: Vector2 = _current_room.default_spawn_position()
 	if arrive_side >= 0:
 		landing = _current_room.spawn_position(arrive_side)
 
@@ -187,6 +237,9 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 		# Start of a run — there is nothing to slide from.
 		_player.warp_to(landing)
 		_camera.set_bounds(_current_room.interior_rect())
+	elif _is_cut_transition(data.kind) or _is_cut_transition(previous_kind):
+		await _cut_to(landing, previous_room)
+		previous_room.queue_free()
 	else:
 		await _slide_to(landing, previous_room)
 		previous_room.queue_free()
@@ -198,6 +251,48 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 	# a tween puppet with physics disabled.
 	_populate(data)
 	_transitioning = false
+
+
+## Does moving into or out of a room of this kind have to be a cut?
+##
+## Only the swapped-in exit room, and only while one is actually installed. The
+## slide assumes the two cells share an edge and are drawn the same way round;
+## a replacement exit room is neither, so travelling to it has nothing to show.
+##
+## Keyed on the same fact that chose the scene rather than on the scene's type, so
+## this file still names no alternative implementation — anything dropped into
+## exit_room_scene gets the cut without announcing itself.
+func _is_cut_transition(kind: int) -> bool:
+	return kind == RoomData.Kind.EXIT and exit_room_scene != null
+
+
+## Swap rooms behind a wipe instead of travelling between them.
+##
+## The player is moved rather than tweened, so there is no path across the gap for
+## anything to look wrong on. Everything that would be seen happens while the
+## screen is black; the clock keeps running through it, same as the slide.
+func _cut_to(landing: Vector2, previous_room: Room) -> void:
+	_player.is_warping = true
+	_player.velocity = Vector2.ZERO
+	_camera.set_lead_enabled(false)
+	previous_room.process_mode = Node.PROCESS_MODE_DISABLED
+
+	await _fade.fade_out()
+
+	_player.warp_to(landing)
+	_camera.set_bounds(_current_room.interior_rect())
+	# The camera rides the player, so it has just been teleported too. Physics
+	# interpolation is on project-wide and would otherwise smear the first frame
+	# after the wipe across the whole distance travelled.
+	_camera.reset_physics_interpolation()
+	# One frame under the black, so the new room's bodies are settled and the view
+	# is already where it belongs before anything is visible.
+	await get_tree().physics_frame
+
+	await _fade.fade_in()
+
+	_camera.set_lead_enabled(true)
+	_player.is_warping = false
 
 
 ## Zelda-style room slide. Nothing is paused: the O2 countdown keeps running for
@@ -289,6 +384,9 @@ func _on_floor_advanced() -> void:
 ## grid, so there is no adjacency for a camera pan to travel across.
 func _clear_floor() -> void:
 	get_tree().call_group("projectiles", "queue_free")
+	# Above the early return deliberately: the map has to let go of the plan on
+	# every path, or the model keeps a whole discarded floor alive behind it.
+	_minimap.show_floor(null)
 	if _current_room == null:
 		return
 	_current_room.door_entered.disconnect(_on_door_entered)
@@ -379,6 +477,15 @@ func _populate(data: RoomData) -> void:
 	if data.enemies_remaining < 0:
 		data.enemies_remaining = _rng.randi_range(enemies_min, enemies_max)
 
+	# A room that stocks nothing must not seal itself. The doors are unlocked by
+	# enemies dying, so locking an empty room locks it for good and the floor is
+	# unfinishable. Normalised to 0 rather than left negative so a revisit takes
+	# the early return above. Unreachable on the shipped values, where enemies_min
+	# is 1 — the peaceful profile is what makes a zero roll possible.
+	if data.enemies_remaining <= 0:
+		data.enemies_remaining = 0
+		return
+
 	var player_local: Vector2 = _current_room.to_local(_player.global_position)
 	var spots := EnemyPlacement.points(Room.FLOOR, data.enemies_remaining,
 			player_local, _current_room.open_door_landings(), _rng)
@@ -409,6 +516,9 @@ func _begin_floor(floor_number: int) -> void:
 	_floor_number = floor_number
 	var floor_seed: int = FloorGenerator.floor_seed_for(run_seed, floor_number)
 	_plan = FloorGenerator.generate(floor_config, floor_number, floor_seed)
+	# Before the awaited _enter_room below, or the spawn room announces itself to
+	# a map that has no floor to place it on.
+	_minimap.show_floor(_plan)
 
 	# Enemy placement shares the floor's seed, so replaying a seed puts the bad
 	# guys back too, not just the walls. Only along the same route, mind: rooms

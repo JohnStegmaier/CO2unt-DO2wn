@@ -35,6 +35,16 @@ var time_left
 ## than a death sentence.
 var drain_rate: float = 1.0
 
+## Whether the tank empties at all. Only a tuning profile ever turns this off —
+## see the god_mode and peaceful profiles.
+##
+## A flag rather than an enormous total_time, because damage comes off the clock
+## as well as time: a big number still lets a roomful of enemies whittle a run
+## down, and "unlimited health" has to mean the hits themselves cost nothing.
+## infinite_oxygen keeps using the big number on purpose — it wants a run that
+## cannot time out but can still be fought.
+var drain_enabled := true
+
 @export_group("Damage")
 ## Seconds of air a point of blunt damage costs. This single number sets the
 ## lethality of every fight in the game.
@@ -83,6 +93,9 @@ var _air_critical := false
 @onready var bottom_border: ColorRect = $Bottom_Border
 @onready var lights_odd: Array[Sprite2D] = [$UIMain/Light1, $UIMain/Light3, $UIMain/Light5]
 @onready var lights_even: Array[Sprite2D] = [$UIMain/Light2, $UIMain/Light4, $UIMain/Light6]
+@onready var bomb_containers: Array[Sprite2D] = [
+	$UIMain/bomb_container1, $UIMain/bomb_container2, $UIMain/bomb_container3
+]
 
 var setup_done = false
 
@@ -102,6 +115,10 @@ const HIGH_TIME := Color(0.588, 1.003, 0.676, 1.0)
 
 const LIGHT_ON_COLOR := Color(1, 0.5254902, 0.3647059, 1)
 const LIGHT_OFF_COLOR := Color(1, 0.5254902, 0.3647059, 0.25)
+
+## Matches the self_modulate already authored onto bomb_container2/3 in the scene.
+const BOMB_FULL_ALPHA := 1.0
+const BOMB_EMPTY_ALPHA := 80.0 / 255.0
 
 var _lights_alternate := false
 
@@ -128,6 +145,8 @@ func _ready() -> void:
 	# instead of drifting with delta and drain_rate like the needle does.
 	GlobalTimer.tick.connect(update_label)
 	GlobalTimer.tick.connect(play_heartbeat)
+	drain_enabled = GameConfig.get_value("oxygen", "drain", drain_enabled)
+	GlobalTimer.tick.connect(_setup)
 	needle.rotation_degrees = degrees
 
 	top_border_end_pos = top_border.position
@@ -173,6 +192,10 @@ func refill() -> void:
 ## before that would be silently overwritten.
 func apply_damage(amount: int, type: int) -> void:
 	_flash_heartbeat()
+	# The single gate on damage, because this is the single place a hit becomes a
+	# cost in air. A profile that stops the clock stops hits costing anything too.
+	if not drain_enabled:
+		return
 	if type == Damage.Type.PIERCING:
 		add_drain(amount * drain_per_piercing_point)
 	else:
@@ -201,6 +224,9 @@ func add_drain(amount: float) -> void:
 
 func _process(delta: float) -> void:
 	if time_left > 0:
+	if not setup_done:
+		return
+	if drain_enabled and time_left > 0:
 		time_left -= delta * drain_rate
 		time_left = max(time_left, 0)
 		update_needle()
@@ -296,6 +322,13 @@ func _set_air_critical(critical: bool) -> void:
 	air_critical_changed.emit(critical)
 	
 	
+## Lights up one bomb_container per bomb carried, left to right; the rest sit
+## dimmed at the alpha already authored onto them in the scene.
+func set_bombs(current: int, _max_bombs: int = 0) -> void:
+	for i in bomb_containers.size():
+		bomb_containers[i].self_modulate.a = BOMB_FULL_ALPHA if i < current else BOMB_EMPTY_ALPHA
+
+
 func update_label() -> void:
 	await get_tree().create_timer(0.2).timeout
 	_alternate_lights()

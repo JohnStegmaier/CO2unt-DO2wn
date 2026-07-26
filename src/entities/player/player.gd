@@ -5,11 +5,35 @@ class_name Player
 @export var bullet_scene: PackedScene
 @export var muzzle_offset := 20
 @export var muzzle_y_offset := 0
-@export var fire_rate := 0.14
-@export var bullet_damage := 10
 ## How fast our shots travel. Lives here rather than on the bullet because the
 ## enemies fire the same scene and need their own number — see enemy.gd.
 @export var bullet_speed := 400.0
+
+@export_group("Stats")
+## Global multiplier on top of every level's table value below — one knob to
+## buff or nerf every stat at once without touching the tables themselves.
+@export var STAT_SCALE := 1.0
+
+## Damage per POWER_LVL, index 0 is level 1.
+@export var BULLET_DAMAGE_VALUES: Array[int] = [10, 14, 18, 22, 26, 30, 35]
+## Walk speed per SPEED_LVL, index 0 is level 1.
+@export var WALK_SPEED_VALUES: Array[int] = [150, 200, 250, 300, 350, 375, 400]
+## Seconds between shots per FIRERATE_LVL — lower is faster, index 0 is level 1.
+@export var FIRE_RATE_VALUES: Array[float] = [0.14, 0.12, 0.11, 0.10, 0.09, 0.08, 0.07]
+
+const MIN_STAT_LVL := 1
+const MAX_STAT_LVL := 7
+
+var POWER_LVL := 1
+var SPEED_LVL := 1
+var FIRERATE_LVL := 1
+
+## Derived from POWER_LVL/BULLET_DAMAGE_VALUES by set_power_level() — see _ready().
+var bullet_damage: int
+## Derived from FIRERATE_LVL/FIRE_RATE_VALUES by set_firerate_lvl() — see _ready().
+var fire_rate: float
+## Derived from SPEED_LVL/WALK_SPEED_VALUES by set_speed_lvl() — see _ready().
+var WALK_SPEED: float
 
 @export_group("Ammo")
 @export var magazine_size := 6
@@ -17,11 +41,20 @@ class_name Player
 ## is no manual reload input — so this is the only cost of running the mag dry.
 @export var reload_time := 1.2
 
+@export_group("Bombs")
+## How many bombs the player can carry unless something raises the cap.
+@export var max_f_bombs := 3
+## Bombs carried right now. Starts at 1 rather than max_f_bombs — a fresh run
+## begins under capacity, same as Isaac.
+var f_bombs := 1
+
+## Fired whenever the bomb count changes, so the HUD never has to poll for it.
+signal bombs_changed(current: int, max_bombs: int)
+
 @onready var sprite = $AnimatedSprite2D
 @onready var gun: Sprite2D = $BigGunBTransparent
 @onready var _reload_indicator: Label = $ReloadIndicator
 
-const WALK_SPEED = 150
 const DODGE_SPEED = 200
 const DODGE_DURATION = 0.6
 
@@ -33,6 +66,11 @@ var dodge_direction := Vector2.ZERO
 var dodge_timer := 0.0
 var gun_default_position: Vector2
 var gun_default_scale: Vector2
+## How we are authored to look. Captured once so that anything which borrows our
+## appearance — a room drawn in a perspective of its own, say — never has to
+## remember what it changed. See reset_presentation.
+var _sprite_default_scale: Vector2
+var _sprite_default_position: Vector2
 
 ## Right-stick deflection below this counts as the stick being at rest. Also the
 ## threshold for believing a joypad event means the player actually picked a pad
@@ -45,6 +83,13 @@ var ammo := 0
 ## mag or early from the reload input — distinct from can_shoot, which also
 ## covers the ordinary fire-rate gap between shots.
 var is_reloading := false
+
+## Debug switches, set from the active tuning profile in _ready and false in any
+## normal run. Deliberately NOT @export: an inspector checkbox is something you
+## can tick, save into player.tscn and commit, which is the exact accident tuning
+## profiles exist to prevent. See docs/TUNING_PROFILES.md.
+var infinite_ammo := false
+var invulnerable := false
 
 ## Fired whenever the magazine count changes — on every shot and when a reload
 ## finishes — so the HUD never has to poll for it.
@@ -61,6 +106,17 @@ var aim_deflection := 0.0
 ## Which device last supplied aim. Both can be plugged in, so the most recent
 ## one wins and the player can swap mid-run without touching a settings screen.
 var aiming_with_gamepad := false
+
+## Per-axis multiplier on how fast we move, for rooms that are not drawn top-down.
+##
+## The belt-scroll lobby squashes the vertical axis: there, up and down are depth
+## rather than a second direction to run in, and its walkable band is a fraction
+## of a room's height. At full speed the whole thing is crossed in a third of a
+## second, which turns walking into the lift into a twitch input.
+##
+## Vector2.ONE everywhere else, so a room that says nothing gets today's movement.
+## Whoever sets it owns putting it back — see elevator_room.gd.
+var move_scale := Vector2.ONE
 
 ## True while the Game is moving us between rooms. Physics is handed over to the
 ## transition for the duration — a dodge finishing mid-slide would otherwise
@@ -90,7 +146,30 @@ var _is_dead := false
 func _ready() -> void:
 	gun_default_position = gun.position
 	gun_default_scale = gun.scale
+	_sprite_default_scale = sprite.scale
+	_sprite_default_position = sprite.position
 	ammo = magazine_size
+	infinite_ammo = GameConfig.get_value("player", "infinite_ammo", infinite_ammo)
+	invulnerable = GameConfig.get_value("player", "invulnerable", invulnerable)
+
+	set_power_level(POWER_LVL)
+	set_speed_lvl(SPEED_LVL)
+	set_firerate_lvl(FIRERATE_LVL)
+
+
+func set_power_level(lvl: int) -> void:
+	POWER_LVL = clampi(lvl, MIN_STAT_LVL, MAX_STAT_LVL)
+	bullet_damage = roundi(BULLET_DAMAGE_VALUES[POWER_LVL - 1] * STAT_SCALE)
+
+
+func set_speed_lvl(lvl: int) -> void:
+	SPEED_LVL = clampi(lvl, MIN_STAT_LVL, MAX_STAT_LVL)
+	WALK_SPEED = WALK_SPEED_VALUES[SPEED_LVL - 1] * STAT_SCALE
+
+
+func set_firerate_lvl(lvl: int) -> void:
+	FIRERATE_LVL = clampi(lvl, MIN_STAT_LVL, MAX_STAT_LVL)
+	fire_rate = FIRE_RATE_VALUES[FIRERATE_LVL - 1] * STAT_SCALE
 
 
 ## Last device to speak wins. Joypad motion is filtered by deadzone because an
@@ -134,7 +213,9 @@ func _physics_process(delta: float) -> void:
 		dodge_timer += delta
 		var t: float = clamp(dodge_timer / DODGE_DURATION, 0.0, 1.0)
 		var speed_multiplier: float = 1.0 if t < 0.5 else (1.0 - ((t - 0.5) / 0.5))
-		velocity = dodge_direction * DODGE_SPEED * speed_multiplier
+		# Scaled like the walk below. An undamped roll is 200px/s and would clear a
+		# depth-squashed room in one press, straight past whatever is at the far end.
+		velocity = dodge_direction * DODGE_SPEED * speed_multiplier * move_scale
 		move_and_slide()
 		return
 
@@ -143,7 +224,9 @@ func _physics_process(delta: float) -> void:
 		input_vector.y = Input.get_axis("ui_up", "ui_down")
 		input_vector = input_vector.normalized()
 
-		velocity = input_vector * WALK_SPEED
+		# Scaled after normalising, so the input still reads as a direction and only
+		# the world decides what a step along each axis is worth.
+		velocity = input_vector * WALK_SPEED * move_scale
 		update_animation(input_vector)
 		move_and_slide()
 
@@ -172,12 +255,44 @@ func _physics_process(delta: float) -> void:
 ## check this and skip themselves entirely instead of just being told to deal
 ## no damage, which is why this is its own method rather than folded into
 ## take_damage.
+## Whether the death sequence has started. Public because dying changes what
+## everything else is allowed to do to us — die() tweens the sprite into a
+## flattened pose, so anything driving our appearance has to stand down rather
+## than fight it for the same properties every frame.
+func is_dead() -> bool:
+	return _is_dead
+
+
+## Put our appearance back the way the scene authored it.
+##
+## Owned here rather than by whoever changed it. A room that borrows the player's
+## look has to give it back, and a room can be freed at any moment — mid
+## transition, mid death, mid anything — so "remember what you overwrote and undo
+## it on the way out" is a rule that only has to be missed once to leave a player
+## permanently shrunk or holding no gun for the rest of a run. Asking us instead
+## means there is nothing to remember and nothing to get wrong.
+##
+## Deliberately does nothing while dead: die() is mid-tween on these same
+## properties and a reset would stand the corpse back up.
+func reset_presentation() -> void:
+	if _is_dead:
+		return
+	move_scale = Vector2.ONE
+	sprite.scale = _sprite_default_scale
+	sprite.position = _sprite_default_position
+	gun.visible = true
+
+
 func is_intangible() -> bool:
 	return is_dodging
 
 
 func take_damage(amount: int, type: int = Damage.Type.BLUNT) -> void:
 	if is_warping or is_dodging or _is_dead:
+		return
+	# Before the invulnerability stamp, so a profile's god mode also spares us the
+	# hit flash — a body flickering red while nothing happens reads as a bug.
+	if invulnerable:
 		return
 	if Time.get_ticks_msec() < _invulnerable_until_msec:
 		return
@@ -253,8 +368,12 @@ func shoot() -> void:
 	bullet.global_position = gun.global_position + spawn_offset
 	bullet.reset_physics_interpolation()
 
-	ammo -= 1
-	ammo_changed.emit(ammo, magazine_size)
+	# Skipping the spend is the whole of infinite ammo: the magazine never reaches
+	# zero, so the reload below is never entered and the counter stays full without
+	# needing a second switch for "no reload".
+	if not infinite_ammo:
+		ammo -= 1
+		ammo_changed.emit(ammo, magazine_size)
 
 	if ammo <= 0:
 		# Empty mag reloads on its own — reload() is what blocks the shoot input

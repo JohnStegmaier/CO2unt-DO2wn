@@ -53,6 +53,7 @@ signal bombs_changed(current: int, max_bombs: int)
 
 @onready var sprite = $AnimatedSprite2D
 @onready var gun: Sprite2D = $BigGunBTransparent
+@onready var _reload_indicator: Label = $ReloadIndicator
 
 const DODGE_SPEED = 200
 const DODGE_DURATION = 0.6
@@ -78,6 +79,10 @@ const AIM_DEADZONE := 0.25
 
 var can_shoot := true
 var ammo := 0
+## True for the whole reload wait, whether it started automatically off an empty
+## mag or early from the reload input — distinct from can_shoot, which also
+## covers the ordinary fire-rate gap between shots.
+var is_reloading := false
 
 ## Debug switches, set from the active tuning profile in _ready and false in any
 ## normal run. Deliberately NOT @export: an inspector checkbox is something you
@@ -89,6 +94,9 @@ var invulnerable := false
 ## Fired whenever the magazine count changes — on every shot and when a reload
 ## finishes — so the HUD never has to poll for it.
 signal ammo_changed(current: int, magazine_size: int)
+## Fired at the start and end of a reload, so the HUD can show "RELOADING" even
+## when a manual reload starts with rounds still left in the mag.
+signal reloading_changed(reloading: bool)
 ## World-space aim, whichever device supplied it. Bullets and the gun sprite
 ## both read this, so neither has to know how the player is aiming.
 var gun_direction := Vector2.RIGHT
@@ -231,6 +239,10 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("shoot") and can_shoot and not is_dodging:
 		shoot()
 
+	if Input.is_action_just_pressed("reload") and can_shoot and not is_dodging \
+			and ammo < magazine_size:
+		reload()
+
 
 ## Take a hit. Damage type is passed straight through — what blunt and piercing
 ## actually cost is the O2 timer's business, not ours.
@@ -364,13 +376,30 @@ func shoot() -> void:
 		ammo_changed.emit(ammo, magazine_size)
 
 	if ammo <= 0:
-		# Empty mag reloads on its own — can_shoot stays false for the whole wait,
-		# which is what blocks the shoot input until it is back up.
-		await get_tree().create_timer(reload_time, false).timeout
-		ammo = magazine_size
-		ammo_changed.emit(ammo, magazine_size)
+		# Empty mag reloads on its own — reload() is what blocks the shoot input
+		# until it is back up.
+		await reload()
 	else:
 		await get_tree().create_timer(fire_rate, false).timeout
+		can_shoot = true
+
+
+## Shared by an empty mag reloading itself and the player reloading early with
+## the reload input. can_shoot stays false for the whole wait, which is what
+## blocks shooting (and a second reload) until it is back up.
+func reload() -> void:
+	can_shoot = false
+	is_reloading = true
+	reloading_changed.emit(true)
+	_reload_indicator.visible = true
+
+	await get_tree().create_timer(reload_time, false).timeout
+
+	ammo = magazine_size
+	ammo_changed.emit(ammo, magazine_size)
+	is_reloading = false
+	reloading_changed.emit(false)
+	_reload_indicator.visible = false
 	can_shoot = true
 
 

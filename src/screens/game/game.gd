@@ -108,6 +108,7 @@ func _ready() -> void:
 	_o2_timer.suffocated.connect(_on_player_died)
 
 	_player.ammo_changed.connect(_ammo_counter.set_ammo)
+	_player.reloading_changed.connect(_ammo_counter.set_reloading)
 	_ammo_counter.set_ammo(_player.ammo, _player.magazine_size)
 
 	_player.bombs_changed.connect(_o2_timer.set_bombs)

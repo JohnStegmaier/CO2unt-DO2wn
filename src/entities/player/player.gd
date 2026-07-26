@@ -394,15 +394,15 @@ func take_damage(amount: int, type: int = Damage.Type.BLUNT) -> void:
 	_flash_hit()
 
 
-## Called by oxygen_pickup.gd on contact. Duck-typed the same way bullet.gd
-## calls take_damage — the pickup does not need to know it is a Player.
+## Called by RestoreOxygen on contact. Duck-typed the same way bullet.gd calls
+## take_damage — the effect does not need to know it is a Player.
 func heal(seconds: float) -> void:
 	healed.emit(seconds)
 
 
-## Called by bomb_pickup.gd on contact. Clamped rather than ignored past the
-## cap, same as gain_seconds clamping oxygen to a full tank — a pickup at max
-## bombs is just wasted, not an error.
+## Called by GrantBomb on contact. Clamped rather than ignored past the cap,
+## same as gain_seconds clamping oxygen to a full tank — a pickup at max bombs
+## is just wasted, not an error.
 func gain_bomb() -> void:
 	f_bombs = mini(f_bombs + 1, max_f_bombs)
 	bombs_changed.emit(f_bombs, max_f_bombs)

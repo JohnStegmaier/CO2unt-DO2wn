@@ -9,8 +9,19 @@ extends Node2D
 
 const ROOM_SCENE := preload("res://src/levels/room/room.tscn")
 const ENEMY_SCENE := preload("res://src/entities/enemy/enemy.tscn")
+const ITEM_PICKUP_SCENE := preload("res://src/entities/pickup/item_pickup.tscn")
 const GAME_OVER_SCENE := "res://src/screens/game_over/game_over.tscn"
 const VICTORY_SCENE := "res://src/screens/victory/victory.tscn"
+## Where a profile's drop configs live, so `[drops] config = "economy"` names a
+## file without spelling out a path.
+const DROP_CONFIG_DIR := "res://src/config/drops"
+## Any odd constant would do — this only has to make the loot stream differ from
+## the placement stream. Same golden-ratio word FloorGenerator.floor_seed_for
+## uses, for the same reason: it spreads neighbouring seeds apart.
+const LOOT_SEED_SALT := 0x9E3779B9
+## Pixels a drop may be nudged when more than one lands at once. Roughly the
+## width of a pickup, so they read as a little pile rather than as one item.
+const LOOT_SCATTER := 10.0
 
 @export_group("Room Transition")
 ## Seconds to slide from one room to the next.
@@ -76,6 +87,13 @@ const VICTORY_SCENE := "res://src/screens/victory/victory.tscn"
 ## here and the slot can stay as the registry of what the flag chooses between.
 @export var exit_room_scene: PackedScene
 
+@export_group("Drops")
+## The run's whole economy: who drops what, on which floor, how often. Swap the
+## resource and the game plays by a different drop design with no code change —
+## see docs/DROPS.md. A profile can override which one is loaded without editing
+## this scene; see [method _apply_drop_overrides].
+@export var drop_config: DropConfig
+
 @export_group("Floor")
 ## Shape of every floor in the run. Tune it here and each generated floor obeys.
 @export var floor_config: FloorConfig
@@ -85,6 +103,10 @@ const VICTORY_SCENE := "res://src/screens/victory/victory.tscn"
 @export var run_seed: int = 0
 
 var _rng := RandomNumberGenerator.new()
+## Loot rolls draw from here rather than from _rng, so a change to what drops
+## cannot shuffle where the enemies stand. Both are seeded off the same floor
+## seed, so a replayed seed still replays both.
+var _loot_rng := RandomNumberGenerator.new()
 
 @onready var _room_container: Node2D = $RoomContainer
 @onready var _player: Player = $Player
@@ -179,6 +201,7 @@ func _ready() -> void:
 		boss_enemies_min = 0
 		boss_enemies_max = 0
 	run_seed = GameConfig.get_value("floor", "run_seed", run_seed)
+	_apply_drop_overrides()
 
 	_rng.randomize()
 	if run_seed == 0:
@@ -644,6 +667,7 @@ func _populate(data: RoomData) -> void:
 		# maximum into its current value.
 		enemy.behaviour = Enemy.Behaviour.SKIRMISHER if _rng.randf() < skirmisher_chance \
 				else Enemy.Behaviour.CHASER
+		enemy.loot_source = _loot_source_for(enemy.behaviour, is_boss)
 		if is_boss:
 			var hp_scale: float = final_boss_hp_scale if FloorLadder.is_final(_floor_number) \
 					else boss_hp_scale
@@ -657,7 +681,14 @@ func _populate(data: RoomData) -> void:
 	_current_room.set_locked(true)
 
 
-func _on_enemy_died(data: RoomData) -> void:
+func _on_enemy_died(loot_source: StringName, at: Vector2, data: RoomData) -> void:
+	# Deferred, because this can run mid physics-query-flush — reached from a
+	# bullet's body_entered — and adding a pickup's collision shape to the tree
+	# right then is exactly the state change the physics server rejects. The
+	# bookkeeping below is safe to do now and has to be, or the door would not
+	# unlock until the next idle frame.
+	_spawn_loot.call_deferred(loot_source, at)
+
 	data.enemies_remaining -= 1
 	if data.enemies_remaining > 0:
 		return
@@ -701,9 +732,85 @@ func _begin_floor(floor_number: int) -> void:
 	# guys back too, not just the walls. Only along the same route, mind: rooms
 	# are stocked as you reach them, so a different path draws differently.
 	_rng.seed = floor_seed
+	# Offset rather than shared, so retuning a drop table cannot move an enemy and
+	# adding an enemy cannot change what the one before it dropped.
+	_loot_rng.seed = floor_seed ^ LOOT_SEED_SALT
 
 	print("%s — run seed %d, %d rooms" % [FloorLadder.long_label(floor_number), run_seed, _plan.size()])
 	print(_plan.to_ascii())
 	# Awaited, so a caller riding the elevator can hold the overlay up until the
 	# spawn room is built and stocked rather than opening onto an empty screen.
 	await _enter_room(_plan.spawn_coord)
+
+
+## Let a tuning profile pick a different drop economy for the run.
+##
+## The inspector slot is what ships; this only redirects it, so a profile naming
+## no config leaves the shipped tables exactly as they are — the same bargain
+## every other override in _ready makes. See docs/TUNING_PROFILES.md.
+func _apply_drop_overrides() -> void:
+	var named: String = GameConfig.get_value("drops", "config", "")
+	if named.is_empty():
+		return
+
+	var path := "%s/%s.tres" % [DROP_CONFIG_DIR, named]
+	var loaded := load(path) as DropConfig
+	if loaded == null:
+		# Loudly, and without falling back: a mistyped config that quietly ran the
+		# shipped tables would waste a whole playtest deciding they felt wrong.
+		push_error("Game: no drop config '%s' at %s" % [named, path])
+		return
+	drop_config = loaded
+
+
+## Which row of the drop table this enemy's death is looked up under.
+##
+## Decided here rather than left on the scene because this is where the enemy is
+## made what it is — the same two lines that choose its behaviour and promote it
+## to a boss. An enemy spawned by anything else keeps the scene's own default.
+func _loot_source_for(behaviour: int, is_boss: bool) -> StringName:
+	if is_boss:
+		return &"boss"
+	if behaviour == Enemy.Behaviour.SKIRMISHER:
+		return &"skirmisher"
+	return &"grunt"
+
+
+## Roll this source's drop tables and put whatever comes out on the floor.
+##
+## Parented to the room rather than to the run container, so a drop keeps the
+## position it was dropped at: the old behaviour outlived the room it belonged to
+## but kept a world coordinate belonging to a freed grid, which put it inside the
+## wall of whatever room came next. The cost is that loot left behind when you
+## retreat mid-fight is gone — recording it on RoomData the way enemies_remaining
+## already is would fix that, and is a job of its own.
+func _spawn_loot(source: StringName, at: Vector2) -> void:
+	if drop_config == null or _current_room == null:
+		return
+
+	var tables := drop_config.tables_for(source, _floor_number)
+	if tables.is_empty():
+		return
+
+	var local: Vector2 = _current_room.to_local(at)
+	var items := LootRoller.roll(tables, _loot_rng)
+	for item in items:
+		var pickup: ItemPickup = ITEM_PICKUP_SCENE.instantiate()
+		# Before it enters the tree: _ready is what draws it, so an item assigned
+		# afterwards would be an invisible pickup.
+		pickup.item = item
+		# A single drop lands exactly where the body did; a handful is scattered,
+		# or three coins stack into what looks like one coin and the player walks
+		# away from two of them. Clamped to the floor so the scatter cannot push
+		# one into a wall.
+		var spot: Vector2 = local if items.size() == 1 else _scattered(local)
+		_current_room.add_entity(pickup, spot)
+
+
+## A small random nudge off a drop point, kept inside the walkable floor.
+func _scattered(local: Vector2) -> Vector2:
+	var offset := Vector2(
+			_loot_rng.randf_range(-LOOT_SCATTER, LOOT_SCATTER),
+			_loot_rng.randf_range(-LOOT_SCATTER, LOOT_SCATTER))
+	var inside := Room.FLOOR.grow(-LOOT_SCATTER)
+	return (local + offset).clamp(inside.position, inside.end)

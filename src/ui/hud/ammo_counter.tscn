@@ -17,7 +17,7 @@ horizontal_alignment = 2
 vertical_alignment = 1
 clip_text = true
 
-[node name="Sprite2D" type="Sprite2D" parent="." unique_id=304979953]
+[node name="WeaponIcon" type="Sprite2D" parent="." unique_id=304979953]
 position = Vector2(14, 2.000001)
 scale = Vector2(0.16831683, 0.16831683)
 texture = ExtResource("2_na8xe")

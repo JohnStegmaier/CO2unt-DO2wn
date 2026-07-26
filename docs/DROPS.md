@@ -41,9 +41,11 @@ and tune while the game is running. It holds no RNG and makes no decisions —
 ### Sources
 
 A `DropRule` is keyed on a **source**, not on "enemy": `&"grunt"`,
-`&"skirmisher"`, `&"boss"`, `&"shop"`, and later `&"chest"`. An enemy carries
-only its `loot_source`; `game.gd` sets it alongside the behaviour and the boss
-promotion, in `_loot_source_for`.
+`&"skirmisher"`, `&"boss"`, `&"shop"`, `&"crate"`, `&"barrel"`, and later
+`&"chest"`. An enemy carries only its `loot_source`; `game.gd` sets it
+alongside the behaviour and the boss promotion, in `_loot_source_for`. A prop
+carries its own the same way — `Obstacle` reuses its `ObstacleDef.id`, since
+that was already a unique name for the row and nothing else indexed by it.
 
 That is what lets the treasure room and the shop use this same table when they
 land, instead of needing a loot system each. A source with no rule drops nothing,

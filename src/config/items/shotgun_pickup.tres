@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3 uid="uid://c5llom280e5qj"]
+
+[ext_resource type="Texture2D" uid="uid://b2vwww17ku866" path="res://assets/sprites/items/Drop_orb.png" id="1_orb"]
+[ext_resource type="Script" uid="uid://emnui7uyddjn" path="res://src/systems/loot/item_effect.gd" id="2_effect"]
+[ext_resource type="Script" uid="uid://bsek8x45cecjn" path="res://src/systems/loot/effects/grant_temp_shotgun.gd" id="3_shotgun_effect"]
+[ext_resource type="Texture2D" uid="uid://cjdt6dhufrlc8" path="res://assets/sprites/weapons/shotgun.png" id="4_shotgun_tex"]
+[ext_resource type="Script" uid="uid://dmxi7afktl2qr" path="res://src/systems/loot/item_def.gd" id="5_def"]
+
+[sub_resource type="Resource" id="Resource_shotgun_effect"]
+script = ExtResource("3_shotgun_effect")
+
+[resource]
+script = ExtResource("5_def")
+id = &"shotgun_pickup"
+display_name = "Shotgun"
+icon = ExtResource("4_shotgun_tex")
+icon_scale = 0.3
+backdrop = ExtResource("1_orb")
+pickup_sound = &"shotgun_pickup"
+effects = Array[ExtResource("2_effect")]([SubResource("Resource_shotgun_effect")])

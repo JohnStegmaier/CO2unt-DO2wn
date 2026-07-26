@@ -26,7 +26,9 @@ var sounds = {
 	"chest_open": preload("res://assets/audio/sfx/chest_open.mp3"),
 	"gas_escape": preload("res://assets/audio/sfx/gas_escape.mp3"),
 	"powerup_01": preload("res://assets/audio/sfx/powerup_01.mp3"),
-	"wall_collision_1": preload("res://assets/audio/sfx/wall_collision_1.mp3")
+	"wall_collision_1": preload("res://assets/audio/sfx/wall_collision_1.mp3"),
+	"shotgun_blast": preload("res://assets/audio/sfx/Shotgun_Blast.mp3"),
+	"shotgun_pickup": preload("res://assets/audio/sfx/shotgun_pickup.mp3")
 }
 
 ## Endgame sounds the artists have not delivered yet. They are loaded at runtime

@@ -264,6 +264,18 @@ func open_door_landings() -> Array[Vector2]:
 	return [LANDING]
 
 
+## Where a prop could stand, if this room ever got any.
+##
+## The shipped ObstacleSet does not tick SHOP, so nothing is placed here today
+## and this is never called. Overridden anyway because Room's version returns its
+## top-down FLOOR, which in this room is a band across the middle of the back
+## wall — tick the box and the crates would appear inside the shelves. Answering
+## with the strip the player can actually walk on costs one line and means the
+## box is safe to tick.
+func obstacle_rect() -> Rect2:
+	return SHOP_FLOOR
+
+
 ## Seal the way out, or restore it. Same contract as Room's, with a strip of
 ## floor standing in for a doorway.
 func set_locked(locked: bool) -> void:

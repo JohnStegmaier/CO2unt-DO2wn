@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://de516cuorh3t3" path="res://src/systems/loot/effects/grant_coins.gd" id="2_ltjds"]
 [ext_resource type="Texture2D" uid="uid://ba2kiutrlno8t" path="res://assets/sprites/environment/coin.png" id="3_iaov8"]
 [ext_resource type="Script" uid="uid://dmxi7afktl2qr" path="res://src/systems/loot/item_def.gd" id="4_fh0hi"]
+[ext_resource type="SpriteFrames" path="res://src/config/items/coin_spin_frames.tres" id="5_spin"]
 
 [sub_resource type="Resource" id="Resource_80fpe"]
 script = ExtResource("2_ltjds")
@@ -14,6 +15,8 @@ script = ExtResource("4_fh0hi")
 id = &"coin_big"
 display_name = "Severance"
 icon = ExtResource("3_iaov8")
+icon_frames = ExtResource("5_spin")
+icon_animation = &"spin"
 icon_scale = 0.3
 pickup_sound = &"money_jingle_1"
 effects = Array[ExtResource("1_lp2j7")]([SubResource("Resource_80fpe")])

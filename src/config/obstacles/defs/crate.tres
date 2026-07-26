@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ObstacleDef" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/systems/obstacles/obstacle_def.gd" id="1_def"]
+[ext_resource type="Texture2D" uid="uid://bfalb7fdxg7bo" path="res://assets/sprites/environment/crate.png" id="2_tex"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"crate"
+texture = ExtResource("2_tex")
+offset = Vector2(6, 5.5)
+sprite_scale = 0.5
+body_radius = 11.0
+max_hp = 20
+indestructible = false
+weight = 1.0

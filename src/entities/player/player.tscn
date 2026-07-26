@@ -149,6 +149,32 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
+"texture": ExtResource("12_45rvh")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_xm7nl")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_f610a")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_lacky")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_akx0o")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_fbnv4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_i78gy")
+}],
+"loop": 0,
+"name": &"dodge_up_right",
+"speed": 13.0
+}, {
+"frames": [{
+"duration": 1.0,
 "texture": ExtResource("12_amj0e")
 }, {
 "duration": 1.0,
@@ -302,7 +328,7 @@ shape = SubResource("CapsuleShape2D_5ixxa")
 texture_filter = 1
 position = Vector2(0, -6)
 sprite_frames = SubResource("SpriteFrames_nn08x")
-animation = &"dodge_up"
+animation = &"dodge_up_right"
 
 [node name="ReloadIndicator" type="Node2D" parent="." unique_id=2136498205]
 visible = false

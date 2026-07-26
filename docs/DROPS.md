@@ -111,7 +111,27 @@ carries `icon` + `icon_scale` and an optional `backdrop` + `backdrop_scale`:
 
 Both hover as one unit, so the layers cannot drift apart. Sprites here are
 authored much larger than they are drawn, so the scale is part of how an item
-looks rather than a fudge factor — the orb sits at `0.265`.
+looks rather than a fudge factor — the orb sits at `0.265`, the coin at `0.15`.
+
+## Sound
+
+Two fields, because a drop makes noise at two different moments:
+
+| Field | Fires | Played by |
+|---|---|---|
+| `drop_sound` | the item hits the floor | `game.gd._spawn_loot` |
+| `pickup_sound` | the player collects it | `item_pickup.gd` |
+
+The coin uses both — `money_drop_2` landing, `money_jingle_1` on collection.
+Leave either empty for silence.
+
+A `drop_sound` plays **once per distinct sound per spawn**, so a table that drops
+three coins at once makes one noise rather than three stacked copies of it.
+
+Both are `StringName`s naming a bare file under `assets/audio/sfx/`, the way
+`AudioManager.play_sfx` wants them. They live on the item rather than in code so
+that "what noise does a coin make" is tuned in the same Inspector as everything
+else about the coin.
 
 ## Switching economies
 
@@ -153,10 +173,24 @@ updating `DEFAULT_RATES` in the checker is how you say you meant it.
 
 ## What ships
 
-- **`default.tres`** — the shipped economy, and a faithful port rather than a
-  re-tune. The old code carved a single `randf()` into
-  `[oxygen 0.3][bomb 0.3][nothing 0.4]`; that is exactly a one-roll table with
-  those three weights.
+- **`default.tres`** — the shipped economy:
+
+  | Row | Weight | Rate |
+  |---|---|---|
+  | `coin_small` | 0.40 | 40% |
+  | `oxygen_small` | 0.20 | 20% |
+  | `bomb` | 0.20 | 20% |
+  | *(nothing)* | 0.20 | 20% |
+
+  **This is the one deliberate balance change in the branch.** PR #51's roll was
+  coin 0.6 / oxygen 0.2 / bomb 0.2, summing to 1.0 — every kill dropped
+  something. Coins are thinned to 0.4 and the freed 0.2 becomes a chance of
+  nothing; **oxygen and bomb are untouched at 0.2 each**. Guaranteed loot from
+  every enemy devalues it, and oxygen is effectively the health bar here, so it
+  should not get rarer just because coins got commoner.
+
+  `tools/check_drops.gd` asserts these rates, so nothing else can drift into the
+  shipped economy unnoticed.
 - **`economy.tres`** — the coin-heavy candidate, as far as the current item set
   reaches. Also the worked example of the three things a rule can do that the
   default does not: a guaranteed table beside a chance table, a source that

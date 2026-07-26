@@ -157,6 +157,28 @@ func play_sfx(sound_name, pitch = 1.0, volume = 0.0, start_time = 0.0):
 	return chosen
 
 
+## Cut one named sound short wherever it is playing.
+##
+## Needed because a sound can outlast the thing that asked for it: the clock's
+## tick is over two seconds long and is fired every second, so there is always
+## one still sounding, and freezing the beat grid left it ringing on into a room
+## that is supposed to be silent. Stopping the stream rather than fading it,
+## because the caller is asking for silence now.
+##
+## Returns how many players it stopped, which is the only way to tell whether a
+## sound was actually in flight.
+func stop_sfx(sound_name) -> int:
+	if not sounds.has(sound_name):
+		return 0
+	var stream: AudioStream = sounds[sound_name]
+	var stopped := 0
+	for player in [$SFX1, $SFX2, $SFX3, $SFX4, $SFX5, $SFX6, $SFX7, $SFX8, $SFX9, $SFX10]:
+		if player.playing and player.stream == stream:
+			player.stop()
+			stopped += 1
+	return stopped
+
+
 ## The player's own pulse, rising as the air runs out. It gets a dedicated player
 ## rather than an SFX slot: it loops for the rest of the run, and a busy room
 ## would otherwise evict it or starve everything else out of the pool of ten.

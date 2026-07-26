@@ -10,6 +10,9 @@ extends Node2D
 const ROOM_SCENE := preload("res://src/levels/room/room.tscn")
 const ENEMY_SCENE := preload("res://src/entities/enemy/enemy.tscn")
 const ITEM_PICKUP_SCENE := preload("res://src/entities/pickup/item_pickup.tscn")
+## The clock's voice, once a second. Named because [ClockHold] has to be able to
+## cut it short as well as stop the beat that fires it.
+const TICK_SFX := &"tick_trim"
 const GAME_OVER_SCENE := "res://src/screens/game_over/game_over.tscn"
 const VICTORY_SCENE := "res://src/screens/victory/victory.tscn"
 ## Where a profile's drop configs live, so `[drops] config = "economy"` names a
@@ -260,7 +263,7 @@ func _start_music() -> void:
 
 
 func _on_global_tick() -> void:
-	AudioManager.play_sfx("tick_trim", 1, -5, 0)
+	AudioManager.play_sfx(TICK_SFX, 1, -5, 0)
 
 
 ## The walls are closing in and the player can hear their own pulse. Fired by the
@@ -823,7 +826,10 @@ func _setup_shops() -> void:
 		shop_config = ShopConfig.new()
 	shop_config.apply_overrides()
 
-	_clock_hold = ClockHold.new(_o2_timer, shop_config.music)
+	# The tick goes in so the hold can silence it. Stopping the beat grid leaves
+	# the last tick still sounding — it is a two-second sample on a one-second
+	# beat, so there is always one in the air.
+	_clock_hold = ClockHold.new(_o2_timer, shop_config.music, TICK_SFX)
 	_grant_starting_coins()
 
 

@@ -27,15 +27,23 @@ extends RefCounted
 var _o2_timer: Node
 ## Named track to play while held. Empty plays nothing.
 var _music: String
+## The beat grid's own voice, silenced along with the grid.
+##
+## Suspending GlobalTimer stops new ticks, but a tick already sounding plays on —
+## and this one is over two seconds long against a one-second beat, so there is
+## ALWAYS one in flight. Without cutting it, every single entry into a shop was
+## followed by one more audible tick after the countdown had visibly stopped.
+var _tick_sfx: StringName
 ## What [method AudioManager.play_music] handed back, so the shop's own track can
 ## be faded out without touching the frozen one underneath it.
 var _shop_player: Node
 var _held: bool = false
 
 
-func _init(o2_timer: Node, music: String = "") -> void:
+func _init(o2_timer: Node, music: String = "", tick_sfx: StringName = &"") -> void:
 	_o2_timer = o2_timer
 	_music = music
+	_tick_sfx = tick_sfx
 
 
 func is_held() -> bool:
@@ -54,6 +62,9 @@ func set_held(held: bool) -> void:
 	_set_countdown_frozen(held)
 
 	if held:
+		# After suspending the grid, not before: a tick could otherwise be fired
+		# by the very last beat in between the two and survive the silencing.
+		_silence_tick()
 		_start_shop_music()
 	else:
 		_stop_shop_music()
@@ -81,6 +92,15 @@ func _set_countdown_frozen(frozen: bool) -> void:
 	_o2_timer.process_mode = (
 		Node.PROCESS_MODE_DISABLED if frozen else Node.PROCESS_MODE_INHERIT
 	)
+
+
+## Cut off the tick that is still sounding from the last beat before the freeze.
+##
+## Stopping the grid is not enough on its own — see [member _tick_sfx].
+func _silence_tick() -> void:
+	if _tick_sfx.is_empty():
+		return
+	AudioManager.stop_sfx(_tick_sfx)
 
 
 ## The shop track goes on whichever music player the frozen one is not using.

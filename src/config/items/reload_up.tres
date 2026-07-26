@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Script" uid="uid://emnui7uyddjn" path="res://src/systems/loot/item_effect.gd" id="2_rl0ef"]
+[ext_resource type="Script" uid="uid://dwgl5qnepcp10" path="res://src/systems/loot/effects/raise_stat_level.gd" id="3_rl0st"]
+[ext_resource type="Texture2D" uid="uid://h85ghw3mncdh" path="res://assets/sprites/items/reload-up.png" id="4_rl0ic"]
+[ext_resource type="Script" uid="uid://dmxi7afktl2qr" path="res://src/systems/loot/item_def.gd" id="5_rl0df"]
+
+[sub_resource type="Resource" id="Resource_reload_effect"]
+script = ExtResource("3_rl0st")
+stat = 3
+
+[resource]
+script = ExtResource("5_rl0df")
+id = &"reload_up"
+display_name = "Reload Upgrade"
+icon = ExtResource("4_rl0ic")
+icon_scale = 0.75
+pickup_sound = &"money_jingle_1"
+effects = Array[ExtResource("2_rl0ef")]([SubResource("Resource_reload_effect")])

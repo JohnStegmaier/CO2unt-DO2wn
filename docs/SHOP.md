@@ -159,9 +159,12 @@ different descent index to see that floor's shelf without playing to it.
 ## Appendix: the vinaigrette
 
 `vinaigrette.tres` currently does something boring — it raises your speed by one
-level, same as `speed_up`. The shelf rework moved it out of the shop and into
-the chest pool, but it is still in the game under false pretences, and this is
-the note explaining why, so that nobody later "fixes" it by deleting it.
+level, and since `speed_up` stopped dropping (reload took its slots when the HUD
+swapped rows) it is the only thing that does. The shelf rework moved it into
+the chest pool, with one exception: the Floor 3 shelf still stocks it at 10
+coins — a floor-specific `&"shop"` rule, so every run walks past it exactly
+once. It is in the game under false pretences either way, and this is the note
+explaining why, so that nobody later "fixes" it by deleting it.
 
 **It is a typo that became canon.** It comes from mispronouncing *vignette* while
 describing the death sequence — the dark closing in as you suffocate, which is

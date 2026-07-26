@@ -236,14 +236,16 @@ updating `DEFAULT_RATES` in the checker is how you say you meant it.
   hands out roughly three of each and a long run still cannot max a stat off
   trash alone.
 
-  A third stat, reload speed, is wired end to end (setter, HUD row, effect
-  enum) but has no item yet — it needs an icon before `reload_up.tres` can
-  exist, and until then the RELOAD row cannot advance in a real run.
+  `reload_up` sits exactly where `speed_up` used to — the chest pool and the
+  boss's guaranteed drop — because reload replaced walk speed as the
+  player-facing upgrade (the HUD swapped rows at the same time). Walk speed
+  still levels underneath; the vinaigrette is now the only thing that raises
+  it, which suits the vinaigrette — see docs/SHOP.md's appendix.
 
   `&"boss"` is its own row rather than a share of this table — a floor boss
   paying out the same coin/oxygen/bomb a booger does is not the fight-ending
   moment the design roadmap below promises. It rolls two single-entry tables,
-  both guaranteed: `speed_up` and `oxygen_big`, every kill, no roll involved.
+  both guaranteed: `reload_up` and `oxygen_big`, every kill, no roll involved.
 - **`economy.tres`** — the coin-heavy candidate, as far as the current item set
   reaches. Also the worked example of the three things a rule can do that the
   default does not: a guaranteed table beside a chance table, a source that

@@ -19,6 +19,9 @@ class_name Player
 @export var WALK_SPEED_VALUES: Array[int] = [150, 200, 250, 300, 350, 375, 400]
 ## Seconds between shots per FIRERATE_LVL — lower is faster, index 0 is level 1.
 @export var FIRE_RATE_VALUES: Array[float] = [0.14, 0.12, 0.11, 0.10, 0.09, 0.08, 0.07]
+## Reload speed multiplier per RELOAD_SPEED_LVL — 1.0 is the baseline reload
+## time, rising by 0.25 a level, index 0 is level 1.
+@export var RELOAD_SPEED_VALUES: Array[float] = [1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5]
 
 const MIN_STAT_LVL := 1
 const MAX_STAT_LVL := 7
@@ -26,6 +29,7 @@ const MAX_STAT_LVL := 7
 var POWER_LVL := 1
 var SPEED_LVL := 1
 var FIRERATE_LVL := 1
+var RELOAD_SPEED_LVL := 1
 
 ## Derived from POWER_LVL/BULLET_DAMAGE_VALUES by set_power_level() — see _ready().
 var bullet_damage: int
@@ -33,11 +37,15 @@ var bullet_damage: int
 var fire_rate: float
 ## Derived from SPEED_LVL/WALK_SPEED_VALUES by set_speed_lvl() — see _ready().
 var WALK_SPEED: float
+## Derived from RELOAD_SPEED_LVL/RELOAD_SPEED_VALUES by set_reload_speed_lvl() —
+## see _ready().
+var RELOAD_SPEED: float
 
 ## Fired whenever a stat level changes, so the HUD never has to poll for it.
 signal power_level_changed(lvl: int)
 signal speed_lvl_changed(lvl: int)
 signal firerate_lvl_changed(lvl: int)
+signal reload_speed_lvl_changed(lvl: int)
 
 ## Money carried. Uncapped — unlike ammo and bombs there is no magazine or carry
 ## limit here.
@@ -302,6 +310,7 @@ func _ready() -> void:
 	set_power_level(POWER_LVL)
 	set_speed_lvl(SPEED_LVL)
 	set_firerate_lvl(FIRERATE_LVL)
+	set_reload_speed_lvl(RELOAD_SPEED_LVL)
 
 	# A child's _ready runs before its parent's, so the Loadout has ALREADY
 	# equipped the starting weapon and emitted for it — into nothing, because the
@@ -332,18 +341,11 @@ func set_firerate_lvl(lvl: int) -> void:
 	firerate_lvl_changed.emit(FIRERATE_LVL)
 
 
-## How far a stat has come from level 1, as a factor a picked-up weapon can be
-## scaled by — see WeaponDef.damage_against. STAT_SCALE rides along for free,
-## because `current` has already been multiplied by it and the level-1 entry has
-## not: a tuning profile that halves every stat halves the borrowed guns too.
-##
-## Level 1 is read off the table rather than stored, so retuning the tables is
-## still the only place a stat curve is written down. A table that starts at zero
-## is a broken profile, not a division by zero.
-func _mult_from_base(current: float, values: Array) -> float:
-	if values.is_empty() or is_zero_approx(float(values[0])):
-		return 1.0
-	return current / float(values[0])
+func set_reload_speed_lvl(lvl: int) -> void:
+	RELOAD_SPEED_LVL = clampi(lvl, MIN_STAT_LVL, MAX_STAT_LVL)
+	RELOAD_SPEED = RELOAD_SPEED_VALUES[RELOAD_SPEED_LVL - 1] * STAT_SCALE
+	_loadout.player_reload_speed = RELOAD_SPEED
+	reload_speed_lvl_changed.emit(RELOAD_SPEED_LVL)
 
 
 ## Last device to speak wins. Joypad motion is filtered by deadzone because an

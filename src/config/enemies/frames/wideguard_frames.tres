@@ -1,0 +1,90 @@
+[gd_resource type="SpriteFrames" load_steps=17 format=3]
+
+[ext_resource type="Texture2D" uid="uid://yiwc8qdo4wgm" path="res://assets/sprites/characters/bad_guy/wideguard/guard-facing-right1.png" id="1_wideguard_facing_right1"]
+[ext_resource type="Texture2D" uid="uid://rpoebt04recv" path="res://assets/sprites/characters/bad_guy/wideguard/guard-facing-right2.png" id="2_wideguard_facing_right2"]
+[ext_resource type="Texture2D" uid="uid://bkin4pl5huqml" path="res://assets/sprites/characters/bad_guy/wideguard/guard-facing-right3.png" id="3_wideguard_facing_right3"]
+[ext_resource type="Texture2D" uid="uid://cgoilwtmxnwhf" path="res://assets/sprites/characters/bad_guy/wideguard/guard-facing-right4.png" id="4_wideguard_facing_right4"]
+[ext_resource type="Texture2D" uid="uid://dlhs38a40jtrb" path="res://assets/sprites/characters/bad_guy/wideguard/guard-facing-down1.png" id="5_wideguard_facing_down1"]
+[ext_resource type="Texture2D" uid="uid://dnv45wj56ond6" path="res://assets/sprites/characters/bad_guy/wideguard/guard-facing-down2.png" id="6_wideguard_facing_down2"]
+[ext_resource type="Texture2D" uid="uid://x7lg17os7ct0" path="res://assets/sprites/characters/bad_guy/wideguard/guard-facing-down3.png" id="7_wideguard_facing_down3"]
+[ext_resource type="Texture2D" uid="uid://duxtixy4rsv1g" path="res://assets/sprites/characters/bad_guy/wideguard/guard-facing-down4.png" id="8_wideguard_facing_down4"]
+[ext_resource type="Texture2D" uid="uid://d24nbrosph8ux" path="res://assets/sprites/characters/bad_guy/wideguard/guard-facing-left1.png" id="9_wideguard_facing_left1"]
+[ext_resource type="Texture2D" uid="uid://do08v4w6tuht4" path="res://assets/sprites/characters/bad_guy/wideguard/guard-facing-left2.png" id="10_wideguard_facing_left2"]
+[ext_resource type="Texture2D" uid="uid://d2sng75eo15" path="res://assets/sprites/characters/bad_guy/wideguard/guard-facing-left3.png" id="11_wideguard_facing_left3"]
+[ext_resource type="Texture2D" uid="uid://dwhjxts87cpku" path="res://assets/sprites/characters/bad_guy/wideguard/guard-facing-left4.png" id="12_wideguard_facing_left4"]
+[ext_resource type="Texture2D" uid="uid://bbb0sdtubdilt" path="res://assets/sprites/characters/bad_guy/wideguard/guard-facing-up1.png" id="13_wideguard_facing_up1"]
+[ext_resource type="Texture2D" uid="uid://sj5hny3kvvk4" path="res://assets/sprites/characters/bad_guy/wideguard/guard-facing-up2.png" id="14_wideguard_facing_up2"]
+[ext_resource type="Texture2D" uid="uid://c4iwync8rsaxv" path="res://assets/sprites/characters/bad_guy/wideguard/guard-facing-up3.png" id="15_wideguard_facing_up3"]
+[ext_resource type="Texture2D" uid="uid://dc5oh8owusr04" path="res://assets/sprites/characters/bad_guy/wideguard/guard-facing-up4.png" id="16_wideguard_facing_up4"]
+
+[resource]
+animations = [
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_wideguard_facing_right1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_wideguard_facing_right2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_wideguard_facing_right3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_wideguard_facing_right4")
+}],
+"loop": true,
+"name": &"move_right",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_wideguard_facing_down1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_wideguard_facing_down2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_wideguard_facing_down3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_wideguard_facing_down4")
+}],
+"loop": true,
+"name": &"move_down",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("9_wideguard_facing_left1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_wideguard_facing_left2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_wideguard_facing_left3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_wideguard_facing_left4")
+}],
+"loop": true,
+"name": &"move_left",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("13_wideguard_facing_up1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_wideguard_facing_up2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_wideguard_facing_up3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_wideguard_facing_up4")
+}],
+"loop": true,
+"name": &"move_up",
+"speed": 5.0
+}]

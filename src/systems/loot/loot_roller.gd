@@ -37,6 +37,23 @@ static func _roll_table(table: DropTable, rng: RandomNumberGenerator,
 			into.append(entry.item)
 
 
+## The same walk as [method roll], but hands back the rows themselves rather
+## than the items inside them. A dropped item has no price to lose — the row
+## it came from is thrown away the moment the item is read off it — but a shop
+## offer is exactly that row, so [DropTableShopStockProvider] needs the
+## [DropEntry], not just what is on it.
+static func roll_entries(table: DropTable, rng: RandomNumberGenerator) -> Array[DropEntry]:
+	var picked: Array[DropEntry] = []
+	var total := table.total_weight()
+	if is_zero_approx(total):
+		return picked
+	for i in maxi(0, table.rolls):
+		var entry := _pick(table, total, rng)
+		if entry != null and entry.item != null:
+			picked.append(entry)
+	return picked
+
+
 ## Weighted pick over the table's rows, the same walk FloorGenerator._weighted_pick
 ## does. Kept here rather than shared with it: that one takes a prepared array of
 ## floats and this one has to skip empty rows, and folding both into one helper

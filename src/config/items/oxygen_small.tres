@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3 uid="uid://q0srdeqdujvj"]
+
+[ext_resource type="Script" uid="uid://emnui7uyddjn" path="res://src/systems/loot/item_effect.gd" id="1_rx1qe"]
+[ext_resource type="Script" uid="uid://b7gdg6j6lca4s" path="res://src/systems/loot/effects/restore_oxygen.gd" id="2_8oyk5"]
+[ext_resource type="Texture2D" uid="uid://d0fevscnhr52x" path="res://assets/sprites/items/Drop_orb_o2.png" id="3_25gi2"]
+[ext_resource type="Script" uid="uid://dmxi7afktl2qr" path="res://src/systems/loot/item_def.gd" id="4_jjlhe"]
+
+[sub_resource type="Resource" id="Resource_3584m"]
+script = ExtResource("2_8oyk5")
+
+[resource]
+script = ExtResource("4_jjlhe")
+id = &"oxygen_small"
+display_name = "Oxygen Canister"
+icon = ExtResource("3_25gi2")
+icon_scale = 0.265
+effects = Array[ExtResource("1_rx1qe")]([SubResource("Resource_3584m")])

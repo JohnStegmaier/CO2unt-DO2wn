@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/items/Drop_orb.png" id="1_2nii1"]
+[ext_resource type="Script" path="res://src/systems/loot/item_effect.gd" id="2_5awmc"]
+[ext_resource type="Script" path="res://src/systems/loot/effects/raise_stat_level.gd" id="3_m3xok"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/power.png" id="4_pbibm"]
+[ext_resource type="Script" path="res://src/systems/loot/item_def.gd" id="5_2loj1"]
+
+[sub_resource type="Resource" id="Resource_7obsg"]
+script = ExtResource("3_m3xok")
+
+[resource]
+script = ExtResource("5_2loj1")
+id = &"power_up"
+display_name = "Damage Upgrade"
+icon = ExtResource("4_pbibm")
+icon_scale = 0.5
+backdrop = ExtResource("1_2nii1")
+pickup_sound = &"money_jingle_1"
+effects = Array[ExtResource("2_5awmc")]([SubResource("Resource_7obsg")])

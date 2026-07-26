@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3 uid="uid://b3qpqun0o2hhc"]
+
+[ext_resource type="Texture2D" uid="uid://b2vwww17ku866" path="res://assets/sprites/items/Drop_orb.png" id="1_5voyb"]
+[ext_resource type="Script" uid="uid://emnui7uyddjn" path="res://src/systems/loot/item_effect.gd" id="2_4cvbf"]
+[ext_resource type="Script" uid="uid://gjpbge3dxd50" path="res://src/systems/loot/effects/grant_bomb.gd" id="3_j5dp5"]
+[ext_resource type="Texture2D" uid="uid://btcar3vlujyln" path="res://assets/sprites/items/bomb.png" id="4_a0t6q"]
+[ext_resource type="Script" uid="uid://dmxi7afktl2qr" path="res://src/systems/loot/item_def.gd" id="5_exeyt"]
+
+[sub_resource type="Resource" id="Resource_mo3q8"]
+script = ExtResource("3_j5dp5")
+
+[resource]
+script = ExtResource("5_exeyt")
+id = &"bomb"
+display_name = "Oh Shit Bomb"
+icon = ExtResource("4_a0t6q")
+icon_scale = 0.3
+backdrop = ExtResource("1_5voyb")
+effects = Array[ExtResource("2_4cvbf")]([SubResource("Resource_mo3q8")])

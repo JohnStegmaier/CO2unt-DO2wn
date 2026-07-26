@@ -46,6 +46,47 @@ signal firerate_lvl_changed(lvl: int)
 ## is no manual reload input — so this is the only cost of running the mag dry.
 @export var reload_time := 1.2
 
+## Money carried. Uncapped — unlike ammo and bombs there is no magazine or carry
+## limit here.
+##
+## Held on the player rather than in a wallet of its own because every
+## [ItemEffect] is apply(player) — putting the balance anywhere else would force
+## one effect to reach for the run container and break the uniform signature that
+## lets effects compose. The player also already survives room changes, which is
+## the only other thing a separate owner would have bought.
+##
+## Starts at zero. A run that should begin with money says so at run start rather
+## than here, so the shipped number stays the honest one.
+var coins := 0
+
+## Fired whenever the coin count changes, so the HUD never has to poll for it.
+## A refused purchase changes nothing and so says nothing — see
+## [method spend_coins].
+signal coins_changed(current: int)
+
+
+func add_coins(amount: int) -> void:
+	if amount == 0:
+		return
+	coins = maxi(0, coins + amount)
+	coins_changed.emit(coins)
+
+
+## Take payment. False means the balance was short and nothing was taken, which
+## is the whole reason this returns anything: a caller must not be able to hand
+## over the goods and then discover it was not paid.
+##
+## Deliberately silent on a refusal rather than pushing an error — being unable
+## to afford something is an ordinary thing for a player to do, and the shop is
+## what says so out loud.
+func spend_coins(amount: int) -> bool:
+	if amount < 0 or coins < amount:
+		return false
+	coins -= amount
+	coins_changed.emit(coins)
+	return true
+
+
 @export_group("Bombs")
 ## How many bombs the player can carry unless something raises the cap.
 @export var max_f_bombs := 3
@@ -56,20 +97,14 @@ var f_bombs := 1
 ## Fired whenever the bomb count changes, so the HUD never has to poll for it.
 signal bombs_changed(current: int, max_bombs: int)
 
-@export_group("Coins")
-## Uncapped — unlike ammo and bombs there is no magazine or carry limit here.
-var coins := 0
-
-## Fired whenever the coin count changes, so the HUD never has to poll for it.
-signal coins_changed(current: int)
-
-
-## Called by money_pickup.gd on contact. Duck-typed the same way heal() and
-## gain_bomb() are — the pickup does not need to know it is a Player.
+## One coin, the way the pickup this replaced granted them. Kept as a one-line
+## alias of [method add_coins] so anything written against it still works.
+##
+## The money_jingle_1 that used to play here now lives on the coin's
+## ItemDef.pickup_sound, where which noise an item makes is a tuning decision in
+## the same inspector as the rest of it rather than a line of code.
 func gain_coin() -> void:
-	coins += 1
-	coins_changed.emit(coins)
-	AudioManager.play_sfx("money_jingle_1")
+	add_coins(1)
 
 
 ## Emergency pulse: spends one bomb and wipes every projectile on screen, same
@@ -377,15 +412,15 @@ func take_damage(amount: int, type: int = Damage.Type.BLUNT) -> void:
 	AudioManager.play_sfx("damage_taken_0%d" % [1 if randf() < 0.5 else 2], randf_range(1.3,1.4))
 
 
-## Called by oxygen_pickup.gd on contact. Duck-typed the same way bullet.gd
-## calls take_damage — the pickup does not need to know it is a Player.
+## Called by RestoreOxygen on contact. Duck-typed the same way bullet.gd calls
+## take_damage — the effect does not need to know it is a Player.
 func heal(seconds: float) -> void:
 	healed.emit(seconds)
 
 
-## Called by bomb_pickup.gd on contact. Clamped rather than ignored past the
-## cap, same as gain_seconds clamping oxygen to a full tank — a pickup at max
-## bombs is just wasted, not an error.
+## Called by GrantBomb on contact. Clamped rather than ignored past the cap,
+## same as gain_seconds clamping oxygen to a full tank — a pickup at max bombs
+## is just wasted, not an error.
 func gain_bomb() -> void:
 	f_bombs = mini(f_bombs + 1, max_f_bombs)
 	bombs_changed.emit(f_bombs, max_f_bombs)

@@ -11,23 +11,23 @@ extends CharacterBody2D
 ## rectangle with nothing inside it, so a straight seek plus move_and_slide can
 ## never get stuck and nothing can ever stand between us and the player.
 
-## Pickup drop rates — rolled once on death as a single mutually-exclusive
-## pick (see _on_health_died), so at most one drop ever happens, never more
-## than one. Tune these three chances right here without hunting through the
-## rest of the file. They sum to 1.0 — every kill drops something; raise one
-## and lower another to keep it that way, or let them sum to less than 1.0 to
-## bring back a "no drop" chance.
-@export_group("Drops")
-@export var money_pickup_scene: PackedScene
-@export_range(0.0, 1.0) var money_drop_chance := 0.6
-@export var pickup_scene: PackedScene
-@export_range(0.0, 1.0) var pickup_drop_chance := 0.2
-@export var bomb_pickup_scene: PackedScene
-@export_range(0.0, 1.0) var bomb_pickup_drop_chance := 0.2
-@export_group("")
+## Which row of the drop table this one's death is looked up under. Not a table
+## and not a drop chance: an enemy says what it is and the run's [DropConfig]
+## says what that is worth, so the whole economy — every enemy type, every floor
+## — is read and tuned in one inspector rather than across every enemy scene.
+##
+## Overridden by whoever spawns us when they know better; game.gd sets &"boss"
+## on the one it just promoted. A source with no rule drops nothing, which is
+## what makes an unnamed enemy quiet rather than an error.
+@export var loot_source: StringName = &"grunt"
 
-## This one is gone. The Game listens so it can tell when a room is cleared.
-signal died
+## This one is gone, and where. The Game listens so it can tell when a room is
+## cleared and roll for loot — it owns the seeded RNG, so the roll cannot happen
+## here without making drops unreproducible from a run seed.
+##
+## Carries the position because by the time anything acts on this the corpse is
+## mid-fade and about to free itself.
+signal died(loot_source: StringName, at: Vector2)
 
 ## How this one fights. Declared as an enum for readable call sites but exported
 ## and passed as a plain int, for the reason in grid_direction.gd.
@@ -42,7 +42,7 @@ enum Behaviour { CHASER, SKIRMISHER }
 ## How fast their shots travel. The single biggest lever on whether a shot is
 ## dodgeable, and independent of the player's — both sides fire the same scene,
 ## so this has to live on the shooter to be tunable separately.
-@export var bullet_speed := 150.0
+@export var bullet_speed := 180.0
 ## Blunt cost of being walked into. Rate-limited by the player's own mercy
 ## window, so this needs no timer of its own.
 @export var contact_damage: int = 6
@@ -174,7 +174,7 @@ func _shoot(aim: Vector2) -> void:
 	get_tree().current_scene.add_child(bullet)
 	# Same shot sound as the player's gun, pitched and dimmed down so enemy fire
 	# reads as duller and doesn't compete with the player's own shots.
-	AudioManager.play_sfx("laser_gun_01", 0.4, -8.0)
+	AudioManager.play_sfx("laser_gun_01", 0.7, -6.0)
 	bullet.global_position = global_position + direction * MUZZLE_OFFSET
 	bullet.reset_physics_interpolation()
 
@@ -282,26 +282,14 @@ func _on_health_damaged(_amount: int, _type: int) -> void:
 
 
 func _on_health_died() -> void:
-	died.emit()
+	# Reported before the fade rather than after it, so the room unlocks on the
+	# killing blow instead of a tenth of a second later. What our death is worth
+	# is the run's business, not ours.
+	died.emit(loot_source, global_position)
 	# Stop interacting the instant we die, so the corpse cannot block a shot or
 	# body-check the player while it plays out.
 	set_deferred("collision_layer", 0)
 	set_deferred("collision_mask", 0)
-
-	# Single roll carved into [money][oxygen][bomb], so at most one drop ever
-	# happens — see the Drops export group at the top of the file to retune.
-	var drop_roll := randf()
-	if money_pickup_scene != null and drop_roll < money_drop_chance:
-		# Played here rather than on pickup, so the sound is the drop landing,
-		# not the player later walking over it — money_jingle_1 in
-		# money_pickup.gd covers that half.
-		AudioManager.play_sfx("money_drop_2", 1, 3)
-		_spawn_drop.call_deferred(money_pickup_scene, global_position)
-	elif pickup_scene != null and drop_roll < money_drop_chance + pickup_drop_chance:
-		_spawn_drop.call_deferred(pickup_scene, global_position)
-	elif bomb_pickup_scene != null \
-			and drop_roll < money_drop_chance + pickup_drop_chance + bomb_pickup_drop_chance:
-		_spawn_drop.call_deferred(bomb_pickup_scene, global_position)
 
 	var death := create_tween()
 	death.set_parallel(true)
@@ -309,15 +297,3 @@ func _on_health_died() -> void:
 	death.tween_property(_sprite, "modulate:a", 0.0, 0.12)
 	await death.finished
 	queue_free()
-
-
-## Deferred because _on_health_died can run mid physics-query-flush — a bullet's
-## body_entered, per the stack in the error this fixed — and adding a fresh
-## Area2D's collision shape to the tree right then is exactly the state change
-## the physics server rejects. Parented to the run container like bullets, not
-## to this corpse — the corpse is about to fade and queue_free, and the drop
-## has to outlive it.
-func _spawn_drop(scene: PackedScene, spawn_position: Vector2) -> void:
-	var drop: Node2D = scene.instantiate()
-	get_tree().current_scene.add_child(drop)
-	drop.global_position = spawn_position

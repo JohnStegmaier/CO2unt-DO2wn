@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/items/Drop_orb.png" id="1_po4a3"]
+[ext_resource type="Script" path="res://src/systems/loot/item_effect.gd" id="2_e51wo"]
+[ext_resource type="Script" path="res://src/systems/loot/effects/raise_stat_level.gd" id="3_26tn5"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ui/speed.png" id="4_oop14"]
+[ext_resource type="Script" path="res://src/systems/loot/item_def.gd" id="5_otc5i"]
+
+[sub_resource type="Resource" id="Resource_31y42"]
+script = ExtResource("3_26tn5")
+stat = 1
+
+[resource]
+script = ExtResource("5_otc5i")
+id = &"speed_up"
+display_name = "Speed Upgrade"
+icon = ExtResource("4_oop14")
+icon_scale = 0.5
+backdrop = ExtResource("1_po4a3")
+pickup_sound = &"money_jingle_1"
+effects = Array[ExtResource("2_e51wo")]([SubResource("Resource_31y42")])

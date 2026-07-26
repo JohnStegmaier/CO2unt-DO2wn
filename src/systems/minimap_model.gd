@@ -38,8 +38,16 @@ var _states: Dictionary[Vector2i, int] = {}
 ## Point the model at a floor. Pass null to blank it — the runtime does exactly
 ## that when it throws a floor away, so the model does not keep the dead plan
 ## alive.
+##
+## The focus resets with the floor. Left alone it would carry the last floor's
+## coordinate into this one, and if that coordinate happens to exist here too it
+## would be marked as somewhere the player has stood and its neighbours revealed
+## — fog lifted off a floor nobody has walked a step of. The runtime does call
+## set_current straight after today, but a leak that depends on two calls staying
+## adjacent in another file is a leak waiting to happen.
 func set_floor(plan: FloorPlan) -> void:
 	_plan = plan
+	_current = plan.spawn_coord if plan != null else Vector2i.ZERO
 	_refresh()
 
 

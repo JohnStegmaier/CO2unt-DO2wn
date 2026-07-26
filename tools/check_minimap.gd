@@ -186,6 +186,14 @@ func _check_states(model: MinimapModel, plan: FloorPlan, current: Vector2i, tag:
 			_:
 				errors.append("%s: %v is on the map in state %s" % [tag, coord, _state_name(state)])
 
+	# The corner map centres its grid on this coordinate rather than on spawn, so
+	# a current that is not a room on this floor would translate the whole grid
+	# hundreds of cells sideways and leave the panel blank. "Exactly one room is
+	# drawn as current" below is a different claim and would not catch it.
+	if not plan.has_room(model.current_coord()):
+		errors.append("%s: the current coordinate %v is not a room on this floor" \
+				% [tag, model.current_coord()])
+
 	if currents != 1:
 		errors.append("%s: %d rooms drawn as current, expected exactly 1" % [tag, currents])
 
@@ -282,6 +290,51 @@ func _check_blank_and_stray() -> Array[String]:
 			errors.append("stray: %v drawn as current while the player is off the plan" % coord)
 	if model.marker_at(Vector2i(999, 999)) != MinimapModel.NO_MARKER:
 		errors.append("stray: a coordinate off the plan reports a kind")
+
+	errors.append_array(_check_floor_swap(config))
+	return errors
+
+
+## Descending must not carry the last floor's position into the new one.
+##
+## Every floor spawns at the same coordinate and grows outward from it, so a room
+## the player reached on floor 1 very often exists on floor 2 as well. If the
+## model kept that coordinate, the new floor would open with a room marked as
+## somewhere they had stood and its neighbours already revealed — fog lifted off
+## ground nobody has walked.
+func _check_floor_swap(config: FloorConfig) -> Array[String]:
+	var errors: Array[String] = []
+	var walked := FloorGenerator.generate(config, 0, FloorGenerator.floor_seed_for(3, 0))
+	var model := MinimapModel.new()
+
+	# Walk a few rooms out, so the focus is somewhere other than spawn.
+	var coord: Vector2i = walked.spawn_coord
+	walked.get_room(coord).visited = true
+	model.set_floor(walked)
+	model.set_current(coord)
+	for step in 4:
+		var sides: Array[int] = walked.get_room(coord).door_sides()
+		coord += GridDirection.offset(sides[0])
+		walked.get_room(coord).visited = true
+		model.set_current(coord)
+	if coord == walked.spawn_coord:
+		errors.append("swap: the walk never left spawn, so the swap check proves nothing")
+
+	var fresh := FloorGenerator.generate(config, 1, FloorGenerator.floor_seed_for(3, 1))
+	model.set_floor(fresh)
+
+	if model.current_coord() != fresh.spawn_coord:
+		errors.append("swap: a new floor opens focused on %v, expected its spawn %v" \
+				% [model.current_coord(), fresh.spawn_coord])
+	var expected: int = 1 + fresh.get_room(fresh.spawn_coord).door_count()
+	if model.visible_count() != expected:
+		errors.append("swap: a new floor opens showing %d cells, expected spawn plus its %d neighbours" \
+				% [model.visible_count(), fresh.get_room(fresh.spawn_coord).door_count()])
+	for room_coord in fresh.rooms:
+		if room_coord == fresh.spawn_coord:
+			continue
+		if model.state_at(room_coord) == MinimapModel.State.VISITED:
+			errors.append("swap: %v is drawn as explored on a floor the player just arrived on" % room_coord)
 	return errors
 
 

@@ -20,11 +20,24 @@ extends Resource
 ## grow back alongside itself without a door — and the gap plus the stub is what
 ## tells those two cases apart.
 @export var cell_gap: float = 2.0
-## The grid drawn, in cells. 13 is 2 * FloorConfig.max_depth + 1, so every room
-## of every floor fits however the player wanders — check_minimap.gd asserts it
-## (the widest floor in 1000 is 12x12). Nothing here is derived from the floor
-## actually in play, which is what stops the panel's size from hinting at how
-## much is left to find.
+## The grid drawn, in cells. Keep both numbers ODD: the centring in
+## MinimapView._cell_rect halves (window_cells - 1), so an even count lands every
+## cell on a half pixel and smears every outline on the panel.
+##
+## The full panel uses 13, which is 2 * FloorConfig.max_depth + 1 — so every room
+## of every floor fits however the player wanders, and check_minimap.gd asserts it
+## over a thousand floors (the widest is 12x12). The corner porthole uses 5 and
+## clips the rest on purpose.
+##
+## Nothing here is derived from the floor actually in play, which is what stops a
+## panel's size from hinting at how much is left to find. To widen the window
+## without growing the panel — which is the same thing as widening it without
+## telling the player anything — solve panel_size() for cell_size and floor it:
+##
+##     cell = (panel - 2 * padding + gap) / window_cells - gap
+##
+## e.g. 17 cells into the full panel's 350x246 with gap 4 and padding 8 gives
+## 19x11 and a 403x259 panel, so trim the gap or the padding to land it back.
 @export var window_cells: Vector2i = Vector2i(13, 13)
 @export var padding: float = 4.0
 @export var outline_width: float = 1.0
@@ -46,12 +59,9 @@ extends Resource
 @export var current_color: Color = Color(0.30, 0.95, 0.45, 1.0)
 @export var current_alpha_min: float = 0.55
 @export var current_alpha_max: float = 0.95
-@export var blink_period: float = 1.4
-## Steps in one pulse. Doubles as the redraw throttle — the map only redraws when
-## the step changes, so 12 is about nine redraws a second rather than sixty. A
-## stepped pulse also reads as deliberate at this resolution, where a smooth fade
-## has too few pixels to be smooth in.
-@export var blink_steps: int = 12
+## The pulse RATE is deliberately not here — it lives on Minimap, because it is a
+## property of the map rather than of a skin, and two styles carrying two periods
+## would be the two views drifting apart written down as data.
 
 @export_group("Explored rooms")
 @export var visited_fill_color: Color = Color(0.24, 0.68, 0.36, 0.22)
@@ -59,10 +69,22 @@ extends Resource
 
 @export_group("Unexplored rooms")
 ## Barely there on purpose: enough to say a room is out there, not enough to read
-## as anything else. The dashed outline is what marks it as not yet walked into.
+## as anything else. The dotted outline is what marks it as not yet walked into.
 @export var discovered_fill_color: Color = Color(0.12, 0.34, 0.20, 0.10)
 @export var discovered_outline_color: Color = Color(0.20, 0.50, 0.30, 0.40)
-@export var dash_length: float = 2.0
+## Dots, not dashes. A gap in a dashed outline falls exactly where a door stub
+## would and reads as an opening — the one characteristic an unexplored room must
+## not appear to have. Dots are plainly a texture and cannot be misread as a way
+## through. The two lengths are independent, which is the whole reason
+## MinimapView builds them by hand instead of calling draw_dashed_line: that
+## function's one parameter sets the dash and the gap together.
+##
+## KEEP dot_length ROUGHLY EQUAL TO outline_width. That is what makes a dot a
+## dot: a run longer than the stroke is thick is a short dash, and a short dash is
+## the thing this is here to avoid. Scaling the map up therefore means scaling
+## both — the full panel draws at width 2 and length 2, the corner at 1 and 1.
+@export var dot_length: float = 1.0
+@export var dot_gap: float = 2.0
 
 @export_group("Special rooms")
 ## Hue per RoomData.Kind, indexed the way KIND_GLYPHS and Room.KIND_TINTS are.

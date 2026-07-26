@@ -16,6 +16,27 @@ extends Area2D
 ##
 ## [method arm] is called by enemy.gd as well as by the player's Loadout, so its
 ## signature belongs to both.
+##
+## Every scene also needs a "Shadow" child (a small dark Sprite2D, same idea as
+## Enemy's) — _ready reaches for it by name to hold it level while the rest of
+## the node rotates to face the shot.
+##
+## Give that Shadow a z_index of 0 or higher, not a negative one. Enemy's own
+## Shadow can sit at -1 because Enemy lives under Room's Entities node, which is
+## already pushed to +2 — its shadow's effective depth ends up positive. A
+## projectile is parented straight onto Game (see arm/_shoot in enemy.gd and
+## Loadout), with no such boost, so a negative z_index here does not land it
+## behind the bullet — it lands behind Room's own background (z_index -1) and
+## disappears entirely.
+##
+## An "Outline" child is optional. Where present (bullet.tscn), _ready shows it
+## on [constant CollisionLayers.ENEMY_BULLET] shots. A ring-shaped
+## GradientTexture2D sprite, the same idea as Shadow and Glow, rather than an
+## edge-detect shader on the sprite: the source frames are 5x5 px of pure
+## soft-edged blur with no silhouette to trace, so what actually reads as "the
+## bullet" on screen is almost entirely the Glow sprite underneath it — an
+## outline has to be its own shape drawn around that, not a rim traced on a
+## texture too small to have one.
 
 ## Set per shot by [method arm], not tuned here: one scene serves the player and
 ## the enemies, so a value set on the scene would move both at once. The exported
@@ -53,8 +74,22 @@ func _ready() -> void:
 	# swap, and so does the player's bomb.
 	add_to_group("projectiles")
 	rotation = direction.angle()
+	# Every projectile scene carries a Shadow child now (see bullet.tscn,
+	# chakram.tscn), authored as if the shot travels straight down the screen.
+	# Rotating this node to face an arbitrary aim direction drags that child
+	# along on both axes — not just spinning the shadow's shape, but orbiting
+	# its position around the shot, so a bullet aimed up-left would trail its
+	# shadow up-left instead of leaving it straight below. Counter-rotating the
+	# local position once, here, cancels the parent transform Godot is about to
+	# apply when it draws it; countering rotation the same way keeps the shape
+	# from skewing. Simpler than giving Shadow its own per-frame script just to
+	# fight this, since rotation never changes again after this line.
+	$Shadow.position = $Shadow.position.rotated(-rotation)
+	$Shadow.rotation = -rotation
 	if collision_layer & CollisionLayers.ENEMY_BULLET:
 		modulate = Color.RED
+		if has_node("Outline"):
+			$Outline.visible = true
 	body_entered.connect(_on_body_entered)
 	get_tree().create_timer(lifetime).timeout.connect(queue_free)
 	_on_armed()

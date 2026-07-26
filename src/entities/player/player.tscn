@@ -359,7 +359,7 @@ texture_filter = 1
 position = Vector2(0, 5)
 scale = Vector2(0.375, 0.375)
 texture = ExtResource("15_lqdhu")
-offset = Vector2(20, -4)
+offset = Vector2(27, 0)
 flip_h = true
 
 [node name="Muzzle" type="Marker2D" parent="BigGunBTransparent" unique_id=1118717441]

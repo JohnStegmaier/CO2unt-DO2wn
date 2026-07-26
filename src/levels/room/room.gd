@@ -30,7 +30,7 @@ const FLOOR := Rect2(49, 49, 343, 187)
 const KIND_TINTS: Array[Color] = [
 	Color(0, 0, 0, 0),                        # NORMAL
 	Color(0, 0, 0, 0),                        # SPAWN
-	Color(0.55, 0.06, 0.09, 0.3),             # BOSS
+	Color(0.85, 0.12, 0.14, 0.1),             # BOSS
 	Color(0.85, 0.66, 0.16, 0.24),            # SHOP
 	Color(0.16, 0.42, 0.82, 0.26),            # TREASURE
 	Color(0.16, 0.72, 0.36, 0.24),            # EXIT
@@ -196,6 +196,28 @@ func _obstacle_holder() -> Node2D:
 	return holder
 
 
+## Put a piece of cosmetic floor dressing down. Same contract as
+## [method add_obstacle] — position before the tree, interpolation reset after
+## — but its own layer, one below Obstacles: a blood splat under a crate should
+## stay under it rather than fight it for the same z_index.
+func add_decal(node: Node2D, local_position: Vector2) -> void:
+	node.position = local_position
+	_decal_holder().add_child(node)
+	node.reset_physics_interpolation()
+
+
+## The layer decals are parented to, made if this room has not got one. Same
+## reasoning as [method _obstacle_holder] — a Room subclass with its own tree
+## must not be assumed to carry this node.
+func _decal_holder() -> Node2D:
+	var holder := get_node_or_null(^"Decals") as Node2D
+	if holder != null:
+		return holder
+	holder = Node2D.new()
+	holder.name = "Decals"
+	holder.z_index = -1
+	add_child(holder)
+	return holder
 ## Room-local rect anything on foot may stand in.
 ##
 ## [constant FLOOR] is the answer for the shell, and was for a long time the only

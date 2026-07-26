@@ -19,9 +19,12 @@ is exactly what [DROPS.md](DROPS.md) says the source keying is for.
 ```
 default.tres
   DropRule(source = &"shop")
-    DropTable
-      DropEntry{ item: vinaigrette.tres, price: 10 }
-      DropEntry{ item: speed_up.tres,    price: 25 }
+    DropTable  { DropEntry{ item: oxygen_small.tres, price: 15 } }
+    DropTable  { DropEntry{ item: oxygen_big.tres,    price: 25 } }
+    DropTable  { DropEntry{ item: bomb.tres,          price: 20 } }
+    DropTable  { DropEntry{ item: shotgun.tres,   price: 40 }
+                 DropEntry{ item: timmy_gun.tres, price: 40 }
+                 DropEntry{ item: chakram.tres,   price: 40 } }  ← rolls: 1
              │
              ▼
   DropTableShopStockProvider   (the adapter)
@@ -35,12 +38,18 @@ a thing — the same oxygen canister is a free drop on floor 5 and costs coins i
 shop. Putting it on the row means the rule that routes an item to a source also
 says what that source charges. Rows that are never sold leave it at zero.
 
-**One reinterpretation to know about.** A `DropTable` is normally a pool you
-*roll*. A shelf is not a roll — it is everything on offer, laid out. So
-`DropTableShopStockProvider` takes every row rather than sampling, and
-`DropEntry.weight` is ignored for a storefront source. `check_drops.gd` detects
-storefronts by their rows all being priced, reports them as a price list rather
-than a drop rate, and asserts they are actually sellable.
+**A shelf rolls too, table by table** — the same `DropTable.rolls` /
+`DropEntry.weight` every other source reads, not a special case. A table with
+one row and no empty slot is guaranteed, so "oxygen small, always" is a
+one-row table same as it would be on an enemy. A table with more rows than
+`rolls`, like the weapon row above, is a genuine pick — `default.tres` sells
+one random weapon rather than a fixed one, at the same price whichever it is.
+`DropTableShopStockProvider` rolls each table exactly once, the moment
+`ShopRegistry` first asks for this shop's stock, and the result is what
+`ShopRegistry` then holds for the rest of the run — see below. `check_drops.gd`
+still finds a storefront by its rows all being priced and reports it as a price
+list, listing every row a table *could* pay out rather than simulating which
+one a given shop rolled.
 
 Stock is owned by `ShopRegistry` for the length of a run, keyed by floor and
 coord. Rooms are freed when you walk out, so stock held on the room node would

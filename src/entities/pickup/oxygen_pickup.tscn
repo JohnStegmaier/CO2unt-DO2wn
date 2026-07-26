@@ -4,7 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://b2vwww17ku866" path="res://assets/sprites/items/Drop_orb.png" id="2_orb"]
 
 [sub_resource type="Gradient" id="Gradient_shadow"]
-colors = PackedColorArray(0, 0, 0, 0.45, 0, 0, 0, 0)
+colors = PackedColorArray(0, 0, 0, 0.6, 0, 0, 0, 0)
 
 [sub_resource type="GradientTexture2D" id="GradientTexture2D_shadow"]
 gradient = SubResource("Gradient_shadow")

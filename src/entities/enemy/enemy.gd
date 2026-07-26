@@ -20,7 +20,7 @@ extends CharacterBody2D
 @export var pickup_scene: PackedScene
 @export_range(0.0, 1.0) var pickup_drop_chance := 0.3
 @export var bomb_pickup_scene: PackedScene
-@export_range(0.0, 1.0) var bomb_pickup_drop_chance := 0.1
+@export_range(0.0, 1.0) var bomb_pickup_drop_chance := 0.3
 @export_group("")
 
 ## This one is gone. The Game listens so it can tell when a room is cleared.

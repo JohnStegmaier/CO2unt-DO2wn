@@ -83,6 +83,33 @@ func bounds() -> Rect2:
 	))
 
 
+## Which cubby contains this point, or -1 for none.
+##
+## Takes a point in the same space [method cell_rect] returns, so a caller works
+## in the shelf's local coordinates and does not have to know how the grid is
+## laid out. Deliberately returns -1 for the spacing between cubbies rather than
+## the nearest one: the gaps are where the planks are drawn, and a cursor resting
+## on a plank is not pointing at anything.
+func cell_at(point: Vector2) -> int:
+	if capacity() <= 0:
+		return -1
+	var local: Vector2 = point - origin
+	var step: Vector2 = stride()
+	if local.x < 0.0 or local.y < 0.0 or step.x <= 0.0 or step.y <= 0.0:
+		return -1
+
+	var column: int = int(local.x / step.x)
+	var row: int = int(local.y / step.y)
+	if column < 0 or column >= columns or row < 0 or row >= rows:
+		return -1
+	# Inside the cell's slot, but is it inside the cell or in the gap after it?
+	if local.x - column * step.x > cell_size.x:
+		return -1
+	if local.y - row * step.y > cell_size.y:
+		return -1
+	return index_of(row, column)
+
+
 ## Step one cubby in a direction, wrapping at the edges.
 ##
 ## Wraps per axis — walking off the right of a shelf returns to the left of the

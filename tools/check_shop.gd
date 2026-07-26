@@ -19,6 +19,7 @@ func _initialize() -> void:
 	_check_grid_indexing()
 	_check_grid_geometry()
 	_check_grid_wrap()
+	_check_cell_at()
 	_check_degenerate_grids()
 	_check_stock_fill()
 	_check_stock_take()
@@ -112,6 +113,49 @@ func _check_grid_wrap() -> void:
 	_equal(index, 5, "twelve right steps is a full lap")
 
 	_equal(grid.neighbour(-1, 1, 0), -1, "stepping from an invalid index stays invalid")
+
+
+## Pointing at a cubby, in the gap between two, and off the shelf entirely.
+##
+## This is what the mouse hover reads, so it has to agree exactly with the rects
+## the cubbies are drawn from — a hover that highlights a cell the cursor is not
+## visibly inside is worse than no hover at all.
+func _check_cell_at() -> void:
+	var grid := _grid(4, 12)
+
+	# Every cubby's own centre, and its top-left corner, resolve to itself.
+	for index in grid.capacity():
+		var rect: Rect2 = grid.cell_rect(index)
+		_equal(grid.cell_at(rect.get_center()), index, "centre of cubby %d" % index)
+		_equal(grid.cell_at(rect.position), index, "top-left of cubby %d" % index)
+
+	# The gaps are where the planks are drawn. A cursor on a plank points at
+	# nothing rather than at whichever cubby happens to be nearest.
+	var first: Rect2 = grid.cell_rect(0)
+	var gap_x: Vector2 = Vector2(first.end.x + grid.cell_spacing.x * 0.5, first.get_center().y)
+	_equal(grid.cell_at(gap_x), -1, "the gap between two columns is nothing")
+	var gap_y: Vector2 = Vector2(first.get_center().x, first.end.y + grid.cell_spacing.y * 0.5)
+	_equal(grid.cell_at(gap_y), -1, "the gap between two rows is nothing")
+
+	# Off the shelf in every direction.
+	_equal(grid.cell_at(grid.origin - Vector2(1, 1)), -1, "above and left of the shelf")
+	_equal(grid.cell_at(grid.origin - Vector2(1, 0)), -1, "left of the shelf")
+	_equal(grid.cell_at(grid.origin - Vector2(0, 1)), -1, "above the shelf")
+	_equal(grid.cell_at(grid.bounds().end + Vector2(1, 1)), -1, "past the far corner")
+	_equal(grid.cell_at(Vector2(-500, -500)), -1, "nowhere near it")
+
+	# The far corner of the last cubby is still inside it — the shelf's bounds
+	# end on the last cubby rather than a spacing gap past it.
+	var last: Rect2 = grid.cell_rect(grid.capacity() - 1)
+	_equal(grid.cell_at(last.end), grid.capacity() - 1, "far corner of the last cubby")
+
+	# Round trip: cell_at is the inverse of cell_rect for every centre.
+	for index in grid.capacity():
+		_equal(grid.cell_at(grid.cell_rect(index).get_center()), index,
+				"cell_at inverts cell_rect for %d" % index)
+
+	var empty := _grid(0, 0)
+	_equal(empty.cell_at(Vector2.ZERO), -1, "an empty grid contains no point")
 
 
 ## A 1xN or Nx1 shelf still behaves, and a 0-cell one does not divide by zero.

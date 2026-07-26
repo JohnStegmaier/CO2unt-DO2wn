@@ -77,12 +77,19 @@ that would change.
 
 ## Controls
 
-| Action | Keyboard | Gamepad |
+| Action | Keyboard / mouse | Gamepad |
 |---|---|---|
 | Talk to the shopkeeper, confirm a purchase | `E`, `Enter` | X (button 2) |
-| Move the selection | arrows / WASD | D-pad / left stick |
+| Move the selection | arrows / WASD, **or hover an item** | D-pad / left stick |
+| Buy | `E` / `Enter`, **or left-click an item** | X (button 2) |
 | Step out of browsing | `Backspace` | Y (button 3) |
 | Leave | walk into the bottom of the frame | — |
+
+Mouse and pad are both first-class: hovering moves the selection frame and
+left-click buys, but only once the cursor has actually **moved**. A pointer left
+resting over a cubby would otherwise re-select it every frame and quietly undo
+every D-pad press, so it stays out of the way until you pick it up. Left-click is
+`shoot`, which is dead while you are talking to the shopkeeper.
 
 `back` is on Y rather than the conventional B because B is `bomb`. Engaging
 freezes the player with `is_warping` rather than `can_move`, because `bomb`,

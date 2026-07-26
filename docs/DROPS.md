@@ -197,7 +197,9 @@ updating `DEFAULT_RATES` in the checker is how you say you meant it.
   | `coin_small` | 0.40 | 40% |
   | `oxygen_small` | 0.20 | 20% |
   | `bomb` | 0.20 | 20% |
-  | *(nothing)* | 0.20 | 20% |
+  | `power_up` | 0.03 | 3% |
+  | `firerate_up` | 0.03 | 3% |
+  | *(nothing)* | 0.14 | 14% |
 
   **This is the one deliberate balance change in the branch.** PR #51's roll was
   coin 0.6 / oxygen 0.2 / bomb 0.2, summing to 1.0 — every kill dropped
@@ -206,8 +208,34 @@ updating `DEFAULT_RATES` in the checker is how you say you meant it.
   every enemy devalues it, and oxygen is effectively the health bar here, so it
   should not get rarer just because coins got commoner.
 
+  The two stat upgrades were later paid for out of that same *nothing* row —
+  0.06 of it — for the reason below. The three asserted rates did not move,
+  which is the point: the row that shrank is the one nobody feels.
+
   `tools/check_drops.gd` asserts these rates, so nothing else can drift into the
   shipped economy unnoticed.
+
+### Where the upgrades are offered
+
+`power_up` and `firerate_up` reached the shop the long way round. They existed,
+worked, and had art from the day the catalogue did — and were routed **only** to
+`&"chest"`, so a run that found no treasure room never saw a single one and the
+game read as having three drops. The catalogue was never the problem; the routing
+table was, which is the distinction this whole file is built on.
+
+They now appear on four sources, deliberately at four different pressures:
+
+| Source | Offer | Why |
+|---|---|---|
+| `&"shop"` | 30 coins each | The guaranteed one. Coins finally buy power, not just a salad. |
+| `&"chest"` | in the upgrades pool | Unchanged. |
+| `&"crate"` / `&"barrel"` | 0.05 each | Out of the prop table's *nothing*, 0.78 → 0.68. Rewards smashing scenery. |
+| enemies | 0.03 each | Rare on purpose — see below. |
+
+Enemy rate is the one worth arguing about. A level is **permanent** and the cap is
+7, so at 3% a hundred-kill run hands out roughly three of each and a long run
+still cannot max a stat off trash alone. Raise it and the shop rows stop being
+worth 30 coins.
 - **`economy.tres`** — the coin-heavy candidate, as far as the current item set
   reaches. Also the worked example of the three things a rule can do that the
   default does not: a guaranteed table beside a chance table, a source that
@@ -220,6 +248,12 @@ equips itself on pickup — so it is a row in a `DropTable` and needs nothing el
 from this system. Crates, barrels, chests and the shop all offer them today; the
 enemy tables deliberately do not, because they are rate-locked by
 `check_drops.gd`. See **docs/WEAPONS.md**.
+
+A picked-up weapon keeps its own damage and fire interval, but both are now
+scaled by the player's POWER and FIRERATE levels — otherwise a Damage Upgrade
+bought from the shop does nothing for the twenty seconds a borrowed gun is held,
+which reads as a broken purchase. See `scales_with_player_stats` in
+**docs/WEAPONS.md**.
 
 ## The three candidate economies
 

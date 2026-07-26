@@ -314,6 +314,7 @@ func set_power_level(lvl: int) -> void:
 	POWER_LVL = clampi(lvl, MIN_STAT_LVL, MAX_STAT_LVL)
 	bullet_damage = roundi(BULLET_DAMAGE_VALUES[POWER_LVL - 1] * STAT_SCALE)
 	_loadout.player_damage = bullet_damage
+	_loadout.player_power_mult = _mult_from_base(float(bullet_damage), BULLET_DAMAGE_VALUES)
 	power_level_changed.emit(POWER_LVL)
 
 
@@ -327,7 +328,22 @@ func set_firerate_lvl(lvl: int) -> void:
 	FIRERATE_LVL = clampi(lvl, MIN_STAT_LVL, MAX_STAT_LVL)
 	fire_rate = FIRE_RATE_VALUES[FIRERATE_LVL - 1] * STAT_SCALE
 	_loadout.player_fire_interval = fire_rate
+	_loadout.player_firerate_mult = _mult_from_base(fire_rate, FIRE_RATE_VALUES)
 	firerate_lvl_changed.emit(FIRERATE_LVL)
+
+
+## How far a stat has come from level 1, as a factor a picked-up weapon can be
+## scaled by — see WeaponDef.damage_against. STAT_SCALE rides along for free,
+## because `current` has already been multiplied by it and the level-1 entry has
+## not: a tuning profile that halves every stat halves the borrowed guns too.
+##
+## Level 1 is read off the table rather than stored, so retuning the tables is
+## still the only place a stat curve is written down. A table that starts at zero
+## is a broken profile, not a division by zero.
+func _mult_from_base(current: float, values: Array) -> float:
+	if values.is_empty() or is_zero_approx(float(values[0])):
+		return 1.0
+	return current / float(values[0])
 
 
 ## Last device to speak wins. Joypad motion is filtered by deadzone because an

@@ -147,8 +147,8 @@ func _ready() -> void:
 ## overhang.
 ##
 ## Measuring the walls at load rather than authoring a second set of numbers is
-## what stops that happening again: move or resize a wall and the plug, the seal
-## and the trigger follow it. The values in room.tscn are an editor preview.
+## what stops that happening again: move or resize a wall and the plug and the
+## trigger follow it. The values in room.tscn are an editor preview.
 ##
 ## Only rooms built from room.tscn have any of this. ShopRoom and ElevatorRoom are
 ## drawn side-on, have neither doorways nor plugs, and deliberately do not call
@@ -301,6 +301,8 @@ func _decal_holder() -> Node2D:
 	holder.z_index = -1
 	add_child(holder)
 	return holder
+
+
 ## Room-local rect anything on foot may stand in.
 ##
 ## [constant FLOOR] is the answer for the shell, and was for a long time the only

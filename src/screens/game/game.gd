@@ -1483,7 +1483,10 @@ func _scatter_decals(data: RoomData) -> void:
 	if decal_set == null or not decal_set.allows_kind(data.kind):
 		return
 
-	var floor_rect: Rect2 = _current_room.obstacle_rect()
+	# floor_rect, not obstacle_rect: a decal blocks nothing, so it may dress
+	# floor that solid props are barred from — the board room returns an empty
+	# obstacle_rect on purpose and still gets its torch.
+	var floor_rect: Rect2 = _current_room.floor_rect()
 	if not floor_rect.has_area():
 		return
 

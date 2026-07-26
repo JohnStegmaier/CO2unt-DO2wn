@@ -224,6 +224,22 @@ updating `DEFAULT_RATES` in the checker is how you say you meant it.
   `tools/check_drops.gd` asserts these rates, so nothing else can drift into the
   shipped economy unnoticed.
 
+  ### Where the upgrades are offered
+
+  `power_up` and `firerate_up` appear on three sources, at three pressures:
+  the chest upgrades pool (weight 1.0 each), crates and barrels (0.05 each,
+  paid out of the prop table's *nothing*), and enemies (0.03 each, the 0.06
+  above). The shop stopped selling them when its shelf was reworked to
+  consumables plus one random 40-coin weapon — coins buy survival and guns
+  now, and permanent power comes from playing. Enemy rate stays low on
+  purpose: a level is permanent and the cap is 7, so at 3% a hundred-kill run
+  hands out roughly three of each and a long run still cannot max a stat off
+  trash alone.
+
+  A third stat, reload speed, is wired end to end (setter, HUD row, effect
+  enum) but has no item yet — it needs an icon before `reload_up.tres` can
+  exist, and until then the RELOAD row cannot advance in a real run.
+
   `&"boss"` is its own row rather than a share of this table — a floor boss
   paying out the same coin/oxygen/bomb a booger does is not the fight-ending
   moment the design roadmap below promises. It rolls two single-entry tables,
@@ -243,8 +259,8 @@ enemy tables deliberately do not, because they are rate-locked by
 
 A picked-up weapon keeps its own damage and fire interval, but both are now
 scaled by the player's POWER and FIRERATE levels — otherwise a Damage Upgrade
-bought from the shop does nothing for the twenty seconds a borrowed gun is held,
-which reads as a broken purchase. See `scales_with_player_stats` in
+grabbed mid-fight does nothing for the twenty seconds a borrowed gun is held,
+which reads as a broken pickup. See `scales_with_player_stats` in
 **docs/WEAPONS.md**.
 
 ## The three candidate economies

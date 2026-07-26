@@ -225,8 +225,15 @@ func interval_against(player_interval: float, firerate_mult: float = 1.0) -> flo
 ## current reload speed. player_reload_speed is a multiplier rather than a
 ## seconds value like [param player_interval] above, so scaling divides by it
 ## instead of substituting it outright. See [member scales_with_player_stats].
-func reload_time_against(player_reload_speed: float) -> float:
-	return reload_time / player_reload_speed if scales_with_player_stats else reload_time
+##
+## A weapon that keeps its own numbers still divides by reload_mult — how far
+## the RELOAD level has come from level 1 — for the reason damage_against
+## takes power_mult: an upgrade that goes quiet while a pickup weapon is held
+## reads as broken.
+func reload_time_against(player_reload_speed: float, reload_mult: float = 1.0) -> float:
+	if scales_with_player_stats:
+		return reload_time / player_reload_speed
+	return reload_time / maxf(0.01, reload_mult)
 
 
 ## Equip on pickup.

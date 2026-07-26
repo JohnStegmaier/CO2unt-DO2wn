@@ -13,7 +13,7 @@
 [ext_resource type="Resource" uid="uid://cbulbyqstlesc" path="res://src/config/items/firerate_up.tres" id="11_firerate_up"]
 [ext_resource type="Resource" uid="uid://con0ivnodelt8" path="res://src/config/items/oxygen_big.tres" id="12_oxygen_big"]
 [ext_resource type="Resource" uid="uid://datc8u77gfg07" path="res://src/config/items/coin_medium.tres" id="13_coin_medium"]
-[ext_resource type="Resource" path="res://src/config/weapons/shotgun.tres" id="9_shotgun"]
+[ext_resource type="Resource" uid="uid://bsgqmukbjxp5u" path="res://src/config/weapons/shotgun.tres" id="9_shotgun"]
 [ext_resource type="Resource" path="res://src/config/weapons/timmy_gun.tres" id="14_timmy"]
 [ext_resource type="Resource" path="res://src/config/weapons/chakram.tres" id="15_chakram"]
 

@@ -61,7 +61,6 @@ const ELEVATOR_WALL_PREFERENCE: Array[int] = [
 @onready var _doors: Node2D = $Doors
 @onready var _plugs: Node2D = $Walls/Plugs
 @onready var _entities: Node2D = $Entities
-@onready var _obstacles: Node2D = $Obstacles
 @onready var _tint: ColorRect = $Tint
 @onready var _elevator: Elevator = $Elevator
 
@@ -108,8 +107,33 @@ func add_entity(node: Node2D, local_position: Vector2) -> void:
 ## is a change to how every room draws and belongs on its own branch.
 func add_obstacle(node: Node2D, local_position: Vector2) -> void:
 	node.position = local_position
-	_obstacles.add_child(node)
+	_obstacle_holder().add_child(node)
 	node.reset_physics_interpolation()
+
+
+## The layer props are parented to, made if this room has not got one.
+##
+## Looked up rather than @onready, and made rather than assumed, because a Room
+## subclass is a separate scene and not an inherited one — ElevatorRoom declares
+## its own tree from scratch, as ShopRoom does. An @onready $Obstacles therefore
+## errors on every subclass the moment it enters the tree, whether or not that
+## room ever holds a prop, and the fix cannot be "add the node to their scenes
+## too": that breaks again for the next subclass, in a branch nobody has written
+## yet.
+##
+## room.tscn still authors one, so the ordinary room gets it in the right place in
+## the child list. This is only the fallback.
+func _obstacle_holder() -> Node2D:
+	var holder := get_node_or_null(^"Obstacles") as Node2D
+	if holder != null:
+		return holder
+	holder = Node2D.new()
+	holder.name = "Obstacles"
+	# Explicit, because the whole reason this node exists is to draw beneath the
+	# player rather than in front of her the way Entities does.
+	holder.z_index = 0
+	add_child(holder)
+	return holder
 
 
 ## Room-local rect that solid props may be scattered into. An empty rect means

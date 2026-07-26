@@ -1,7 +1,7 @@
 class_name BoardRoom
 extends Room
 
-## The last room in the building: a board room twice the length of an ordinary
+## The last room in the building: a board room half again as long as an ordinary
 ## one, with a table down the middle, chairs along both sides, a television on
 ## the far wall and six men in suits waiting at the table.
 ##
@@ -10,12 +10,17 @@ extends Room
 ## door slide — just longer, so inheriting means every one of those keeps working
 ## with no code here and every override below can call super.
 ##
-## [b]It is one cell in the plan and two cells tall on the screen.[/b] The room
-## node still sits at coord * STRIDE like any other, and its scene simply extends
-## [constant Room.STRIDE].y further NORTH than its own cell, into negative local
-## y. That is the whole trick, and it is why nothing in [FloorPlan],
+## [b]It is one cell in the plan and one and a half cells tall on the screen.[/b]
+## The room node still sits at coord * STRIDE like any other, and its scene simply
+## extends [constant EXTRA_LENGTH] further NORTH than its own cell, into negative
+## local y. That is the whole trick, and it is why nothing in [FloorPlan],
 ## [FloorGenerator] or the grid had to learn about rooms of different sizes: the
 ## cell it overhangs is empty, and [BasementPlan] is where that is guaranteed.
+##
+## Note that it reserves the WHOLE cell above while only drawing into half of it.
+## Reserving a fraction of a cell is not a thing the grid can express, and it
+## would not help if it were — nothing could be put in the other half without
+## sharing a wall with this room.
 ##
 ## Keeping the scene origin at the top-left of the SOUTHERN half — rather than
 ## re-centring it on the room — is what makes that cheap. The south doorway, its
@@ -32,17 +37,19 @@ extends Room
 ## [b]What board_room.tscn does on top of the shell[/b], recorded here because a
 ## .tscn cannot keep a comment through a resave:
 ##
-## - [code]background_north[/code] is the inherited background again, one STRIDE
-##   up. [code]background_join[/code] is a band of the same texture's plain
-##   interior laid across the seam between them: two copies of a bordered room
-##   stacked a STRIDE apart leave the top one's bottom wall, the bottom one's top
-##   wall and the 21px margin either side of both running straight across the
-##   middle of the floor, which reads as a wall bisecting the board room. The
-##   join is at the same horizontal scale, so the side walls carry through
-##   unbroken, and squashed 9% vertically to fit — nothing, on brickwork. It is
-##   the last of the three so it draws over both.
+## - [code]background_north[/code] is the inherited background again, EXTRA_LENGTH
+##   up, and region-cropped to drop its BOTTOM wall — texture rows 0..664, the
+##   border below that starting at row 670. Cropped SIX ROWS SHORT of it, not to
+##   it: the art draws a hard dark line exactly on that boundary, and a sprite
+##   whose last row is that line puts a 1px black rule straight across the floor.
+##   It draws over the inherited copy, so
+##   in the strip where the two overlap you see this one's floor rather than
+##   either one's wall. That is the whole seam treatment, and it only works
+##   because the overhang is shorter than the art is tall: at a full STRIDE the
+##   two copies did not overlap at all, they left a 42px gap plus two facing
+##   walls, and hiding that took a third sprite.
 ## - The two north wall shapes and all four [code]door_north[/code] nodes move up
-##   by one STRIDE. The doorway itself is never opened — this room is a dead end
+##   by EXTRA_LENGTH. The doorway itself is never opened — this room is a dead end
 ##   with one door, at the south — but the nodes have to exist and be in the
 ##   right wall, because [method Room._apply_doors] walks all four sides.
 ## - [code]wall_west_far[/code] and [code]wall_east_far[/code] close the sides of
@@ -54,17 +61,25 @@ extends Room
 ##   on it is the right fiction and the right composition: it is the thing at the
 ##   far end of the table that the camera arrives at last.
 
-## How much further north than its cell this room reaches. One cell exactly —
-## "twice as long" is the whole brief, and a room that overhung by some other
-## amount would still have to reserve a whole cell to do it.
-const EXTRA_LENGTH := STRIDE.y
+## How much further north than its cell this room reaches, as a fraction of one.
+##
+## Half. A full cell was the first pass and played too long: the walk from the
+## door to the table, and from the table to the far wall, were each about as long
+## as the table itself, so most of the room was floor with nothing on it. This
+## halves both of those gaps.
+##
+## Kept as a fraction of [constant Room.STRIDE] rather than a pixel count so the
+## room stays defined in cells — the grid is what it has to agree with, and
+## tools/check_basement.gd reads this number to check the scene against it.
+const EXTRA_CELLS := 0.5
+const EXTRA_LENGTH := STRIDE.y * EXTRA_CELLS
 
 ## Camera clamp, extended north. Derived rather than typed out so it cannot drift
 ## from the shell it is an extension of.
 const INTERIOR_EXTENDED := Rect2(
 		INTERIOR.position - Vector2(0.0, EXTRA_LENGTH),
 		INTERIOR.size + Vector2(0.0, EXTRA_LENGTH))
-## Walkable area, extended the same way. Rect2(49, -237, 343, 473).
+## Walkable area, extended the same way. Rect2(49, -94, 343, 330).
 const FLOOR_EXTENDED := Rect2(
 		FLOOR.position - Vector2(0.0, EXTRA_LENGTH),
 		FLOOR.size + Vector2(0.0, EXTRA_LENGTH))
@@ -75,25 +90,39 @@ const FLOOR_EXTENDED := Rect2(
 const ARRIVAL_SPOT := Vector2(221.0, 215.0)
 
 ## The table, matching the shapes authored in board_room.tscn.
-const TABLE_CENTRE := Vector2(221.0, -2.0)
-const TABLE_SIZE := Vector2(94.0, 300.0)
+##
+## Sized against the people rather than against the room. The first pass filled a
+## third of the floor's width and two thirds of its length, which is honestly how
+## big a boardroom table is — and read as comic next to a 30px man, because a
+## room drawn at this scale is not a room, it is a diagram of one. This is the
+## size that looks like a table with six people at it.
+const TABLE_CENTRE := Vector2(221.0, 71.0)
+const TABLE_SIZE := Vector2(56.0, 190.0)
 
 ## The table as [ObstacleField] holds it: a row of overlapping circles down its
 ## length — see [method register_solids].
 ##
-## Radius and step are a pair. A circle of this radius reaches
-## sqrt(62² - 37.5²) ≈ 49px sideways at the midpoint between two of them, which
-## clears the table's 47px half-width, so the run of circles covers the rectangle
-## with no notch between them for an enemy to walk into.
-const TABLE_SOLID_RADIUS := 62.0
-const TABLE_SOLID_STEP := 75.0
-const TABLE_SOLID_COUNT := 5
+## Radius and step are a pair, and both are also bounded from below by
+## [constant SEATS]. A circle of this radius reaches sqrt(35² - 19²) ≈ 29px
+## sideways at the midpoint between two of them, clearing the table's 28px
+## half-width so the run covers the rectangle with no notch for an enemy to walk
+## into; and it has to stay under 46px, which is how far a seat sits from the
+## table's spine, or the six men spawn inside the thing they are sitting at.
+const TABLE_SOLID_RADIUS := 35.0
+const TABLE_SOLID_STEP := 38.0
+const TABLE_SOLID_COUNT := 6
 
-## Where the six sit, alternating down the table and walking away from the door.
+## Where the six sit.
+##
+## Three pairs facing each other, on alternate rows. The two southernmost chairs
+## are deliberately empty: shortening the room brought the table's near end within
+## 75px of where the player walks in, and leaving that row unoccupied is what puts
+## the closest suit back out at 104px instead — cheaper than moving the table and
+## it reads better anyway, as a board gathered up the far end.
 ##
 ## Centred on the chairs board_room.tscn draws, so a suit is IN his seat rather
 ## than standing beside it — which is where the chairs had to move to, not the
-## seats: every one of these has to sit outside all five circles in
+## seats: every one of these has to sit outside all six circles in
 ## [method register_solids], or a body spawns inside the table it is sitting at
 ## and is shoved out of the room on the first physics frame.
 ##
@@ -104,12 +133,12 @@ const TABLE_SOLID_COUNT := 5
 ## tools/check_basement.gd holds all of that: on the floor, off the table, and
 ## far enough from the door.
 const SEATS: Array[Vector2] = [
-	Vector2(146.0, -147.0),
-	Vector2(296.0, -89.0),
-	Vector2(146.0, -31.0),
-	Vector2(296.0, 27.0),
-	Vector2(146.0, 85.0),
-	Vector2(296.0, 143.0),
+	Vector2(175.0, -14.0),
+	Vector2(267.0, -14.0),
+	Vector2(175.0, 54.0),
+	Vector2(267.0, 54.0),
+	Vector2(175.0, 122.0),
+	Vector2(267.0, 122.0),
 ]
 
 ## What this room washes itself in: nothing. Same reasoning as

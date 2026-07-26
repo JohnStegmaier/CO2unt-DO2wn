@@ -1,7 +1,7 @@
 extends SceneTree
 
 ## Assert the shape of the Basement: two rooms, one doorway, and a board room
-## drawn twice as long as the cell it stands in.
+## drawn longer than the cell it stands in.
 ##
 ##   godot --headless --script tools/check_basement.gd
 ##
@@ -32,8 +32,8 @@ const BOARD_SCENE := "res://src/levels/board_room/board_room.tscn"
 const GAME_SCRIPT := "res://src/screens/game/game.gd"
 const ENEMY_SET := "res://src/config/enemies/default.tres"
 
-## Nodes board_room.tscn moves into the far wall. Every one must sit exactly one
-## STRIDE north of where room.tscn puts it — the doorway is never opened, but
+## Nodes board_room.tscn moves into the far wall. Every one must sit exactly the
+## overhang north of where room.tscn puts it — the doorway is never opened, but
 ## [method Room._apply_doors] walks all four sides and a plug left behind in the
 ## middle of the floor is a chunk of wall standing in the open.
 const MOVED_NORTH: Array[String] = [
@@ -62,16 +62,26 @@ func _initialize() -> void:
 	var board_source := _read(BOARD_SCRIPT)
 	var stride: Variant = _parse_vector(room_source, "STRIDE")
 	var room_floor: Variant = _parse_rect(room_source, "FLOOR")
-	if stride == null or room_floor == null:
-		_fail("could not read STRIDE and FLOOR out of %s" % ROOM_SCRIPT)
+	# How far north the board room reaches, as a fraction of a cell. Read rather
+	# than assumed: the scene has this baked into a dozen hand-typed coordinates
+	# and board_room.gd derives its rects from it, so the two can drift and this
+	# is the only thing that would notice.
+	var cells: Variant = _parse_float(board_source, "EXTRA_CELLS")
+	if stride == null or room_floor == null or cells == null:
+		_fail("could not read STRIDE and FLOOR out of %s, or EXTRA_CELLS out of %s"
+				% [ROOM_SCRIPT, BOARD_SCRIPT])
 		_report()
 		return
+	var overhang: float = stride.y * cells
+	if overhang <= 0.0 or cells > 1.0:
+		_fail("the board room overhangs %.1f of a cell — it must reach past its own "
+				% cells + "cell to be a long room, and never past the one above it")
 
 	_check_plan()
-	_check_scene_offsets(stride)
-	_check_side_walls(stride)
+	_check_scene_offsets(overhang)
+	_check_side_walls(overhang)
 	var table := _check_table(board_source)
-	_check_seats(board_source, table, _extended(room_floor, stride))
+	_check_seats(board_source, table, _extended(room_floor, overhang))
 	_check_cast(board_source)
 
 	_report()
@@ -126,13 +136,12 @@ func _check_plan() -> void:
 			% [plan.size(), BasementPlan.ARRIVAL, BasementPlan.BOARD_ROOM, BasementPlan.OVERHANG])
 
 
-## Every node board_room.tscn lifts into the far wall sits exactly one STRIDE
-## above room.tscn's copy of it, and the second background is one STRIDE above
-## the first.
-func _check_scene_offsets(stride: Vector2) -> void:
+## Every node board_room.tscn lifts into the far wall sits exactly the overhang
+## above room.tscn's copy of it, and so does the second background.
+func _check_scene_offsets(overhang: float) -> void:
 	var room_scene := _read(ROOM_SCENE)
 	var board_scene := _read(BOARD_SCENE)
-	var lift := Vector2(0.0, -stride.y)
+	var lift := Vector2(0.0, -overhang)
 
 	for node_name in MOVED_NORTH:
 		var base: Variant = _parse_node_position(room_scene, node_name)
@@ -144,7 +153,7 @@ func _check_scene_offsets(stride: Vector2) -> void:
 			_fail("board_room.tscn does not move %s into the far wall" % node_name)
 			continue
 		if moved != base + lift:
-			_fail("%s is at %v in the board room; one STRIDE above room.tscn is %v"
+			_fail("%s is at %v in the board room; the overhang above room.tscn is %v"
 					% [node_name, moved, base + lift])
 
 	var background: Variant = _parse_node_position(room_scene, "background")
@@ -152,16 +161,15 @@ func _check_scene_offsets(stride: Vector2) -> void:
 	if background == null or north == null:
 		_fail("could not compare the two backgrounds")
 	elif north != background + lift:
-		_fail("background_north is at %v; one STRIDE above the inherited background is %v"
+		_fail("background_north is at %v; the overhang above the inherited background is %v"
 				% [north, background + lift])
 
-	print("  scene: %d nodes lifted one STRIDE (%.0fpx) into the far wall"
-			% [MOVED_NORTH.size(), stride.y])
+	print("  scene: %d nodes lifted %.0fpx into the far wall" % [MOVED_NORTH.size(), overhang])
 
 
 ## The side walls of the half the shell never had meet the ones it did, with no
 ## gap for the player to walk out of the room through.
-func _check_side_walls(stride: Vector2) -> void:
+func _check_side_walls(overhang: float) -> void:
 	var room_scene := _read(ROOM_SCENE)
 	var board_scene := _read(BOARD_SCENE)
 
@@ -174,8 +182,8 @@ func _check_side_walls(stride: Vector2) -> void:
 	# The far shape has to reach from the north wall down to the top of the
 	# inherited pair. One shape rather than two, because there is no doorway up
 	# there to leave a gap for — so its length is the whole overhang.
-	if not is_equal_approx(far.y, stride.y):
-		_fail("the far side walls are %.1fpx long; the overhang is %.0fpx" % [far.y, stride.y])
+	if not is_equal_approx(far.y, overhang):
+		_fail("the far side walls are %.1fpx long; the overhang is %.0fpx" % [far.y, overhang])
 
 	for side in ["west", "east"]:
 		var base: Variant = _parse_node_position(room_scene, "wall_%s_north" % side)
@@ -323,11 +331,11 @@ func _suit() -> EnemyDef:
 	return null if set == null else set.by_id(StringName(id))
 
 
-## [constant Room.FLOOR] grown north by one cell, which is what
+## [constant Room.FLOOR] grown north by the overhang, which is what
 ## [constant BoardRoom.FLOOR_EXTENDED] derives.
-func _extended(floor_rect: Rect2, stride: Vector2) -> Rect2:
-	return Rect2(floor_rect.position - Vector2(0.0, stride.y),
-			floor_rect.size + Vector2(0.0, stride.y))
+func _extended(floor_rect: Rect2, overhang: float) -> Rect2:
+	return Rect2(floor_rect.position - Vector2(0.0, overhang),
+			floor_rect.size + Vector2(0.0, overhang))
 
 
 # -- Reading source as text ----------------------------------------------------

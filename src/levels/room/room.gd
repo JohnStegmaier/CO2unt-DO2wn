@@ -420,7 +420,6 @@ func _place_elevator(data: RoomData) -> void:
 ## has for doorways that lead nowhere — same collision. The two do not look alike:
 ## a doorway that leads nowhere shows nothing, and a sealed one slides its shut
 ## door into place. See _apply_doors.
-## has for doorways that lead nowhere — same collision, same visual.
 ##
 ## "Restore" means the doors the plan gave this room MINUS the ones sealed for a
 ## reason of their own; see [method set_sealed_sides]. Clearing the fight lock

@@ -20,10 +20,7 @@ extends Area2D
 ## The Area2D's own shape is what ACTORS are hit with, and it is deliberately
 ## generous — radius 8 around a 5px bullet sprite. Solid geometry is not tested
 ## that way; see [method _sweep].
-
-## How far back from a surface a clamped muzzle sits. Enough that the first sweep
-## starts outside what it is about to hit rather than exactly on it.
-const MUZZLE_BACKOFF := 1.0
+##
 ## Every scene also needs a "Shadow" child (a small dark Sprite2D, same idea as
 ## Enemy's) — _ready reaches for it by name to hold it level while the rest of
 ## the node rotates to face the shot.
@@ -44,6 +41,10 @@ const MUZZLE_BACKOFF := 1.0
 ## bullet" on screen is almost entirely the Glow sprite underneath it — an
 ## outline has to be its own shape drawn around that, not a rim traced on a
 ## texture too small to have one.
+
+## How far back from a surface a clamped muzzle sits. Enough that the first sweep
+## starts outside what it is about to hit rather than exactly on it.
+const MUZZLE_BACKOFF := 1.0
 
 ## Set per shot by [method arm], not tuned here: one scene serves the player and
 ## the enemies, so a value set on the scene would move both at once. The exported

@@ -156,6 +156,16 @@ func _check_catalogue(set: EnemySet, label: String, boss_scale: float) -> void:
 				_fail("%s/%s: carries a bullet_scene its behaviour can never fire"
 						% [label, def.id])
 
+			# The wind-up is spent out of the interval, so one longer than the
+			# interval clamps the remainder at zero and the def quietly fires every
+			# telegraph_seconds instead of every fire_interval. Nothing breaks; it
+			# just stops being possible to read the rate of fire off the row.
+			if def.telegraph_seconds > def.fire_interval:
+				_fail("%s/%s: telegraph_seconds %.2f is longer than its fire_interval"
+						% [label, def.id, def.telegraph_seconds]
+						+ " %.2f, so the def no longer states its own rate of fire"
+						% def.fire_interval)
+
 		# THE geometry invariant. A boss-eligible def spends its width times the
 		# promotion scale, because game.gd can make it that wide; one that can
 		# never be promoted spends it once. Exceed the cap and the flood fill in
@@ -376,6 +386,7 @@ func _check_behaviours(set: EnemySet) -> void:
 
 		var ceiling: float = def.behaviour.top_speed()
 		var phases := {}
+		var peak_windup := 0.0
 		for tick in TICKS:
 			# Advancing the clocks by hand is the whole reason phases count down
 			# from delta instead of comparing against Time.get_ticks_msec() —
@@ -408,6 +419,15 @@ func _check_behaviours(set: EnemySet) -> void:
 				_fail("%s: facing returned NaN on tick %d" % [def.id, tick])
 				break
 
+			# AttackTell lerps a radius across this, so anything outside 0..1 draws
+			# a ring that inverts or expands out of the room rather than closing.
+			var charge: float = def.behaviour.windup(ctx)
+			if is_nan(charge) or charge < 0.0 or charge > 1.0:
+				_fail("%s: windup returned %f on tick %d, outside 0..1"
+						% [def.id, charge, tick])
+				break
+			peak_windup = maxf(peak_windup, charge)
+
 			phases[ctx.phase] = true
 			ctx.velocity = velocity
 			ctx.here += velocity * TICK_DELTA
@@ -417,11 +437,38 @@ func _check_behaviours(set: EnemySet) -> void:
 
 		var visited: Array = phases.keys()
 		visited.sort()
-		print("   %-10s %s reached phases %s" % [def.id,
+		# The wind-up is printed rather than asserted for everything, because zero
+		# is a legal answer for three of the four: a shooter's tell is
+		# EnemyDef.telegraph_seconds and Enemy holds that clock, so nothing here can
+		# see it. What this column catches is the archetype whose tell is its own.
+		print("   %-10s %s reached phases %s, peak windup %.2f" % [def.id,
 				"stationary" if is_zero_approx(ceiling) else "%.0f px/s max" % ceiling,
-				str(visited)])
+				str(visited), peak_windup])
 		_check_phase_coverage(def, phases)
+		_check_windup_coverage(def, peak_windup)
 	print("")
+
+
+## Two archetypes carry their own wind-up rather than the def's: a charger,
+## because its attack is a lunge and [member EnemyDef.telegraph_seconds] belongs
+## to a gun it does not have; and a turret, because its tell is per BEARING and
+## the def's is per shot. One that never reaches it looks exactly like an attack
+## arriving out of nowhere, which is the bug this feature exists to remove — so
+## it is worth a check of its own rather than being covered by "the phase was
+## visited", which passes on a threshold that lets the phase run for a frame.
+##
+## Named archetypes here for the same reason [method _check_phase_coverage] does:
+## what a behaviour promises about itself is not something the base class can say.
+func _check_windup_coverage(def: EnemyDef, peak_windup: float) -> void:
+	var owns_its_tell: bool = def.behaviour is ChargeBehaviour \
+			or def.behaviour is TurretBehaviour
+	if not owns_its_tell:
+		return
+	# Near 1 rather than merely above 0: a ring that stops closing short of the
+	# attack is a countdown that ends early, which is worse than none.
+	if peak_windup < 0.99:
+		_fail("%s: peaked at %.2f in %d ticks — its tell would never finish closing"
+				% [def.id, peak_windup, TICKS])
 
 
 ## A phased archetype that never leaves its first state is a threshold typo, and

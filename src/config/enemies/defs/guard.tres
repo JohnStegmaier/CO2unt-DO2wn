@@ -46,6 +46,7 @@ bullet_damage = 8
 bullet_damage_type = 0
 bullet_speed = 180.0
 fire_interval = 1.6
+telegraph_seconds = 0.35
 aim_spread = 0.2
 muzzle_offset = 10.0
 spawn_grace = 0.8

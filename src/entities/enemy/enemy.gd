@@ -518,7 +518,12 @@ func _shoot(aim: Vector2) -> void:
 	# Same shot sound as the player's gun, pitched and dimmed down so enemy fire
 	# reads as duller and doesn't compete with the player's own shots.
 	AudioManager.play_sfx("laser_gun_01", 0.7, -6.0)
-	bullet.global_position = global_position + direction * _def.muzzle_offset
+	# Clamped for the same reason the player's is: the muzzle reaches further out
+	# than the body it belongs to, and a turret backed into a corner would
+	# otherwise put its shot inside the wall or through it.
+	bullet.global_position = Projectile.clear_muzzle(
+			get_world_2d().direct_space_state, global_position,
+			global_position + direction * _def.muzzle_offset)
 	bullet.reset_physics_interpolation()
 
 

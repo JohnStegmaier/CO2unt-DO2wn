@@ -14,16 +14,16 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/environment/door-east-shut.png" id="12_east_shut"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_h"]
-size = Vector2(183, 17)
+size = Vector2(200, 17)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_v"]
-size = Vector2(16, 99)
+size = Vector2(16, 130)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_plug_h"]
-size = Vector2(50, 28)
+size = Vector2(49, 17)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_plug_v"]
-size = Vector2(28, 50)
+size = Vector2(16, 47.5)
 
 [node name="Room" type="Node2D" unique_id=1808165109]
 script = ExtResource("1_room")
@@ -42,95 +42,66 @@ centered = false
 collision_mask = 0
 
 [node name="wall_north_west" type="CollisionShape2D" parent="Walls/WallBody" unique_id=262429740]
-position = Vector2(111, 29.5)
+position = Vector2(101, 29.5)
 shape = SubResource("RectangleShape2D_wall_h")
 
 [node name="wall_north_east" type="CollisionShape2D" parent="Walls/WallBody" unique_id=541482655]
-position = Vector2(330.5, 29.5)
+position = Vector2(342, 29.5)
 shape = SubResource("RectangleShape2D_wall_h")
 
 [node name="wall_south_west" type="CollisionShape2D" parent="Walls/WallBody" unique_id=655154354]
-position = Vector2(109, 256.5)
+position = Vector2(98.5, 256.5)
 shape = SubResource("RectangleShape2D_wall_h")
 
 [node name="wall_south_east" type="CollisionShape2D" parent="Walls/WallBody" unique_id=613139368]
-position = Vector2(332, 256.5)
+position = Vector2(340, 256.5)
 shape = SubResource("RectangleShape2D_wall_h")
 
 [node name="wall_west_north" type="CollisionShape2D" parent="Walls/WallBody" unique_id=887127018]
-position = Vector2(29, 70.5)
+position = Vector2(29, 59.5)
 shape = SubResource("RectangleShape2D_wall_v")
 
 [node name="wall_west_south" type="CollisionShape2D" parent="Walls/WallBody" unique_id=1113308421]
-position = Vector2(29, 215.5)
+position = Vector2(29, 226.5)
 shape = SubResource("RectangleShape2D_wall_v")
 
 [node name="wall_east_north" type="CollisionShape2D" parent="Walls/WallBody" unique_id=763636652]
-position = Vector2(413, 70.5)
+position = Vector2(413, 58)
 shape = SubResource("RectangleShape2D_wall_v")
 
 [node name="wall_east_south" type="CollisionShape2D" parent="Walls/WallBody" unique_id=214677477]
-position = Vector2(413.5, 215.5)
+position = Vector2(413, 227.5)
 shape = SubResource("RectangleShape2D_wall_v")
 
 [node name="Plugs" type="Node2D" parent="Walls" unique_id=376354447]
-visible = false
 
 [node name="plug_north" type="StaticBody2D" parent="Walls/Plugs" unique_id=245918299]
-position = Vector2(221, 35)
+position = Vector2(221.5, 29.5)
 collision_mask = 0
 
 [node name="shape" type="CollisionShape2D" parent="Walls/Plugs/plug_north" unique_id=1451501582]
 shape = SubResource("RectangleShape2D_plug_h")
 
-[node name="seal" type="ColorRect" parent="Walls/Plugs/plug_north" unique_id=1776458012]
-offset_left = -23.0
-offset_top = -15.0
-offset_right = 23.0
-offset_bottom = 13.0
-color = Color(0.2196078, 0.3294118, 0.4, 1)
-
 [node name="plug_east" type="StaticBody2D" parent="Walls/Plugs" unique_id=2122978407]
-position = Vector2(406, 143)
+position = Vector2(413, 142.75)
 collision_mask = 0
 
 [node name="shape" type="CollisionShape2D" parent="Walls/Plugs/plug_east" unique_id=241522331]
 shape = SubResource("RectangleShape2D_plug_v")
 
-[node name="seal" type="ColorRect" parent="Walls/Plugs/plug_east" unique_id=42931806]
-offset_left = -13.0
-offset_top = -23.0
-offset_right = 15.0
-offset_bottom = 23.0
-color = Color(0.2196078, 0.3294118, 0.4, 1)
-
 [node name="plug_south" type="StaticBody2D" parent="Walls/Plugs" unique_id=768755542]
-position = Vector2(221, 250)
+position = Vector2(219.25, 256.5)
 collision_mask = 0
 
 [node name="shape" type="CollisionShape2D" parent="Walls/Plugs/plug_south" unique_id=1565406216]
 shape = SubResource("RectangleShape2D_plug_h")
 
-[node name="seal" type="ColorRect" parent="Walls/Plugs/plug_south" unique_id=1927891321]
-offset_left = -24.0
-offset_top = -13.0
-offset_right = 22.0
-offset_bottom = 15.0
-color = Color(0.2196078, 0.3294118, 0.4, 1)
-
 [node name="plug_west" type="StaticBody2D" parent="Walls/Plugs" unique_id=1398777208]
-position = Vector2(35, 143)
+position = Vector2(29, 143)
 collision_mask = 0
 
 [node name="shape" type="CollisionShape2D" parent="Walls/Plugs/plug_west" unique_id=861018635]
 shape = SubResource("RectangleShape2D_plug_v")
-
-[node name="seal" type="ColorRect" parent="Walls/Plugs/plug_west" unique_id=1982391467]
-offset_left = -15.0
-offset_top = -24.0
-offset_right = 13.0
-offset_bottom = 22.0
-color = Color(0.2196078, 0.3294118, 0.4, 1)
 
 [node name="Decals" type="Node2D" parent="."]
 z_index = -1
@@ -156,21 +127,21 @@ z_index = 2
 
 [node name="door_north" parent="Doors" unique_id=478506567 instance=ExtResource("3_door")]
 visible = false
-position = Vector2(221, 35)
+position = Vector2(221.5, 29.5)
 
 [node name="door_east" parent="Doors" unique_id=1576405422 instance=ExtResource("3_door")]
 visible = false
-position = Vector2(406, 143)
+position = Vector2(413, 142.75)
 side = 1
 
 [node name="door_south" parent="Doors" unique_id=1856126186 instance=ExtResource("3_door")]
 visible = false
-position = Vector2(221, 250)
+position = Vector2(219.25, 256.5)
 side = 2
 
 [node name="door_west" parent="Doors" unique_id=1305475667 instance=ExtResource("3_door")]
 visible = false
-position = Vector2(35, 143)
+position = Vector2(29, 143)
 side = 3
 
 [node name="door_north_open" type="Sprite2D" parent="Doors" unique_id=1407089581]

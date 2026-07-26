@@ -58,9 +58,9 @@ const FLOOR := Rect2(49, 49, 343, 187)
 ## Room's door node positions pulled inward by LevelDoor.spawn_inset, one per
 ## GridDirection.Side, in Side order: north, east, south, west.
 const LANDINGS: Array[Vector2] = [
-	Vector2(221, 57),
-	Vector2(384, 143),
-	Vector2(221, 228),
+	Vector2(221.5, 57.5),
+	Vector2(385, 142.75),
+	Vector2(219.25, 228.5),
 	Vector2(57, 143),
 ]
 

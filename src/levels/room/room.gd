@@ -18,10 +18,18 @@ const STRIDE := Vector2(442, 286)
 ## Room-local rect the camera is allowed to show.
 const INTERIOR := Rect2(0, 0, 442, 286)
 
-## Room-local rect anything on foot may stand in. The perimeter wall shapes are
-## 28 deep, centred at 35/250 vertically and 35/406 horizontally, so the floor is
-## everything inside their inner faces.
+## Room-local rect anything on foot may stand in.
+##
+## Deliberately inside the walls rather than flush with them: their inner faces
+## are x 37..405 and y 38..248, and this keeps a further ~12px clear so props and
+## spawns never end up wedged against a wall or straddling a door landing. Do not
+## re-derive it from the wall shapes — tools/check_obstacles.gd pins this value
+## and flood-fills the room for crossability against it.
 const FLOOR := Rect2(49, 49, 343, 187)
+
+## How far a plug reaches past the doorway into the wall on either side, so that
+## rounding in the authored geometry can never leave a hairline gap at the join.
+const PLUG_OVERLAP := 4.0
 
 ## Placeholder wash per RoomData.Kind, indexed the same way KIND_GLYPHS is — one
 ## tells you which room you are in from the terminal, the other from the screen.
@@ -80,6 +88,7 @@ const ELEVATOR_WALL_PREFERENCE: Array[int] = [
 ]
 
 @onready var _doors: Node2D = $Doors
+@onready var _wall_body: StaticBody2D = $Walls/WallBody
 @onready var _plugs: Node2D = $Walls/Plugs
 @onready var _entities: Node2D = $Entities
 @onready var _tint: ColorRect = $Tint
@@ -120,10 +129,84 @@ var _fight_locked: bool = false
 
 
 func _ready() -> void:
+	_fit_openings()
 	for side in GridDirection.SIDES:
 		door_for(side).player_entered.connect(_on_door_player_entered)
 		_setup_door_shut_material(side)
 	_elevator.entered.connect(_on_elevator_entered)
+
+
+## Fit every plug and door trigger to the hole its wall actually leaves.
+##
+## This is the fix for a bug worth remembering. The plugs used to be authored
+## independently of the walls, both 28 deep. An art pass thinned the walls to
+## 17/16 and repositioned them, and left the plugs alone — so every plug stuck
+## 11-13px past the wall's inner face, invisibly, onto the floor. Walking along a
+## wall you stopped dead on nothing, and a shot fired along one died in mid-air
+## short of the door. The door triggers had the same copied thickness and the same
+## overhang.
+##
+## Measuring the walls at load rather than authoring a second set of numbers is
+## what stops that happening again: move or resize a wall and the plug, the seal
+## and the trigger follow it. The values in room.tscn are an editor preview.
+##
+## Only rooms built from room.tscn have any of this. ShopRoom and ElevatorRoom are
+## drawn side-on, have neither doorways nor plugs, and deliberately do not call
+## super._ready().
+func _fit_openings() -> void:
+	for side in GridDirection.SIDES:
+		var opening := _doorway(side)
+		var is_vertical: bool = side == GridDirection.Side.EAST \
+				or side == GridDirection.Side.WEST
+		var depth: float = opening.size.x if is_vertical else opening.size.y
+		var width: float = opening.size.y if is_vertical else opening.size.x
+
+		# Fresh per plug rather than the shared sub-resource, for the same reason
+		# LevelDoor.fit_opening builds its own: one resource cannot hold four
+		# sizes, and every instance of this scene would share whatever it held.
+		var shape := RectangleShape2D.new()
+		var plugged := width + PLUG_OVERLAP * 2.0
+		shape.size = Vector2(depth, plugged) if is_vertical else Vector2(plugged, depth)
+
+		var plug := _plug_for(side)
+		plug.position = opening.get_center()
+		# Deferred for the reason given in _apply_doors: the physics server
+		# rejects shape changes made while it is flushing queries.
+		plug.get_node("shape").set_deferred("shape", shape)
+
+		door_for(side).fit_opening(depth, width)
+
+
+## The hole in a wall, room-local: as deep as the band and as wide as the space
+## its two shapes leave between them.
+##
+## Read off the wall shapes themselves so there is one source of truth for where a
+## wall is. Each side is two CollisionShape2Ds named for it, and the doorway is
+## what they do not cover.
+func _doorway(side: int) -> Rect2:
+	var band := Rect2()
+	var gap_start := INF
+	var gap_end := -INF
+	var is_vertical: bool = side == GridDirection.Side.EAST \
+			or side == GridDirection.Side.WEST
+
+	for shape: CollisionShape2D in _wall_body.get_children():
+		if not shape.name.begins_with("wall_" + GridDirection.side_name(side) + "_"):
+			continue
+		var rect := Rect2(shape.position - shape.shape.size * 0.5, shape.shape.size)
+		band = rect if band.size == Vector2.ZERO else band.merge(rect)
+		# The near edge of the far shape and the far edge of the near one are the
+		# two sides of the gap, whichever order the children happen to be in.
+		if is_vertical:
+			gap_start = minf(gap_start, rect.end.y)
+			gap_end = maxf(gap_end, rect.position.y)
+		else:
+			gap_start = minf(gap_start, rect.end.x)
+			gap_end = maxf(gap_end, rect.position.x)
+
+	if is_vertical:
+		return Rect2(band.position.x, gap_start, band.size.x, gap_end - gap_start)
+	return Rect2(gap_start, band.position.y, gap_end - gap_start, band.size.y)
 
 
 ## Give this side's shut sprite its own ShaderMaterial. One per sprite rather
@@ -334,7 +417,9 @@ func _place_elevator(data: RoomData) -> void:
 ## Seal every doorway, or restore the ones the floor plan gave this room.
 ##
 ## A sealed door is just a plugged one, so this reuses the plug the room already
-## has for doorways that lead nowhere — same collision, same visual.
+## has for doorways that lead nowhere — same collision. The two do not look alike:
+## a doorway that leads nowhere shows nothing, and a sealed one slides its shut
+## door into place. See _apply_doors.
 ##
 ## "Restore" means the doors the plan gave this room MINUS the ones sealed for a
 ## reason of their own; see [method set_sealed_sides]. Clearing the fight lock
@@ -381,6 +466,9 @@ func _apply_doors(doors: int) -> void:
 		door.set_deferred("monitoring", is_open)
 
 		var plug := _plug_for(side)
+		# A plug draws nothing of its own — the doorway art is what you see — so
+		# this only reaches the shape drawn by Debug > Visible Collision Shapes.
+		# Worth keeping: it is what makes a mis-sized plug obvious on sight.
 		# visible is not physics state, so it can be set straight away.
 		plug.visible = not is_open
 		# Hiding a body does not stop it colliding, so clear the layer too —

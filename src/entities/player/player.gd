@@ -32,6 +32,11 @@ var dodge_direction := Vector2.ZERO
 var dodge_timer := 0.0
 var gun_default_position: Vector2
 var gun_default_scale: Vector2
+## How we are authored to look. Captured once so that anything which borrows our
+## appearance — a room drawn in a perspective of its own, say — never has to
+## remember what it changed. See reset_presentation.
+var _sprite_default_scale: Vector2
+var _sprite_default_position: Vector2
 
 ## Right-stick deflection below this counts as the stick being at rest. Also the
 ## threshold for believing a joypad event means the player actually picked a pad
@@ -93,6 +98,8 @@ var _is_dead := false
 func _ready() -> void:
 	gun_default_position = gun.position
 	gun_default_scale = gun.scale
+	_sprite_default_scale = sprite.scale
+	_sprite_default_position = sprite.position
 	ammo = magazine_size
 
 
@@ -175,6 +182,34 @@ func _physics_process(delta: float) -> void:
 ## check this and skip themselves entirely instead of just being told to deal
 ## no damage, which is why this is its own method rather than folded into
 ## take_damage.
+## Whether the death sequence has started. Public because dying changes what
+## everything else is allowed to do to us — die() tweens the sprite into a
+## flattened pose, so anything driving our appearance has to stand down rather
+## than fight it for the same properties every frame.
+func is_dead() -> bool:
+	return _is_dead
+
+
+## Put our appearance back the way the scene authored it.
+##
+## Owned here rather than by whoever changed it. A room that borrows the player's
+## look has to give it back, and a room can be freed at any moment — mid
+## transition, mid death, mid anything — so "remember what you overwrote and undo
+## it on the way out" is a rule that only has to be missed once to leave a player
+## permanently shrunk or holding no gun for the rest of a run. Asking us instead
+## means there is nothing to remember and nothing to get wrong.
+##
+## Deliberately does nothing while dead: die() is mid-tween on these same
+## properties and a reset would stand the corpse back up.
+func reset_presentation() -> void:
+	if _is_dead:
+		return
+	move_scale = Vector2.ONE
+	sprite.scale = _sprite_default_scale
+	sprite.position = _sprite_default_position
+	gun.visible = true
+
+
 func is_intangible() -> bool:
 	return is_dodging
 

@@ -144,10 +144,9 @@ var _stood_on_floor: bool = false
 ## Whoever is standing in the lobby, handed over by LobbyZone. Physics tells us
 ## who the player is rather than us reaching up the tree for them.
 var _player: Player
-var _gun_was_visible: bool = true
-## The player's own transform and movement, captured on the way in and put back on
-## the way out. Held rather than assumed, because the room does not own the player
-## and must leave them exactly as it found them.
+## What the player looks like at life size, read on the way in. This is the BASIS
+## the depth scaling multiplies, not a note of what to put back — restoring is the
+## player's own job, so nothing here has to survive being forgotten.
 var _sprite_scale: Vector2 = Vector2.ONE
 var _sprite_offset: Vector2 = Vector2.ZERO
 ## Half the sprite's height, negated: the offset that puts its bottom edge on the
@@ -245,7 +244,7 @@ func _process(_delta: float) -> void:
 	var depth: float = local.y
 	_update_depth_scale(depth)
 
-	if _boarding or _player.is_warping or _player._is_dead:
+	if _boarding or _player.is_warping or _player.is_dead():
 		return
 
 	# Hysteresis: opening and shutting at the same line would flutter the leaves
@@ -277,7 +276,7 @@ func _update_depth_scale(depth: float) -> void:
 	# Yield to the death squash. player.gd's die() tweens this very property to a
 	# flattened pose and sets _is_dead before it starts, so without this the corpse
 	# would be fighting us for the sprite every frame.
-	if _player._is_dead:
+	if _player.is_dead():
 		return
 
 	var t: float = clampf(inverse_lerp(DEPTH_FAR_Y, DEPTH_NEAR_Y, depth), 0.0, 1.0)
@@ -299,11 +298,13 @@ func _on_lobby_entered(body: Node2D) -> void:
 	_sprite_scale = player.sprite.scale
 	_sprite_offset = player.sprite.position
 	_foot_offset = _measure_foot_offset(player)
+	# Read as a basis, not stashed to undo later: the player owns what she is
+	# supposed to look like and can be asked to go back to it — reset_presentation.
+	#
 	# Sideways is left alone. Only depth is slowed, because only depth is lying
 	# about how far it goes.
 	player.move_scale = Vector2(1.0, depth_move_scale)
 	if hide_player_gun:
-		_gun_was_visible = player.gun.visible
 		player.gun.visible = false
 
 
@@ -327,22 +328,17 @@ func _on_lobby_exited(body: Node2D) -> void:
 		_restore_player()
 
 
+## Hand the player back exactly as she arrived.
+##
+## Unconditional, and safe to call more than once: everything this room changed
+## about her is restored from her own authored values rather than from anything we
+## wrote down, so a path that reaches here twice, or reaches here having changed
+## nothing, costs an assignment and no correctness.
 func _restore_player() -> void:
 	if _player == null:
 		return
 	if is_instance_valid(_player):
-		_player.move_scale = Vector2.ONE
-		if hide_player_gun:
-			_player.gun.visible = _gun_was_visible
-		# Put the sprite back even if the scaling was never applied — the export can
-		# be turned off mid-run, and a player left shrunk would stay that way.
-		#
-		# Not for a corpse, though. Dying in here frees the room on the way to the
-		# game over screen, and restoring then would stand the flattened body back
-		# up for the frame the death shot is captured on.
-		if not _player._is_dead:
-			_player.sprite.scale = _sprite_scale
-			_player.sprite.position = _sprite_offset
+		_player.reset_presentation()
 	_player = null
 
 

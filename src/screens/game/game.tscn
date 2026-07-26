@@ -9,7 +9,23 @@
 [ext_resource type="PackedScene" path="res://src/ui/elevator_ride/elevator_ride.tscn" id="7_ride"]
 [ext_resource type="PackedScene" path="res://src/levels/elevator_room/elevator_room.tscn" id="8_exit_room"]
 [ext_resource type="PackedScene" path="res://src/ui/screen_fade/screen_fade.tscn" id="9_fade"]
+[ext_resource type="Script" path="res://src/systems/shop_config.gd" id="10_shop_config"]
+[ext_resource type="PackedScene" path="res://src/levels/shop_room/shop_room.tscn" id="11_shop_room"]
+[ext_resource type="Script" path="res://src/systems/drop_table_shop_stock_provider.gd" id="12_shop_stock"]
 [ext_resource type="Resource" path="res://src/config/drops/default.tres" id="10_drop_config"]
+[ext_resource type="Resource" path="res://src/config/obstacles/default.tres" id="11_obstacle_set"]
+
+[sub_resource type="Resource" id="Resource_shop_stock"]
+script = ExtResource("12_shop_stock")
+drop_config = ExtResource("10_drop_config")
+source = &"shop"
+
+[sub_resource type="Resource" id="Resource_shop_config"]
+script = ExtResource("10_shop_config")
+room_scene = ExtResource("11_shop_room")
+stock_provider = SubResource("Resource_shop_stock")
+starting_coins = 60
+music = "shop_calm"
 
 [sub_resource type="Resource" id="Resource_floor_config"]
 script = ExtResource("6_floor_config")
@@ -24,7 +40,9 @@ special_min_depth = 2
 [node name="Game" type="Node2D"]
 script = ExtResource("1_game")
 exit_room_scene = ExtResource("8_exit_room")
+shop_config = SubResource("Resource_shop_config")
 drop_config = ExtResource("10_drop_config")
+obstacle_set = ExtResource("11_obstacle_set")
 floor_config = SubResource("Resource_floor_config")
 
 [node name="RoomContainer" type="Node2D" parent="."]

@@ -273,6 +273,20 @@ func open_door_landings() -> Array[Vector2]:
 	return [LANDING]
 
 
+## No props in here, whatever the obstacle set says.
+##
+## This room's walkable floor is LOBBY_FLOOR — a 50px strip along the bottom, not
+## Room.FLOOR — and it is built around the car rather than being an empty
+## rectangle. Scattering into Room.FLOOR would stand a barrel in the back wall,
+## and there is nowhere in the strip a prop would not be in the way of boarding.
+##
+## An empty rect rather than a flag on the obstacle set, so this stays the exit
+## room's own answer about its own floor. It is what makes ticking `exit` in
+## ObstacleSet.room_kinds harmless instead of a bug.
+func obstacle_rect() -> Rect2:
+	return Rect2()
+
+
 ## Seal the way out, or restore it. Same contract as Room's, with a strip of floor
 ## standing in for a doorway.
 ##
@@ -397,9 +411,17 @@ func _measure_foot_offset(player: Player) -> float:
 	return -texture.get_height() * 0.5
 
 
+## Same hazard ShopRoom._on_shop_exited documents: Game._cut_to disables the
+## departing room before it fades, LobbyZone reports the player as having left,
+## and restoring them there shrinks them out of their depth-scaled size while the
+## screen is still visible. is_warping tells a teardown from a real exit; the
+## restore still happens under the black and in _exit_tree.
 func _on_lobby_exited(body: Node2D) -> void:
-	if body is Player:
-		_restore_player()
+	if not (body is Player):
+		return
+	if _player != null and is_instance_valid(_player) and _player.is_warping:
+		return
+	_restore_player()
 
 
 ## Hand the player back exactly as she arrived.

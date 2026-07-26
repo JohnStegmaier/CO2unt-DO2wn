@@ -1,16 +1,23 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://c6phikmhwfb06"]
 
-[ext_resource type="Script" path="res://src/ui/hud/ammo_counter.gd" id="1_ammo"]
+[ext_resource type="Script" uid="uid://82hssg0ni0ra" path="res://src/ui/hud/ammo_counter.gd" id="1_ammo"]
+[ext_resource type="Texture2D" uid="uid://cm4a87ahjb7tc" path="res://assets/sprites/items/BigGun_B_Transparent.png" id="2_na8xe"]
 
-[node name="AmmoCounter" type="Node2D"]
+[node name="AmmoCounter" type="Node2D" unique_id=1620982977]
 script = ExtResource("1_ammo")
 
-[node name="Label" type="Label" parent="."]
-offset_left = -80.0
-offset_top = -12.0
-offset_right = 0.0
-offset_bottom = 24.0
+[node name="Label" type="Label" parent="." unique_id=592340303]
+offset_left = -91.0
+offset_top = -18.0
+offset_right = -11.0
+offset_bottom = 19.68
 theme_override_font_sizes/font_size = 22
 text = "6 / 6"
-horizontal_alignment = 1
+horizontal_alignment = 2
+vertical_alignment = 1
 clip_text = true
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=304979953]
+position = Vector2(14, 2.000001)
+scale = Vector2(0.16831683, 0.16831683)
+texture = ExtResource("2_na8xe")

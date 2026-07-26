@@ -10,6 +10,10 @@ extends Node2D
 const ROOM_SCENE := preload("res://src/levels/room/room.tscn")
 const ENEMY_SCENE := preload("res://src/entities/enemy/enemy.tscn")
 const ITEM_PICKUP_SCENE := preload("res://src/entities/pickup/item_pickup.tscn")
+const OBSTACLE_SCENE := preload("res://src/entities/obstacle/obstacle.tscn")
+## The clock's voice, once a second. Named because [ClockHold] has to be able to
+## cut it short as well as stop the beat that fires it.
+const TICK_SFX := &"tick_trim"
 const GAME_OVER_SCENE := "res://src/screens/game_over/game_over.tscn"
 const VICTORY_SCENE := "res://src/screens/victory/victory.tscn"
 ## Where a profile's drop configs live, so `[drops] config = "economy"` names a
@@ -22,10 +26,17 @@ const LOOT_SEED_SALT := 0x9E3779B9
 ## Pixels a drop may be nudged when more than one lands at once. Roughly the
 ## width of a pickup, so they read as a little pile rather than as one item.
 const LOOT_SCATTER := 10.0
+## Half a pickup's sprite, so a drop pushed off a prop clears its edge rather than
+## sitting against it.
+const LOOT_CLEARANCE := 6.0
 
 @export_group("Room Transition")
 ## Seconds to slide from one room to the next.
 @export var transition_time: float = 0.85
+## Seconds for the camera's pan, kept a touch longer than transition_time so the
+## view is still catching up to the player when they land — a beat of drift
+## rather than the two arriving in lockstep.
+@export var camera_pan_time: float = 1.0
 ## Curve of the slide. QUAD/OUT leaves fast and decelerates into place, which is
 ## the snappy Isaac feel; SINE/IN_OUT eases at both ends and reads as a glide.
 @export var transition_trans: Tween.TransitionType = Tween.TRANS_QUAD
@@ -87,12 +98,27 @@ const LOOT_SCATTER := 10.0
 ## here and the slot can stay as the registry of what the flag chooses between.
 @export var exit_room_scene: PackedScene
 
+@export_group("Shop")
+## Everything about shops, in one slot — the room scene, where its stock comes
+## from, what the player starts with and what plays in there. Bundled into a
+## single Resource rather than four exports because game.tscn is edited by more
+## than one branch at a time and scene files do not merge.
+##
+## Leave it empty, or leave its room_scene empty, and shops fall back to ordinary
+## rooms with their placeholder tint — same escape hatch as exit_room_scene.
+@export var shop_config: ShopConfig
 @export_group("Drops")
 ## The run's whole economy: who drops what, on which floor, how often. Swap the
 ## resource and the game plays by a different drop design with no code change —
 ## see docs/DROPS.md. A profile can override which one is loaded without editing
 ## this scene; see [method _apply_drop_overrides].
 @export var drop_config: DropConfig
+
+@export_group("Obstacles")
+## Which solid props rooms are furnished with, how many, and which kinds of room
+## get them. Swap the resource for a different set of clutter with no code change;
+## untick a room kind to leave it bare.
+@export var obstacle_set: ObstacleSet
 
 @export_group("Floor")
 ## Shape of every floor in the run. Tune it here and each generated floor obeys.
@@ -107,6 +133,10 @@ var _rng := RandomNumberGenerator.new()
 ## cannot shuffle where the enemies stand. Both are seeded off the same floor
 ## seed, so a replayed seed still replays both.
 var _loot_rng := RandomNumberGenerator.new()
+## What is standing in the room the player is in, so enemies and drops can be
+## kept out of it. Rebuilt with every room; never drawn from an RNG, because a
+## room's props are a function of its coord and the floor seed alone.
+var _obstacle_field := ObstacleField.new()
 
 @onready var _room_container: Node2D = $RoomContainer
 @onready var _player: Player = $Player
@@ -150,6 +180,12 @@ var _boss_cleared: bool = false
 ## terminal states cannot be confused for one another — a won run must not take
 ## any of the paths that check _dying to decide the player is suffocating.
 var _won: bool = false
+## Every shop's shelves, for the length of the run — see [ShopRegistry]. Held
+## here rather than in the rooms because rooms are freed when the player leaves.
+var _shop_registry := ShopRegistry.new()
+## The clock/music freeze a shop puts the run into. Built in _ready once the HUD
+## exists, because it needs the countdown to freeze.
+var _clock_hold: ClockHold
 
 
 func _ready() -> void:
@@ -215,6 +251,9 @@ func _ready() -> void:
 		# another scene without it should still generate rather than crash.
 		floor_config = FloorConfig.new()
 	floor_config.apply_overrides()
+	_apply_obstacle_overrides()
+
+	_setup_shops()
 
 	_begin_floor(0)
 
@@ -230,11 +269,20 @@ func _start_music() -> void:
 	await get_tree().create_timer(0.25, false).timeout
 	if _dying or _won:
 		return
+	# And not while a shop has the clock stopped. This runs a quarter-second after
+	# the tick that armed it, which is long enough for the freeze to land in
+	# between — and the freeze suspends whatever was already playing rather than
+	# stopping it, so on the rare pass where the run's track happened not to be
+	# playing at all (the first seconds of a floor, or just after air came back)
+	# there is nothing for play_music to recognise and it starts the run's music
+	# inside the shop.
+	if _clock_hold != null and _clock_hold.is_held():
+		return
 	AudioManager.play_music("60000 light years", 1, -11, 0)
 
 
 func _on_global_tick() -> void:
-	AudioManager.play_sfx("tick_trim", 1, -5, 0)
+	AudioManager.play_sfx(TICK_SFX, 1, -5, 0)
 
 
 ## The walls are closing in and the player can hear their own pulse. Fired by the
@@ -290,6 +338,8 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 	var scene: PackedScene = ROOM_SCENE
 	if data.kind == RoomData.Kind.EXIT and exit_room_scene != null:
 		scene = exit_room_scene
+	elif _shop_room_available() and data.kind == RoomData.Kind.SHOP:
+		scene = shop_config.room_scene
 	_current_room = scene.instantiate()
 	# Rooms sit at their true grid position rather than all at the origin, so
 	# world space and map space never disagree — which is also what makes the
@@ -309,8 +359,17 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 	# ends, so the player can never be standing in this room at the moment the
 	# answer changes.
 	_current_room.set_boardable(_exit_available())
+	# Here rather than beside _populate, for three reasons: it is before every
+	# await below, so there is no window in which the room could be freed out from
+	# under it; the room slides into view already furnished; and the enemies
+	# placed further down can be told what is in the way.
+	_scatter_obstacles(data)
 	_current_room.door_entered.connect(_on_door_entered)
 	_current_room.elevator_entered.connect(_on_elevator_entered)
+	# Before the transition, not after: the beat grid has to stop before the fade
+	# starts or the clock ticks on into a shop the player has already committed
+	# to. See _apply_clock_hold.
+	_apply_clock_hold(data)
 	_current_coord = coord
 	# Before the slide, not after: visited and _current_coord are both already
 	# set, and a map that waited for the camera to land would be the one thing on
@@ -333,11 +392,27 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 		previous_room.queue_free()
 
 	await get_tree().physics_frame
+	# Lead was never on to begin with for the start-of-run branch above, but
+	# asking again here costs nothing and means every path into _populate goes
+	# through the same held-still window rather than only the two that had a
+	# transition to turn it off for.
+	_camera.set_lead_enabled(false)
 	# After the physics frame, so six collision-shaped bodies cannot be added
 	# mid-flush — the same hazard that forces _enter_room itself to be deferred.
 	# After the slide, so enemies never get a free shot at a player who is still
 	# a tween puppet with physics disabled.
-	_populate(data)
+	var locked: bool = _populate(data)
+	# Lead stays off for the door-shut slide too, not just the room slide that
+	# preceded it — aim lead alone is enough drift to read as the camera
+	# wandering off while the doors are still sealing the room.
+	if locked:
+		await get_tree().create_timer(Room.DOOR_SHUT_TIME, false).timeout
+	_camera.set_lead_enabled(true)
+	# After the line above, deliberately. A shop suppresses the camera's aim-lead
+	# for the whole visit, and this is where the lead is switched back on for
+	# every other room — so the shop has to have the last word or its suppression
+	# is undone the instant it is applied.
+	_apply_shop_services(data, coord)
 	_transitioning = false
 
 
@@ -351,7 +426,12 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 ## this file still names no alternative implementation — anything dropped into
 ## exit_room_scene gets the cut without announcing itself.
 func _is_cut_transition(kind: int) -> bool:
-	return kind == RoomData.Kind.EXIT and exit_room_scene != null
+	if kind == RoomData.Kind.EXIT and exit_room_scene != null:
+		return true
+	# The shop is drawn side-on for the same reason and travels the same way: a
+	# slide assumes the two cells share an edge and are drawn the same way round,
+	# and a belt-scroll room is neither.
+	return kind == RoomData.Kind.SHOP and _shop_room_available()
 
 
 ## Swap rooms behind a wipe instead of travelling between them.
@@ -368,6 +448,13 @@ func _cut_to(landing: Vector2, previous_room: Room) -> void:
 	await _fade.fade_out()
 
 	_player.warp_to(landing)
+	# Under the black, because the room being left may have been drawing the
+	# player differently — the belt-scroll rooms scale her up to three times life
+	# size and hide the gun. Restoring on the way out of the zone instead would
+	# happen in plain sight (see ShopRoom._on_shop_exited), and leaving it to the
+	# old room's _exit_tree would carry that size a frame or two into the next
+	# room. Idempotent and a no-op on a corpse, so every cut can just do it.
+	_player.reset_presentation()
 	_camera.set_bounds(_current_room.interior_rect())
 	# The camera rides the player, so it has just been teleported too. Physics
 	# interpolation is on project-wide and would otherwise smear the first frame
@@ -379,7 +466,8 @@ func _cut_to(landing: Vector2, previous_room: Room) -> void:
 
 	await _fade.fade_in()
 
-	_camera.set_lead_enabled(true)
+	# Lead stays off — _enter_room is what turns it back on, once the room
+	# behind this wipe is done locking its doors, not before.
 	_player.is_warping = false
 
 
@@ -406,11 +494,12 @@ func _slide_to(landing: Vector2, previous_room: Room) -> void:
 	tween.set_ease(transition_ease).set_trans(transition_trans)
 	tween.set_parallel(true)
 	tween.tween_property(_player, "global_position", landing, transition_time)
-	tween.tween_method(_pan_camera_between.bind(from_rect, to_rect), 0.0, 1.0, transition_time)
+	tween.tween_method(_pan_camera_between.bind(from_rect, to_rect), 0.0, 1.0, camera_pan_time)
 	await tween.finished
 
 	_camera.set_bounds(to_rect)
-	_camera.set_lead_enabled(true)
+	# Lead stays off — _enter_room is what turns it back on, once the room
+	# behind this slide is done locking its doors, not before.
 	_player.is_warping = false
 
 
@@ -553,6 +642,11 @@ func _on_player_died() -> void:
 		return
 	_dying = true
 
+	# Released before anything else: dying inside a shop must not leave the run's
+	# music frozen and the countdown out of processing behind the game over
+	# screen. Idempotent, so it costs nothing on the ordinary path.
+	_release_clock_hold()
+
 	# A paused death sequence is a soft lock with no way out.
 	_pause_menu.set_pause_allowed(false)
 
@@ -594,6 +688,11 @@ func _win() -> void:
 	if _won or _dying:
 		return
 	_won = true
+
+	# Same reason as in _on_player_died: the ending must not run over a frozen
+	# clock. Nothing in a normal run wins from inside a shop, but the cost of
+	# saying so is one idempotent call.
+	_release_clock_hold()
 
 	# The clock stops. Everywhere else in this file the countdown running through
 	# a cutscene is the point; here it is the one thing that could still kill a
@@ -637,10 +736,14 @@ func _win() -> void:
 ## — same placement, same lock, same count coming back if the player retreats
 ## mid-fight. That is deliberate: the climax of a floor should be the same
 ## machinery under load, so there is only ever one of these to get right.
-func _populate(data: RoomData) -> void:
+##
+## Returns whether the room actually got locked — _enter_room uses that to know
+## whether to hold the camera still for the door-shut slide, or free it right
+## away because there was no lock to wait on.
+func _populate(data: RoomData) -> bool:
 	var is_boss: bool = data.kind == RoomData.Kind.BOSS
 	if not (is_boss or data.kind == RoomData.Kind.NORMAL) or data.enemies_remaining == 0:
-		return
+		return false
 	if data.enemies_remaining < 0:
 		data.enemies_remaining = _rng.randi_range(boss_enemies_min, boss_enemies_max) if is_boss \
 				else _rng.randi_range(enemies_min, enemies_max)
@@ -658,11 +761,11 @@ func _populate(data: RoomData) -> void:
 		# otherwise leave the run unfinishable rather than merely quiet.
 		if is_boss:
 			_clear_boss_gate()
-		return
+		return false
 
 	var player_local: Vector2 = _current_room.to_local(_player.global_position)
 	var spots := EnemyPlacement.points(Room.FLOOR, data.enemies_remaining,
-			player_local, _current_room.open_door_landings(), _rng)
+			player_local, _current_room.open_door_landings(), _rng, _obstacle_field)
 
 	for spot in spots:
 		var enemy: Enemy = ENEMY_SCENE.instantiate()
@@ -683,6 +786,9 @@ func _populate(data: RoomData) -> void:
 	# No way out until the room is quiet. The clock does not stop, which is the
 	# point.
 	_current_room.set_locked(true)
+	AudioManager.play_sfx("steel_drip",1,0,0.3)
+	AudioManager.play_sfx("spikes_down",0.8,0,0.3)
+	return true
 
 
 func _on_enemy_died(loot_source: StringName, at: Vector2, data: RoomData) -> void:
@@ -698,6 +804,7 @@ func _on_enemy_died(loot_source: StringName, at: Vector2, data: RoomData) -> voi
 		return
 	if _current_room != null:
 		_current_room.set_locked(false)
+		AudioManager.play_sfx("chest_open")
 	if data.kind != RoomData.Kind.BOSS:
 		return
 
@@ -747,6 +854,116 @@ func _begin_floor(floor_number: int) -> void:
 	await _enter_room(_plan.spawn_coord)
 
 
+# -- Shops -------------------------------------------------------------------
+#
+# Everything the run has to do about shops, gathered here rather than scattered
+# through _enter_room. One call from up there and the bodies live down here, so
+# the composition root stays readable while three branches are adding to it.
+
+
+## Build the clock hold and hand the player their starting coins.
+##
+## Belt and braces on the config, the same way floor_config is handled: the scene
+## supplies one, but a Game dropped into another scene without it should still
+## run — with shops simply switched off.
+func _setup_shops() -> void:
+	if shop_config == null:
+		shop_config = ShopConfig.new()
+	shop_config.apply_overrides()
+
+	# The tick goes in so the hold can silence it. Stopping the beat grid leaves
+	# the last tick still sounding — it is a two-second sample on a one-second
+	# beat, so there is always one in the air.
+	_clock_hold = ClockHold.new(_o2_timer, shop_config.music, TICK_SFX)
+	_grant_starting_coins()
+
+
+## What the player opens a run with. add_coins rather than touching coins
+## directly, so the HUD's counter hears about it through coins_changed like every
+## other change to the balance.
+func _grant_starting_coins() -> void:
+	if shop_config.starting_coins <= 0:
+		return
+	_player.add_coins(shop_config.starting_coins)
+
+
+## Is there a shop room to swap in at all?
+func _shop_room_available() -> bool:
+	return shop_config != null and shop_config.room_scene != null
+
+
+## Take or release everything a shop changes about the run, derived from the room
+## the player just walked into.
+##
+## Derived state rather than a pair of events, and re-asserted on EVERY room
+## change rather than only on the ones that involve a shop. That is what makes a
+## leaked hold — a run whose clock never restarts — unreachable rather than
+## merely unlikely: there is no path out of a shop that does not come through
+## here, and arriving anywhere that is not a shop puts the clock back.
+## Stop or restart the run's clock, derived from the room being entered.
+##
+## Split out of [method _apply_shop_services] and called BEFORE the transition,
+## because a cut into a shop is the better part of a second of fade and the beat
+## grid was still running for all of it — you could hear the clock tick once or
+## twice after the countdown had visibly stopped.
+##
+## The reason it used to sit after the transition was to let in-flight HUD tweens
+## land before their node stopped processing. That does not hold up: ScreenFade
+## is CanvasLayer 10 and the HUD is on the default layer, so the wipe covers the
+## gauge too and a tween frozen underneath it cannot be seen.
+##
+## The corollary is that the clock is frozen for the fade INTO a shop and
+## restarts as you fade out of one, so a visit costs no air at either end. That
+## is the right reading: the safe room starts at the door.
+func _apply_clock_hold(data: RoomData) -> void:
+	if _clock_hold == null:
+		return
+	_clock_hold.set_held(data.kind == RoomData.Kind.SHOP and _shop_room_available())
+
+
+## Wire up the room the player just walked into, if it is a shop.
+##
+## Stays after the transition AND after the camera's lead is switched back on,
+## unlike the clock hold above. Every room goes through a held-still window that
+## ends by re-enabling the lead, so a shop suppressing it any earlier would have
+## its suppression undone on the way out of that window.
+func _apply_shop_services(data: RoomData, coord: Vector2i) -> void:
+	var is_shop: bool = data.kind == RoomData.Kind.SHOP and _shop_room_available()
+	if not is_shop:
+		return
+
+	# The camera's own aim-lead is suppressed for the visit, or it wobbles
+	# underneath the room's parallax and the two fight over the same few pixels.
+	_camera.set_lead_enabled(false)
+
+	if _current_room.has_method("configure_shop"):
+		var capacity: int = _current_room.grid.capacity() if _current_room.grid != null else 0
+		_current_room.configure_shop(
+			_shop_registry.stock_for(shop_config.stock_provider, _floor_number, coord, capacity),
+			_player)
+		if not _current_room.offer_purchased.is_connected(_on_offer_purchased):
+			_current_room.offer_purchased.connect(_on_offer_purchased)
+
+
+func _release_clock_hold() -> void:
+	if _clock_hold != null:
+		_clock_hold.set_held(false)
+
+
+## Somebody bought something.
+##
+## The room reports the sale and this decides what it means, which keeps the shop
+## from being the one node that knows both what is on a shelf and what a player
+## is made of. Applying the effects is the item catalogue's contract — see
+## ItemEffect on the drops branch — and is duck-typed until it lands.
+func _on_offer_purchased(offer: ShopOffer) -> void:
+	if offer == null or offer.item == null:
+		return
+	# grant_to rather than walking the effects here: ItemDef says in its own
+	# docstring that it exists so the shop hands an item over by exactly the path
+	# a floor drop does, and a second implementation of "apply every effect" is
+	# the one that would drift.
+	offer.item.grant_to(_player)
 ## Let a tuning profile pick a different drop economy for the run.
 ##
 ## The inspector slot is what ships; this only redirects it, so a profile naming
@@ -819,10 +1036,111 @@ func _spawn_loot(source: StringName, at: Vector2) -> void:
 			AudioManager.play_sfx(item.drop_sound)
 
 
-## A small random nudge off a drop point, kept inside the walkable floor.
+## A small random nudge off a drop point, kept inside the walkable floor and out
+## of anything solid.
+##
+## A pickup inside a crate is not a softlock — the pickup's area still overlaps
+## the player's body, and breaking the crate frees it either way — but it is a
+## coin the player has to walk into a wall to see. Pushed out after the clamp
+## rather than before, because the props all sit well inside the floor rect.
 func _scattered(local: Vector2) -> Vector2:
 	var offset := Vector2(
 			_loot_rng.randf_range(-LOOT_SCATTER, LOOT_SCATTER),
 			_loot_rng.randf_range(-LOOT_SCATTER, LOOT_SCATTER))
 	var inside := Room.FLOOR.grow(-LOOT_SCATTER)
-	return (local + offset).clamp(inside.position, inside.end)
+	var spot := (local + offset).clamp(inside.position, inside.end)
+	return _obstacle_field.nudge_clear(spot, LOOT_CLEARANCE) \
+			.clamp(inside.position, inside.end)
+
+
+## Furnish a room with its solid props.
+##
+## Its own call rather than part of [method _populate], and the difference
+## matters: a room is freed and rebuilt on every entry, but _populate returns
+## early once the room has been cleared. Folding these two together — which is the
+## obvious tidy-up — would silently strip the furniture out of every room the
+## player has already fought through.
+##
+## Everything here is a function of the floor seed and the room's coord, never of
+## _rng and never of where the player is standing. _rng is one stream drawn in
+## room-visit order, so a prop taken from it would move when the player backtracks;
+## and the player arrives through a different door each visit, so a layout that
+## avoided them would rearrange itself for the same reason. A local generator
+## seeded per cell is what keeps fixed_seed.cfg honest.
+func _scatter_obstacles(data: RoomData) -> void:
+	_obstacle_field = ObstacleField.new()
+	if obstacle_set == null or not obstacle_set.allows_kind(data.kind):
+		return
+
+	# The room's own answer about its own floor: the exit room's is a shallow
+	# strip built around the lift, and it returns an empty rect to say "not here".
+	var floor_rect: Rect2 = _current_room.obstacle_rect()
+	if not floor_rect.has_area():
+		return
+
+	var rng := RandomNumberGenerator.new()
+	rng.seed = ObstaclePlacement.seed_for(
+			FloorGenerator.floor_seed_for(run_seed, _floor_number), data.coord)
+
+	# The doorways, plus the middle of the floor — that is where
+	# default_spawn_position puts a player who arrives without a door, which is
+	# every player at the start of every floor.
+	var keep_clear := _current_room.open_door_landings()
+	keep_clear.append(floor_rect.get_center())
+
+	var plans := ObstaclePlacement.points(floor_rect, obstacle_set, keep_clear, rng)
+	for i in plans.size():
+		# Walk the whole list and skip the broken ones rather than filtering it
+		# first: the index IS the identity, so renumbering after a break would
+		# bring back the wrong prop.
+		if (data.obstacles_destroyed & (1 << i)) != 0:
+			continue
+		var plan := plans[i]
+		var obstacle: Obstacle = OBSTACLE_SCENE.instantiate()
+		# Before it enters the tree, the same window make_boss uses: Health copies
+		# max_hp into hp in its own _ready.
+		obstacle.configure(plan.def, i)
+		obstacle.destroyed.connect(_on_obstacle_destroyed.bind(data))
+		_current_room.add_obstacle(obstacle, plan.position)
+		_obstacle_field.add(plan.position, plan.def.body_radius)
+
+
+## Remember a broken prop so it stays broken.
+##
+## Written straight away rather than deferred: this is reached from a bullet's
+## body_entered, so it runs mid physics-flush, but it touches no nodes — the same
+## split _on_enemy_died makes, where the bookkeeping is immediate and only the
+## spawning is put off.
+##
+## The field is not rebuilt. It is read when a room is stocked, which has already
+## happened by the time anything can be shot, and leaving a broken prop in it
+## costs nothing until the room is next entered and it is rebuilt from scratch.
+func _on_obstacle_destroyed(index: int, data: RoomData) -> void:
+	data.obstacles_destroyed |= 1 << index
+
+
+## Fold the active tuning profile into the obstacle set.
+##
+## Here rather than on ObstacleSet itself, which is where FloorConfig puts its
+## equivalent. Naming GameConfig inside a Resource makes that autoload a
+## compile-time dependency of every script that names the Resource's type, and
+## `godot --headless --script` starts no autoloads — which is why check_floors.gd
+## cannot currently load. Doing it from a Node keeps the systems/ side loadable
+## from a terminal, which is the whole point of putting the rules there.
+##
+## Duplicated first, so a profile cannot write itself into the .tres on disk: the
+## set is a shared resource, and editing it in place would follow the developer
+## into a commit — the accident tuning profiles exist to prevent.
+##
+## No fallback when the slot is empty. A Game with no obstacle set is a game with
+## bare rooms, which is a perfectly good game.
+func _apply_obstacle_overrides() -> void:
+	if obstacle_set == null:
+		return
+	obstacle_set = obstacle_set.duplicate()
+	obstacle_set.count_min = GameConfig.get_value(
+			"obstacles", "count_min", obstacle_set.count_min)
+	obstacle_set.count_max = GameConfig.get_value(
+			"obstacles", "count_max", obstacle_set.count_max)
+	obstacle_set.room_kinds = GameConfig.get_value(
+			"obstacles", "room_kinds", obstacle_set.room_kinds)

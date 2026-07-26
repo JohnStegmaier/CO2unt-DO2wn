@@ -240,12 +240,14 @@ func spend_seconds(seconds: float) -> void:
 	update_needle()
 
 
-## A pickup's counterpart to spend_seconds — clamped to a full tank so it can't
-## stack the player past what the suit ever holds fresh. _update_suffocation()
-## already clears _depleted_emitted and fires air_restored on its own once
-## time_left reads above zero again, so this needs no extra bookkeeping for that.
+## A pickup's counterpart to spend_seconds — clamped to NEEDLE_MAX_TIME rather
+## than total_time, so a run that stacks enough oxygen pickups can fill the
+## tank past its starting 90s, all the way to what the gauge can physically
+## show. _update_suffocation() already clears _depleted_emitted and fires
+## air_restored on its own once time_left reads above zero again, so this
+## needs no extra bookkeeping for that.
 func gain_seconds(seconds: float) -> void:
-	time_left = minf(time_left + seconds, total_time)
+	time_left = minf(time_left + seconds, NEEDLE_MAX_TIME)
 	update_label()
 	update_needle()
 

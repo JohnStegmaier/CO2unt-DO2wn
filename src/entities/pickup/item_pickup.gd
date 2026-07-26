@@ -12,8 +12,9 @@ extends Area2D
 ## take_damage: this has no dependency on Player beyond the effects' methods
 ## existing, and the PICKUP layer only masks PLAYER so nothing else can trip it.
 
-## Set before this enters the tree, the way Enemy.behaviour and Health.max_hp
-## are. _ready is what draws it, so an item assigned later would be invisible.
+## Set before this enters the tree, the way [method Enemy.configure] and
+## Health.max_hp are. _ready is what draws it, so an item assigned later would be
+## invisible.
 @export var item: ItemDef
 
 @export_group("Hover")

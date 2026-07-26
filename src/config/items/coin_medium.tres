@@ -18,5 +18,5 @@ icon = ExtResource("3_kppic")
 icon_frames = ExtResource("5_spin")
 icon_animation = &"spin"
 icon_scale = 0.22
-pickup_sound = &"money_drop_1"
+pickup_sound = &"money_jingle_1"
 effects = Array[ExtResource("1_ag812")]([SubResource("Resource_fs4uh")])

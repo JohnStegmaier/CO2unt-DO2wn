@@ -1,0 +1,75 @@
+[gd_resource type="SpriteFrames" load_steps=17 format=3]
+
+[ext_resource type="Texture2D" uid="uid://ctr30qwe3t6vk" path="res://assets/sprites/characters/bad_guy/sentryturret/sentryturret1.png" id="1_sentryturret1"]
+[ext_resource type="Texture2D" uid="uid://eodxt3wtq0b0" path="res://assets/sprites/characters/bad_guy/sentryturret/sentryturret2.png" id="2_sentryturret2"]
+[ext_resource type="Texture2D" uid="uid://f4lq8d0tbfy2" path="res://assets/sprites/characters/bad_guy/sentryturret/sentryturret3.png" id="3_sentryturret3"]
+[ext_resource type="Texture2D" uid="uid://b41rdwad7u0u1" path="res://assets/sprites/characters/bad_guy/sentryturret/sentryturret4.png" id="4_sentryturret4"]
+[ext_resource type="Texture2D" uid="uid://4snpur2syiml" path="res://assets/sprites/characters/bad_guy/sentryturret/sentryturret5.png" id="5_sentryturret5"]
+[ext_resource type="Texture2D" uid="uid://dmlb3ug3c1pju" path="res://assets/sprites/characters/bad_guy/sentryturret/sentryturret6.png" id="6_sentryturret6"]
+[ext_resource type="Texture2D" uid="uid://cduj7ov8fm471" path="res://assets/sprites/characters/bad_guy/sentryturret/sentryturret7.png" id="7_sentryturret7"]
+[ext_resource type="Texture2D" uid="uid://dfbgcsuv5rsoi" path="res://assets/sprites/characters/bad_guy/sentryturret/sentryturret8.png" id="8_sentryturret8"]
+[ext_resource type="Texture2D" uid="uid://ctocfann5olpe" path="res://assets/sprites/characters/bad_guy/sentryturret/sentryturret9.png" id="9_sentryturret9"]
+[ext_resource type="Texture2D" uid="uid://4jvbtl75ovd2" path="res://assets/sprites/characters/bad_guy/sentryturret/sentryturret10.png" id="10_sentryturret10"]
+[ext_resource type="Texture2D" uid="uid://d241vlcehaq5h" path="res://assets/sprites/characters/bad_guy/sentryturret/sentryturret11.png" id="11_sentryturret11"]
+[ext_resource type="Texture2D" uid="uid://dlpxdt4c5hglh" path="res://assets/sprites/characters/bad_guy/sentryturret/sentryturret12.png" id="12_sentryturret12"]
+[ext_resource type="Texture2D" uid="uid://dctdc3xpujc26" path="res://assets/sprites/characters/bad_guy/sentryturret/sentryturret13.png" id="13_sentryturret13"]
+[ext_resource type="Texture2D" uid="uid://cwberphy8ci52" path="res://assets/sprites/characters/bad_guy/sentryturret/sentryturret14.png" id="14_sentryturret14"]
+[ext_resource type="Texture2D" uid="uid://dkufi5oi4gsws" path="res://assets/sprites/characters/bad_guy/sentryturret/sentryturret15.png" id="15_sentryturret15"]
+[ext_resource type="Texture2D" uid="uid://ctsxpqmseoiki" path="res://assets/sprites/characters/bad_guy/sentryturret/sentryturret16.png" id="16_sentryturret16"]
+
+[resource]
+animations = [
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_sentryturret1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_sentryturret2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_sentryturret3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_sentryturret4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_sentryturret5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_sentryturret6")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_sentryturret7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_sentryturret8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_sentryturret9")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_sentryturret10")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_sentryturret11")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_sentryturret12")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_sentryturret13")
+}, {
+"duration": 1.0,
+"texture": ExtResource("14_sentryturret14")
+}, {
+"duration": 1.0,
+"texture": ExtResource("15_sentryturret15")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_sentryturret16")
+}],
+"loop": false,
+"name": &"move",
+"speed": 1.0
+}]

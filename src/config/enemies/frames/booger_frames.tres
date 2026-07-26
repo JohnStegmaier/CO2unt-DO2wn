@@ -1,0 +1,27 @@
+[gd_resource type="SpriteFrames" load_steps=5 format=3]
+
+[ext_resource type="Texture2D" uid="uid://4lbtqs5nrqab" path="res://assets/sprites/characters/bad_guy/booger/booger1.png" id="1_booger1"]
+[ext_resource type="Texture2D" uid="uid://dsik7n5d1hg4e" path="res://assets/sprites/characters/bad_guy/booger/booger2.png" id="2_booger2"]
+[ext_resource type="Texture2D" uid="uid://batp5qxdbcunv" path="res://assets/sprites/characters/bad_guy/booger/booger3.png" id="3_booger3"]
+[ext_resource type="Texture2D" uid="uid://suif56umev5m" path="res://assets/sprites/characters/bad_guy/booger/booger4.png" id="4_booger4"]
+
+[resource]
+animations = [
+{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_booger1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_booger2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_booger3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_booger4")
+}],
+"loop": true,
+"name": &"move",
+"speed": 8.0
+}]

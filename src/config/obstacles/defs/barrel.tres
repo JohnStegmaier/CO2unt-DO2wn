@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ObstacleDef" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/systems/obstacles/obstacle_def.gd" id="1_def"]
+[ext_resource type="Texture2D" uid="uid://cn5abfe0fpgck" path="res://assets/sprites/environment/barrel.png" id="2_tex"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"barrel"
+texture = ExtResource("2_tex")
+offset = Vector2(-2.5, -1)
+sprite_scale = 0.625
+body_radius = 8.0
+max_hp = 40
+indestructible = false
+weight = 1.0

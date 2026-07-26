@@ -28,6 +28,18 @@ var visited: bool = false
 ## emitting died, so the count is exactly what comes back.
 var enemies_remaining: int = -1
 
+## Which of this room's solid props the player has broken, as a bitmask over each
+## prop's index in ObstaclePlacement.points().
+##
+## A mask rather than an array for the same reason `doors` is one: the count is
+## small and fixed, and this exists once per cell of every floor.
+##
+## Indexing by placement order is only sound because that order is reproducible —
+## a room is freed and rebuilt on every entry, so a layout that re-rolled would
+## come back with the same bits set against different props and resurrect the
+## wrong crate. See the note on determinism in obstacle_placement.gd.
+var obstacles_destroyed: int = 0
+
 
 ## kind is a Kind, and side arguments are a GridDirection.Side, but both are
 ## typed int here — see the note in grid_direction.gd on enums across scripts.

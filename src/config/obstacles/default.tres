@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ObstacleSet" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://src/systems/obstacles/obstacle_set.gd" id="1_set"]
+[ext_resource type="Script" path="res://src/systems/obstacles/obstacle_def.gd" id="2_def"]
+[ext_resource type="Resource" path="res://src/config/obstacles/defs/rocks.tres" id="3_rocks"]
+[ext_resource type="Resource" path="res://src/config/obstacles/defs/barrel.tres" id="4_barrel"]
+[ext_resource type="Resource" path="res://src/config/obstacles/defs/crate.tres" id="5_crate"]
+
+[resource]
+script = ExtResource("1_set")
+defs = Array[ExtResource("2_def")]([ExtResource("3_rocks"), ExtResource("4_barrel"), ExtResource("5_crate")])
+count_min = 2
+count_max = 4
+room_kinds = 5

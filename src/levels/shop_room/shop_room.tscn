@@ -1,0 +1,222 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/levels/shop_room/shop_room.gd" id="1_shop"]
+[ext_resource type="Script" path="res://src/components/depth_layer.gd" id="2_layer"]
+[ext_resource type="PackedScene" path="res://src/ui/selection_frame/selection_frame.tscn" id="3_frame"]
+[ext_resource type="PackedScene" path="res://src/components/elevator/elevator.tscn" id="4_elevator"]
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/Shop_matt.png" id="5_mat"]
+[ext_resource type="Script" path="res://src/systems/shop_grid.gd" id="7_grid"]
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/shoptable.png" id="8_table"]
+[ext_resource type="Texture2D" path="res://assets/sprites/characters/shopkeeper/shopkeeper1.png" id="9_keeper1"]
+[ext_resource type="Texture2D" path="res://assets/sprites/characters/shopkeeper/shopkeeper2.png" id="10_keeper2"]
+[ext_resource type="Texture2D" path="res://assets/sprites/characters/shopkeeper/shopkeeper3.png" id="11_keeper3"]
+[ext_resource type="Texture2D" path="res://assets/sprites/characters/shopkeeper/shopkeeper4.png" id="12_keeper4"]
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_keeper"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("9_keeper1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("10_keeper2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_keeper3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_keeper4")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 6.0
+}]
+
+[sub_resource type="Resource" id="Resource_grid"]
+script = ExtResource("7_grid")
+rows = 3
+columns = 8
+origin = Vector2(70, 62)
+cell_size = Vector2(24, 24)
+cell_spacing = Vector2(2, 8)
+center_gap = 96.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_counter"]
+size = Vector2(343, 12)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_side"]
+size = Vector2(28, 58)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_near_lip"]
+size = Vector2(343, 10)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_zone"]
+size = Vector2(442, 240)
+
+[node name="ShopRoom" type="Node2D"]
+script = ExtResource("1_shop")
+grid = SubResource("Resource_grid")
+
+[node name="Depth" type="Node2D" parent="."]
+
+[node name="BackWall" type="Node2D" parent="Depth"]
+script = ExtResource("2_layer")
+depth_factor = 0.0
+
+[node name="ceiling" type="ColorRect" parent="Depth/BackWall"]
+offset_right = 442.0
+offset_bottom = 14.0
+color = Color(0.09, 0.1, 0.13, 1)
+mouse_filter = 2
+
+[node name="back_wall" type="ColorRect" parent="Depth/BackWall"]
+offset_top = 14.0
+offset_right = 442.0
+offset_bottom = 168.0
+color = Color(0.21, 0.18, 0.24, 1)
+mouse_filter = 2
+
+[node name="wall_left" type="ColorRect" parent="Depth/BackWall"]
+offset_top = 14.0
+offset_right = 49.0
+offset_bottom = 240.0
+color = Color(0.14, 0.12, 0.17, 1)
+mouse_filter = 2
+
+[node name="wall_right" type="ColorRect" parent="Depth/BackWall"]
+offset_left = 392.0
+offset_top = 14.0
+offset_right = 442.0
+offset_bottom = 240.0
+color = Color(0.14, 0.12, 0.17, 1)
+mouse_filter = 2
+
+[node name="skirting" type="ColorRect" parent="Depth/BackWall"]
+offset_top = 186.0
+offset_right = 442.0
+offset_bottom = 191.0
+color = Color(0.12, 0.1, 0.15, 1)
+mouse_filter = 2
+
+[node name="floor" type="ColorRect" parent="Depth/BackWall"]
+offset_top = 191.0
+offset_right = 442.0
+offset_bottom = 240.0
+color = Color(0.31, 0.28, 0.3, 1)
+mouse_filter = 2
+
+[node name="Shelves" type="Node2D" parent="Depth"]
+script = ExtResource("2_layer")
+depth_factor = 0.15
+
+[node name="Planks" type="Node2D" parent="Depth/Shelves"]
+
+[node name="Slots" type="Node2D" parent="Depth/Shelves"]
+
+[node name="SelectionFrame" parent="Depth/Shelves" instance=ExtResource("3_frame")]
+
+[node name="Shopkeeper" type="Node2D" parent="Depth"]
+script = ExtResource("2_layer")
+depth_factor = 0.35
+
+[node name="keeper" type="AnimatedSprite2D" parent="Depth/Shopkeeper"]
+texture_filter = 1
+position = Vector2(221, 147)
+scale = Vector2(1.35, 1.35)
+sprite_frames = SubResource("SpriteFrames_keeper")
+animation = &"idle"
+autoplay = "idle"
+
+[node name="TalkPrompt" type="Label" parent="Depth/Shopkeeper"]
+visible = false
+offset_left = 186.0
+offset_top = 90.0
+offset_right = 256.0
+offset_bottom = 104.0
+theme_override_colors/font_color = Color(1, 0.94, 0.62, 1)
+theme_override_font_sizes/font_size = 9
+text = "[E] TALK"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="Counter" type="Node2D" parent="Depth"]
+script = ExtResource("2_layer")
+depth_factor = 0.55
+
+[node name="mat" type="Sprite2D" parent="Depth/Counter"]
+texture_filter = 1
+position = Vector2(221, 213)
+scale = Vector2(0.62, 0.34)
+texture = ExtResource("5_mat")
+
+[node name="table" type="NinePatchRect" parent="Depth/Counter"]
+texture_filter = 1
+offset_left = 49.0
+offset_top = 165.0
+offset_right = 392.0
+offset_bottom = 193.0
+mouse_filter = 2
+texture = ExtResource("8_table")
+patch_margin_left = 26
+patch_margin_right = 12
+axis_stretch_horizontal = 0
+
+[node name="Foreground" type="Node2D" parent="Depth"]
+script = ExtResource("2_layer")
+depth_factor = 0.85
+
+[node name="lip" type="ColorRect" parent="Depth/Foreground"]
+offset_top = 236.0
+offset_right = 442.0
+offset_bottom = 240.0
+color = Color(0.1, 0.09, 0.12, 1)
+mouse_filter = 2
+
+[node name="ShopZone" type="Area2D" parent="."]
+position = Vector2(221, 120)
+collision_layer = 0
+collision_mask = 2
+
+[node name="shape" type="CollisionShape2D" parent="ShopZone"]
+shape = SubResource("RectangleShape2D_zone")
+debug_color = Color(0.4, 0.4, 0.9, 0.1)
+
+[node name="Walls" type="Node2D" parent="."]
+
+[node name="WallBody" type="StaticBody2D" parent="Walls"]
+collision_mask = 0
+
+[node name="counter_band" type="CollisionShape2D" parent="Walls/WallBody"]
+position = Vector2(220.5, 178)
+shape = SubResource("RectangleShape2D_counter")
+
+[node name="wall_left" type="CollisionShape2D" parent="Walls/WallBody"]
+position = Vector2(35, 211)
+shape = SubResource("RectangleShape2D_side")
+
+[node name="wall_right" type="CollisionShape2D" parent="Walls/WallBody"]
+position = Vector2(406, 211)
+shape = SubResource("RectangleShape2D_side")
+
+[node name="near_lip" type="CollisionShape2D" parent="Walls/WallBody"]
+position = Vector2(220.5, 245)
+shape = SubResource("RectangleShape2D_near_lip")
+
+[node name="Plugs" type="Node2D" parent="Walls"]
+
+[node name="Entities" type="Node2D" parent="."]
+
+[node name="Doors" type="Node2D" parent="."]
+
+[node name="Tint" type="ColorRect" parent="."]
+offset_right = 442.0
+offset_bottom = 240.0
+color = Color(0, 0, 0, 0)
+mouse_filter = 2
+
+[node name="Elevator" parent="." instance=ExtResource("4_elevator")]
+visible = false
+
+[connection signal="body_entered" from="ShopZone" to="." method="_on_shop_entered"]
+[connection signal="body_exited" from="ShopZone" to="." method="_on_shop_exited"]

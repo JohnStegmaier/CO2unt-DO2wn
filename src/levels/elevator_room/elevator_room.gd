@@ -359,9 +359,17 @@ func _measure_foot_offset(player: Player) -> float:
 	return -texture.get_height() * 0.5
 
 
+## Same hazard ShopRoom._on_shop_exited documents: Game._cut_to disables the
+## departing room before it fades, LobbyZone reports the player as having left,
+## and restoring them there shrinks them out of their depth-scaled size while the
+## screen is still visible. is_warping tells a teardown from a real exit; the
+## restore still happens under the black and in _exit_tree.
 func _on_lobby_exited(body: Node2D) -> void:
-	if body is Player:
-		_restore_player()
+	if not (body is Player):
+		return
+	if _player != null and is_instance_valid(_player) and _player.is_warping:
+		return
+	_restore_player()
 
 
 ## Hand the player back exactly as she arrived.

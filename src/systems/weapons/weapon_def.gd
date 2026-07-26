@@ -60,7 +60,7 @@ enum SpreadMode {
 ## Uniform scale for [member held_texture] on the gun sprite.
 ##
 ## Sprites in this project are authored at wildly different sizes — the pistol is
-## 242x202 drawn at 0.05, the shotgun is 14x3 drawn at 1.0 — so this is part of
+## 32x32 drawn at 0.75, the shotgun is 14x3 drawn at 1.0 — so this is part of
 ## how a weapon looks rather than a fudge factor, the same as ItemDef.icon_scale.
 @export var held_scale: float = 1.0
 ## Pushes the sprite away from the hand it pivots around. The pistol's art has

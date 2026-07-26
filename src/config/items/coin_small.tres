@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://emnui7uyddjn" path="res://src/systems/loot/item_effect.gd" id="1_dxr7k"]
 [ext_resource type="Script" uid="uid://de516cuorh3t3" path="res://src/systems/loot/effects/grant_coins.gd" id="2_v8j6j"]
-[ext_resource type="Texture2D" uid="uid://ba2kiutrlno8t" path="res://assets/sprites/environment/coin.png" id="3_80peg"]
+[ext_resource type="Texture2D" uid="uid://7i8cys8nluv1" path="res://assets/sprites/items/coin/coin1.png" id="3_v8j6j"]
 [ext_resource type="Script" uid="uid://dmxi7afktl2qr" path="res://src/systems/loot/item_def.gd" id="4_ygd3c"]
 [ext_resource type="SpriteFrames" uid="uid://sksbnhk7mofk" path="res://assets/sprites/items/coin/coin_spin_frames.tres" id="5_spin"]
 
@@ -13,10 +13,10 @@ script = ExtResource("2_v8j6j")
 script = ExtResource("4_ygd3c")
 id = &"coin_small"
 display_name = "Loose Change"
-icon = ExtResource("3_80peg")
+icon = ExtResource("3_v8j6j")
 icon_frames = ExtResource("5_spin")
 icon_animation = &"spin"
-icon_scale = 0.15
+icon_scale = 0.5
 pickup_sound = &"money_jingle_1"
 drop_sound = &"money_drop_2"
 effects = Array[ExtResource("1_dxr7k")]([SubResource("Resource_b2dox")])

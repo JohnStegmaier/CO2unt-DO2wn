@@ -16,3 +16,4 @@ const ENEMY := 1 << 2
 const PLAYER_BULLET := 1 << 3
 const ENEMY_BULLET := 1 << 4
 const DOOR := 1 << 5
+const PICKUP := 1 << 6

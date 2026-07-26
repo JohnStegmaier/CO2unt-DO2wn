@@ -28,7 +28,7 @@ signal suffocation_changed(progress: float)
 signal suffocated
 
 @export var total_time: float = 90 # starting time in seconds
-var time_left
+var time_left = "=)"
 
 ## How fast air is spent, as a multiplier on real time. Piercing damage tears the
 ## suit and raises it; it eases back toward normal so a tear is a crisis rather
@@ -115,8 +115,6 @@ var _air_critical := false
 	$UIMain/StatContainers/FireRateLv7,
 ]
 
-var setup_done = false
-
 var degrees: float = 90.0
 ## Only used by the "snap" border style — the tween owns the bars there, and it
 ## must not be restarted every frame the player sits under the threshold.
@@ -157,7 +155,7 @@ const FLICK_DURATION := 0.10  # seconds for the flick out, same again for return
 func _ready() -> void:
 	print("ready!")
 	
-	# Before anything reads it: _setup() and refill() both copy total_time into
+	# Before anything reads it: refill() copies total_time into
 	# time_left, and they are the only things that start the clock. Overriding
 	# here rather than editing the number above is the whole point of issue #26 —
 	# a test value in a profile cannot be committed into the game by accident.
@@ -168,6 +166,8 @@ func _ready() -> void:
 	# instead of drifting with delta and drain_rate like the needle does.
 	GlobalTimer.tick.connect(update_label)
 	GlobalTimer.tick.connect(play_heartbeat)
+	GlobalTimer.tick.connect(flick_needle)
+	GlobalTimer.tick.connect(_alternate_lights)
 	drain_enabled = GameConfig.get_value("oxygen", "drain", drain_enabled)
 	needle.rotation_degrees = degrees
 
@@ -207,11 +207,6 @@ func refill() -> void:
 	update_needle()
 
 
-## The one place a hit becomes a cost in air.
-##
-## Ignored until the countdown has actually started: _setup() waits for the first
-## GlobalTimer tick plus 0.3s before assigning time_left, and anything spent
-## before that would be silently overwritten.
 func apply_damage(amount: int, type: int) -> void:
 	_flash_heartbeat()
 	# The single gate on damage, because this is the single place a hit becomes a
@@ -236,6 +231,16 @@ func _flash_heartbeat() -> void:
 
 func spend_seconds(seconds: float) -> void:
 	time_left = maxf(time_left - seconds, 0.0)
+	update_label()
+	update_needle()
+
+
+## A pickup's counterpart to spend_seconds — clamped to a full tank so it can't
+## stack the player past what the suit ever holds fresh. _update_suffocation()
+## already clears _depleted_emitted and fires air_restored on its own once
+## time_left reads above zero again, so this needs no extra bookkeeping for that.
+func gain_seconds(seconds: float) -> void:
+	time_left = minf(time_left + seconds, total_time)
 	update_label()
 	update_needle()
 
@@ -369,7 +374,6 @@ func set_firerate_lvl(lvl: int) -> void:
 
 func update_label() -> void:
 	await get_tree().create_timer(0.2).timeout
-	_alternate_lights()
 	update_label_color()
 	_update_label_text()
 
@@ -399,6 +403,7 @@ func play_heartbeat():
 ## over. Keeps the two groups (1/3/5 and 2/4/6) in lockstep opposition rather
 ## than tracking three independent blink states.
 func _alternate_lights() -> void:
+	await get_tree().create_timer(0.2).timeout
 	_lights_alternate = not _lights_alternate
 	var odd_color := LIGHT_ON_COLOR if _lights_alternate else LIGHT_OFF_COLOR
 	var even_color := LIGHT_OFF_COLOR if _lights_alternate else LIGHT_ON_COLOR

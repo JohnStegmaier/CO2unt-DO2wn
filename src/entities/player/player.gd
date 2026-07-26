@@ -133,6 +133,11 @@ var is_warping := false
 ## what a hit costs. Signals up, calls down: the player never touches the HUD.
 signal damaged(amount: int, type: int)
 
+## An oxygen pickup landed on us. Same shape as damaged — reports up rather than
+## touching the O2 timer directly, so the player still knows nothing about the
+## HUD.
+signal healed(seconds: float)
+
 ## The body has finished dying. Emitted after the animation, so a listener can
 ## hold the camera on us before the screen goes anywhere. The decision that we
 ## died is not ours — the O2 timer makes it and the run calls die().
@@ -307,6 +312,12 @@ func take_damage(amount: int, type: int = Damage.Type.BLUNT) -> void:
 	_invulnerable_until_msec = Time.get_ticks_msec() + int(invulnerable_time * 1000.0)
 	damaged.emit(amount, type)
 	_flash_hit()
+
+
+## Called by oxygen_pickup.gd on contact. Duck-typed the same way bullet.gd
+## calls take_damage — the pickup does not need to know it is a Player.
+func heal(seconds: float) -> void:
+	healed.emit(seconds)
 
 
 ## Out of air. Hand over control and play out.

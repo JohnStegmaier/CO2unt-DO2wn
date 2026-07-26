@@ -98,6 +98,7 @@ func _ready() -> void:
 	# The player reports hits upward and the O2 timer decides what they cost.
 	# Game is the only node holding both ends, so the wiring belongs here.
 	_player.damaged.connect(_o2_timer.apply_damage)
+	_player.healed.connect(_o2_timer.gain_seconds)
 	_o2_timer.depleted.connect(_on_air_depleted)
 	_o2_timer.air_restored.connect(_on_air_restored)
 	_o2_timer.air_critical_changed.connect(_on_air_critical_changed)

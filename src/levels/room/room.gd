@@ -189,6 +189,30 @@ func _obstacle_holder() -> Node2D:
 	return holder
 
 
+## Put a piece of cosmetic floor dressing down. Same contract as
+## [method add_obstacle] — position before the tree, interpolation reset after
+## — but its own layer, one below Obstacles: a blood splat under a crate should
+## stay under it rather than fight it for the same z_index.
+func add_decal(node: Node2D, local_position: Vector2) -> void:
+	node.position = local_position
+	_decal_holder().add_child(node)
+	node.reset_physics_interpolation()
+
+
+## The layer decals are parented to, made if this room has not got one. Same
+## reasoning as [method _obstacle_holder] — a Room subclass with its own tree
+## must not be assumed to carry this node.
+func _decal_holder() -> Node2D:
+	var holder := get_node_or_null(^"Decals") as Node2D
+	if holder != null:
+		return holder
+	holder = Node2D.new()
+	holder.name = "Decals"
+	holder.z_index = -1
+	add_child(holder)
+	return holder
+
+
 ## Room-local rect that solid props may be scattered into. An empty rect means
 ## "not this room".
 ##

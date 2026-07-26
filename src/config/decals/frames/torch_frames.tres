@@ -1,0 +1,38 @@
+[gd_resource type="SpriteFrames" load_steps=8 format=3]
+
+[ext_resource type="Texture2D" uid="uid://l7wj38sxebxr" path="res://assets/sprites/environment/torch/torch1.png" id="1_torch1"]
+[ext_resource type="Texture2D" uid="uid://dd2m7sy7mmqdw" path="res://assets/sprites/environment/torch/torch2.png" id="2_torch2"]
+[ext_resource type="Texture2D" uid="uid://bioeao4yq5mqe" path="res://assets/sprites/environment/torch/torch3.png" id="3_torch3"]
+[ext_resource type="Texture2D" uid="uid://bynb7feuqpq82" path="res://assets/sprites/environment/torch/torch4.png" id="4_torch4"]
+[ext_resource type="Texture2D" uid="uid://cylu7e8cqt2vt" path="res://assets/sprites/environment/torch/torch5.png" id="5_torch5"]
+[ext_resource type="Texture2D" uid="uid://dcocdvtry26a6" path="res://assets/sprites/environment/torch/torch6.png" id="6_torch6"]
+[ext_resource type="Texture2D" uid="uid://dekmex2vtw12p" path="res://assets/sprites/environment/torch/torch7.png" id="7_torch7"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_torch1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_torch2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_torch3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_torch4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_torch5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_torch6")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_torch7")
+}],
+"loop": true,
+"name": &"burn",
+"speed": 8.0
+}]

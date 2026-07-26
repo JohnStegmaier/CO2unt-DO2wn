@@ -132,6 +132,9 @@ offset_right = 13.0
 offset_bottom = 22.0
 color = Color(0.2196078, 0.3294118, 0.4, 1)
 
+[node name="Decals" type="Node2D" parent="."]
+z_index = -1
+
 [node name="Obstacles" type="Node2D" parent="."]
 
 [node name="Tint" type="ColorRect" parent="." unique_id=2045664420]

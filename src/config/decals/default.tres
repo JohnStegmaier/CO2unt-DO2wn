@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="DecalSet" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://src/systems/decals/decal_set.gd" id="1_set"]
+[ext_resource type="Script" path="res://src/systems/decals/decal_def.gd" id="2_def"]
+[ext_resource type="Resource" path="res://src/config/decals/defs/blood_splat_a.tres" id="3_splat_a"]
+[ext_resource type="Resource" path="res://src/config/decals/defs/blood_splat_b.tres" id="4_splat_b"]
+[ext_resource type="Resource" path="res://src/config/decals/defs/blood_splat_c.tres" id="5_splat_c"]
+[ext_resource type="Resource" path="res://src/config/decals/defs/torch.tres" id="6_torch"]
+
+[resource]
+script = ExtResource("1_set")
+defs = Array[ExtResource("2_def")]([ExtResource("3_splat_a"), ExtResource("4_splat_b"), ExtResource("5_splat_c")])
+guaranteed_def = ExtResource("6_torch")
+count_min = 0
+count_max = 3
+room_kinds = 5

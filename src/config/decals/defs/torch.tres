@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="DecalDef" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/systems/decals/decal_def.gd" id="1_def"]
+[ext_resource type="SpriteFrames" path="res://src/config/decals/frames/torch_frames.tres" id="2_frames"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"torch"
+sprite_frames = ExtResource("2_frames")
+animation = &"burn"
+sprite_scale = 1.5
+clearance_radius = 20.0
+weight = 1.0

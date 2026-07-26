@@ -11,6 +11,7 @@ const ROOM_SCENE := preload("res://src/levels/room/room.tscn")
 const ENEMY_SCENE := preload("res://src/entities/enemy/enemy.tscn")
 const ITEM_PICKUP_SCENE := preload("res://src/entities/pickup/item_pickup.tscn")
 const OBSTACLE_SCENE := preload("res://src/entities/obstacle/obstacle.tscn")
+const DECAL_SCENE := preload("res://src/entities/decal/decal.tscn")
 ## The clock's voice, once a second. Named because [ClockHold] has to be able to
 ## cut it short as well as stop the beat that fires it.
 const TICK_SFX := &"tick_trim"
@@ -141,6 +142,11 @@ const LOOT_CLEARANCE := 6.0
 ## get them. Swap the resource for a different set of clutter with no code change;
 ## untick a room kind to leave it bare.
 @export var obstacle_set: ObstacleSet
+
+@export_group("Decals")
+## Which cosmetic floor dressing rooms get, how many, and which kinds of room
+## get it. ObstacleSet's exact shape, for the same reason — see decal_set.gd.
+@export var decal_set: DecalSet
 
 @export_group("Floor")
 ## Shape of every floor in the run. Tune it here and each generated floor obeys.
@@ -284,6 +290,7 @@ func _ready() -> void:
 		floor_config = FloorConfig.new()
 	floor_config.apply_overrides()
 	_apply_obstacle_overrides()
+	_apply_decal_overrides()
 
 	_setup_shops()
 
@@ -400,6 +407,7 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 	# under it; the room slides into view already furnished; and the enemies
 	# placed further down can be told what is in the way.
 	_scatter_obstacles(data)
+	_scatter_decals(data)
 	_current_room.door_entered.connect(_on_door_entered)
 	_current_room.elevator_entered.connect(_on_elevator_entered)
 	# Asked of the room rather than keyed on its kind, for the same reason the scene
@@ -1258,6 +1266,50 @@ func _on_obstacle_destroyed(index: int, loot_source: StringName, at: Vector2, da
 	data.obstacles_destroyed |= 1 << index
 	_obstacle_field.remove_id(index)
 	_spawn_loot.call_deferred(loot_source, at)
+
+
+## Scatter a room's cosmetic floor dressing — blood splats, torches — after its
+## solid props. Order after _scatter_obstacles is cosmetic only: nothing here
+## reads _obstacle_field or feeds one, because nothing steers on a decal.
+##
+## No ObstacleField equivalent and no destroyed-bitmask on RoomData: nothing
+## ever breaks a decal, so there is no state to remember between visits — the
+## same seed simply draws the same dressing again, which is the point.
+func _scatter_decals(data: RoomData) -> void:
+	if decal_set == null or not decal_set.allows_kind(data.kind):
+		return
+
+	var floor_rect: Rect2 = _current_room.obstacle_rect()
+	if not floor_rect.has_area():
+		return
+
+	var rng := RandomNumberGenerator.new()
+	rng.seed = DecalPlacement.seed_for(
+			FloorGenerator.floor_seed_for(run_seed, _floor_number), data.coord)
+
+	var keep_clear := _current_room.open_door_landings()
+	keep_clear.append(floor_rect.get_center())
+
+	var plans := DecalPlacement.points(floor_rect, decal_set, keep_clear, rng)
+	for plan in plans:
+		var decal: RoomDecal = DECAL_SCENE.instantiate()
+		# Before it enters the tree, the same window Obstacle.configure uses.
+		decal.configure(plan.def)
+		_current_room.add_decal(decal, plan.position)
+
+
+## Fold the active tuning profile into the decal set — see
+## _apply_obstacle_overrides for why this lives here and not on DecalSet.
+func _apply_decal_overrides() -> void:
+	if decal_set == null:
+		return
+	decal_set = decal_set.duplicate()
+	decal_set.count_min = GameConfig.get_value(
+			"decals", "count_min", decal_set.count_min)
+	decal_set.count_max = GameConfig.get_value(
+			"decals", "count_max", decal_set.count_max)
+	decal_set.room_kinds = GameConfig.get_value(
+			"decals", "room_kinds", decal_set.room_kinds)
 
 
 ## Fold the active tuning profile into the obstacle set.

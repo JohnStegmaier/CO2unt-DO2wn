@@ -92,6 +92,8 @@ overrides — a section is only listed there if it actually changed something.
 | `drops` | `config` | `game.gd` — names a `.tres` in `src/config/drops/` to use instead of the one on `game.tscn`. The whole economy in one key; see [DROPS.md](DROPS.md) |
 | `obstacles` | `count_min`, `count_max` | `game.gd` — solid props per furnished room. Six is the ceiling: `ObstaclePlacement` lays a 3×2 grid and puts at most one prop in a cell |
 | `obstacles` | `room_kinds` | `game.gd` — bitmask over `RoomData.Kind` (normal 1, spawn 2, boss 4, shop 8, treasure 16, exit 32) of which rooms get props. Ships as `5`, normal and boss |
+| `decals` | `count_min`, `count_max` | `game.gd` — cosmetic floor dressing per furnished room: blood splats, torches. No collision, no cap tied to it — `DecalPlacement` lays a 2×2 grid |
+| `decals` | `room_kinds` | `game.gd` — same mask as `obstacles.room_kinds`. Ships as `5`, normal and boss |
 
 Shrinking a floor means lowering the depth rules with it: the generator rerolls
 40 times and then warns before it will ship an exit shallower than

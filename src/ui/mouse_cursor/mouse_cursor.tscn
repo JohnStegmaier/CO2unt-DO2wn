@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://1ipcev26qkrg"]
+
+[ext_resource type="Script" uid="uid://cj0wysdl4dvjd" path="res://src/ui/mouse_cursor/mouse_cursor.gd" id="1_cursor"]
+[ext_resource type="Texture2D" uid="uid://espua3n8yegi" path="res://assets/sprites/target.png" id="2_target"]
+
+[node name="MouseCursor" type="CanvasLayer" unique_id=1146936912]
+layer = 25
+script = ExtResource("1_cursor")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=969700236]
+modulate = Color(4.1983953, 3.8497922, 3.0131443, 0.60784316)
+texture_filter = 1
+scale = Vector2(1.3275862, 1.3275862)
+texture = ExtResource("2_target")

@@ -37,6 +37,11 @@ const DEFAULT_RATES := {
 ## never flake, tight enough to catch a fat-fingered weight.
 const RATE_TOLERANCE := 0.01
 
+## Sources DEFAULT_RATES actually describes. A source with its own, deliberately
+## different economy — a crate's shotgun chance, say — is not held to the enemy
+## rates above, or every new source would fail this check the day it is added.
+const DEFAULT_RATE_SOURCES: Array[StringName] = [&"grunt", &"skirmisher", &"boss"]
+
 
 func _initialize() -> void:
 	var failures: Array[String] = []
@@ -337,7 +342,7 @@ func _report_shelf(path: String, source: StringName, tables: Array[DropTable]) -
 ## to: updating DEFAULT_RATES is how you say you meant it.
 func _check_default_rates(path: String, source: StringName, counts: Dictionary) -> Array[String]:
 	var errors: Array[String] = []
-	if path.get_file() != "default.tres":
+	if path.get_file() != "default.tres" or not DEFAULT_RATE_SOURCES.has(source):
 		return errors
 	for id in DEFAULT_RATES:
 		var rate: float = counts.get(id, 0) / float(ROLLS)

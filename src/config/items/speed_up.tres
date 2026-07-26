@@ -1,10 +1,10 @@
-[gd_resource type="Resource" script_class="ItemDef" format=3]
+[gd_resource type="Resource" script_class="ItemDef" format=3 uid="uid://tvc671y66uca"]
 
-[ext_resource type="Texture2D" path="res://assets/sprites/items/Drop_orb.png" id="1_po4a3"]
-[ext_resource type="Script" path="res://src/systems/loot/item_effect.gd" id="2_e51wo"]
-[ext_resource type="Script" path="res://src/systems/loot/effects/raise_stat_level.gd" id="3_26tn5"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ui/speed.png" id="4_oop14"]
-[ext_resource type="Script" path="res://src/systems/loot/item_def.gd" id="5_otc5i"]
+[ext_resource type="Texture2D" uid="uid://b2vwww17ku866" path="res://assets/sprites/items/Drop_orb.png" id="1_po4a3"]
+[ext_resource type="Script" uid="uid://emnui7uyddjn" path="res://src/systems/loot/item_effect.gd" id="2_e51wo"]
+[ext_resource type="Script" uid="uid://dwgl5qnepcp10" path="res://src/systems/loot/effects/raise_stat_level.gd" id="3_26tn5"]
+[ext_resource type="Texture2D" uid="uid://dep7p0g6gw0kd" path="res://assets/sprites/ui/speed.png" id="4_oop14"]
+[ext_resource type="Script" uid="uid://dmxi7afktl2qr" path="res://src/systems/loot/item_def.gd" id="5_otc5i"]
 
 [sub_resource type="Resource" id="Resource_31y42"]
 script = ExtResource("3_26tn5")

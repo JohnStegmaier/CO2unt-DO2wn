@@ -110,6 +110,16 @@ var _stuck_frames: int = 0
 var _unstick_frames: int = 0
 var _unstick_sign: float = 1.0
 
+## Set by pulse_stagger. Trigger stays jammed until the msec timestamp passes;
+## steering holds the knockback velocity until the (much shorter) other one does.
+var _fire_suppressed_until_msec: int = 0
+var _knockback_until_msec: int = 0
+
+## How long a pulse knockback holds steering off before the enemy starts
+## fighting its way back toward the target — long enough to read as a shove,
+## short enough that it is not a second, longer stagger stacked on the silence.
+const PULSE_KNOCKBACK_HOLD := 0.25
+
 @onready var _health: Health = $Health
 @onready var _sprite: Sprite2D = $Sprite2D
 
@@ -170,7 +180,8 @@ func _physics_process(delta: float) -> void:
 		_sprite.flip_h = velocity.x < 0.0
 
 	_fire_cooldown -= delta
-	if _fire_cooldown <= 0.0 and to_target.length() < fire_range:
+	var trigger_jammed := Time.get_ticks_msec() < _fire_suppressed_until_msec
+	if not trigger_jammed and _fire_cooldown <= 0.0 and to_target.length() < fire_range:
 		_fire_cooldown = fire_interval
 		_shoot(to_target.normalized())
 
@@ -246,8 +257,10 @@ func _shoot(aim: Vector2) -> void:
 ## components/steering/ with no untangling.
 func _desired_velocity(to_target: Vector2, delta: float) -> Vector2:
 	# Mid-dodge we are not steering at all — hold the jump, same shape as the
-	# player's own is_dodging early return.
+	# player's own is_dodging early return. A pulse knockback holds the same way.
 	if Time.get_ticks_msec() < _dodge_until_msec:
+		return velocity
+	if Time.get_ticks_msec() < _knockback_until_msec:
 		return velocity
 
 	match behaviour:
@@ -319,12 +332,27 @@ func _on_dodge_sensor_area_entered(area: Area2D) -> void:
 	_dodge_ready_at_msec = Time.get_ticks_msec() + int(dodge_cooldown * 1000.0)
 
 
+## Hit by the player's pulse bomb: shoved away from the blast and its trigger
+## jammed for silence_duration. Duck-typed the same way take_damage is, so the
+## bomb needs nothing more than has_method to reach every enemy on screen.
+func pulse_stagger(from: Vector2, force: float, silence_duration: float) -> void:
+	var away := global_position - from
+	if away.length() < 0.001:
+		away = Vector2.RIGHT
+	velocity = away.normalized() * force
+	_knockback_until_msec = Time.get_ticks_msec() + int(PULSE_KNOCKBACK_HOLD * 1000.0)
+	_fire_suppressed_until_msec = Time.get_ticks_msec() + int(silence_duration * 1000.0)
+
+
 func _ready() -> void:
 	# The single most likely "why do bullets go straight through" failure: player
 	# bullets mask ENEMY, so an enemy left on the default layer is invisible to
 	# them. Cheap to assert while the feature is young.
 	assert(collision_layer == CollisionLayers.ENEMY,
 			"Enemy must sit on the ENEMY layer or bullets pass through it")
+	# So the pulse bomb can reach every enemy on screen without game.gd handing
+	# it a list — same trick bullet.gd's "projectiles" group plays for the sweep.
+	add_to_group("enemies")
 	_health.damaged.connect(_on_health_damaged)
 	_health.died.connect(_on_health_died)
 	# Staggered, or a roomful fires in unison forever after.

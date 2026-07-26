@@ -18,11 +18,13 @@ extends StaticBody2D
 
 ## Broken, and which one. The index is into the room's placement result, which is
 ## what game.gd records so it stays broken when the player comes back — see
-## RoomData.obstacles_destroyed.
+## RoomData.obstacles_destroyed. loot_source and at are the same shape as
+## Enemy.died's — this prop's def.id doubles as its drop table row, the same
+## way a behaviour picks an enemy's.
 ##
 ## Reported upward rather than written from here: this knows nothing about floors
-## or rooms, and should not start now.
-signal destroyed(index: int)
+## or rooms, or loot tables, and should not start now.
+signal destroyed(index: int, loot_source: StringName, at: Vector2)
 
 @onready var _sprite: Sprite2D = $Sprite2D
 @onready var _collider: CollisionShape2D = $CollisionShape2D
@@ -78,7 +80,7 @@ func _on_health_died() -> void:
 	# flush. The signal is emitted straight away because it is bookkeeping and the
 	# room has to know now; only the collision change is deferred, which is the
 	# same split game.gd makes when an enemy dies.
-	destroyed.emit(index)
+	destroyed.emit(index, def.id, global_position)
 
 	# Hiding a body does not stop it colliding, and the fade below takes a moment.
 	# Deferred because the physics server rejects this mid-flush.

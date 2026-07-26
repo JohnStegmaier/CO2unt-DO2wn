@@ -409,6 +409,7 @@ func take_damage(amount: int, type: int = Damage.Type.BLUNT) -> void:
 	_invulnerable_until_msec = Time.get_ticks_msec() + int(invulnerable_time * 1000.0)
 	damaged.emit(amount, type)
 	_flash_hit()
+	AudioManager.play_sfx("gas_escapes")
 	AudioManager.play_sfx("damage_taken_0%d" % [1 if randf() < 0.5 else 2], randf_range(1.3,1.4))
 
 
@@ -529,9 +530,8 @@ func reload() -> void:
 	can_shoot = true
 
 
-## Maps current movement input to one of the dodge directions we have
-## animations for. Up-right and up-left aren't supported yet, so those return
-## Vector2.ZERO and the dodge input is simply ignored.
+## Maps current movement input to one of the eight dodge directions we have
+## animations for.
 func get_dodge_direction(v: Vector2) -> Vector2:
 	if v.y > 0:
 		if v.x > 0:
@@ -539,19 +539,23 @@ func get_dodge_direction(v: Vector2) -> Vector2:
 		elif v.x < 0:
 			return Vector2(-1, 1).normalized()  # down-left
 		return Vector2.DOWN
-	elif v.y == 0:
+	elif v.y < 0:
 		if v.x > 0:
-			return Vector2.RIGHT
+			return Vector2(1, -1).normalized()  # up-right
 		elif v.x < 0:
-			return Vector2.LEFT
-	elif v.x == 0:
+			return Vector2(-1, -1).normalized() # up-left
 		return Vector2.UP
+	elif v.x > 0:
+		return Vector2.RIGHT
+	elif v.x < 0:
+		return Vector2.LEFT
 	return Vector2.ZERO
 
 
 ## Dodge in the given direction. "dodge_right" covers right and down-right,
-## mirrored via flip_h for left and down-left; straight down and straight up
-## get their own animations since they aren't just a mirror of anything.
+## mirrored via flip_h for left and down-left; "dodge_up_right" does the same
+## for up-right and up-left. Straight down and straight up get their own
+## animations since they aren't just a mirror of anything.
 func dodge(direction: Vector2) -> void:
 	can_move = false
 	is_dodging = true
@@ -565,6 +569,10 @@ func dodge(direction: Vector2) -> void:
 	elif direction == Vector2.UP:
 		last_direction = "up"
 		sprite.play("dodge_up")
+	elif direction.y < 0:
+		last_direction = "up"
+		sprite.flip_h = direction.x < 0
+		sprite.play("dodge_up_right")
 	else:
 		last_direction = "right"
 		sprite.flip_h = direction.x < 0

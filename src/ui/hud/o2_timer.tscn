@@ -280,6 +280,7 @@ scale = Vector2(0.5, 0.5)
 texture = ExtResource("2_rocwj")
 
 [node name="Light1" type="Sprite2D" parent="UIMain" unique_id=475850424]
+visible = false
 self_modulate = Color(1, 0.5254902, 0.3647059, 1)
 texture_filter = 1
 position = Vector2(38.00004, -10)
@@ -287,6 +288,7 @@ scale = Vector2(1.102938, 1.1029398)
 texture = ExtResource("4_w10os")
 
 [node name="Light2" type="Sprite2D" parent="UIMain" unique_id=1950030570]
+visible = false
 self_modulate = Color(1, 0.5254902, 0.3647059, 1)
 texture_filter = 1
 position = Vector2(72.00001, -10)
@@ -294,6 +296,7 @@ scale = Vector2(1.102938, 1.1029398)
 texture = ExtResource("4_w10os")
 
 [node name="Light3" type="Sprite2D" parent="UIMain" unique_id=548059605]
+visible = false
 self_modulate = Color(1, 0.5254902, 0.3647059, 1)
 texture_filter = 1
 position = Vector2(104.00001, -10)
@@ -301,6 +304,7 @@ scale = Vector2(1.102938, 1.1029398)
 texture = ExtResource("4_w10os")
 
 [node name="Light4" type="Sprite2D" parent="UIMain" unique_id=191238127]
+visible = false
 self_modulate = Color(1, 0.5254902, 0.3647059, 1)
 texture_filter = 1
 position = Vector2(138, -10)
@@ -308,6 +312,7 @@ scale = Vector2(1.102938, 1.1029398)
 texture = ExtResource("4_w10os")
 
 [node name="Light5" type="Sprite2D" parent="UIMain" unique_id=1604904852]
+visible = false
 self_modulate = Color(1, 0.5254902, 0.3647059, 1)
 texture_filter = 1
 position = Vector2(170, -10)
@@ -317,7 +322,7 @@ texture = ExtResource("4_w10os")
 [node name="Light6" type="Sprite2D" parent="UIMain" unique_id=1416657362]
 self_modulate = Color(1, 0.5254902, 0.3647059, 1)
 texture_filter = 1
-position = Vector2(204.00003, -10)
+position = Vector2(30.50003, -8.5)
 scale = Vector2(1.102938, 1.1029398)
 texture = ExtResource("4_w10os")
 

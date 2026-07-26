@@ -36,6 +36,27 @@ const KIND_TINTS: Array[Color] = [
 	Color(0.16, 0.72, 0.36, 0.24),            # EXIT
 ]
 
+## How far a shut door travels sliding into place. Moves along that side's own
+## GridDirection.offset — the direction the door itself faces — so the north
+## door slides up into its slot, the east door slides right into its, and so
+## on; see _animate_door_shut.
+const DOOR_SHUT_RISE_DISTANCE := 24.0
+## Seconds the shut-door slide takes.
+const DOOR_SHUT_TIME := 0.35
+
+## Reveals a shut door in step with its slide, so no part of the sprite is
+## ever drawn ahead of where the door has actually reached — see
+## door_shut_reveal.gdshader.
+const DOOR_SHUT_SHADER := preload("res://assets/shaders/door_shut_reveal.gdshader")
+## Which axis each side's shut sprite wipes in — X for the doors on the east
+## and west walls, Y for north and south — indexed the same way GridDirection
+## SIDES is.
+const DOOR_SHUT_AXIS: Array[int] = [1, 0, 1, 0] # NORTH, EAST, SOUTH, WEST
+## Whether that side's wipe grows from the texture's far edge (UV 1.0) rather
+## than its near one (UV 0.0) — set so the reveal always grows from the edge
+## the door is travelling toward.
+const DOOR_SHUT_FROM_END: Array[bool] = [false, true, true, false] # NORTH, EAST, SOUTH, WEST
+
 ## Where the elevator stands when this room is the exit, indexed by the wall it
 ## is set into. Each sits with its back against that wall's inner face, so the
 ## room can use any wall it has no doorway on — and a dead end, which is the only
@@ -68,6 +89,21 @@ const ELEVATOR_WALL_PREFERENCE: Array[int] = [
 ## sealed for a fight and restored afterwards without the room having to know
 ## why.
 var _open_doors: int = 0
+## Where each side's shut sprite is authored to sit once fully closed. Read
+## once in _ready(), before anything has ever moved it, so a slide that gets
+## interrupted mid-flight and reversed still has a true resting spot to aim
+## for instead of whatever position the animation left it at.
+var _door_shut_resting: Array[Vector2] = [Vector2.ZERO, Vector2.ZERO, Vector2.ZERO, Vector2.ZERO]
+## The logical shut/open state each door is currently sliding toward or
+## already at — distinct from the sprite's own `visible`, which lags behind
+## it for the whole way the door takes to open (see _animate_door_open).
+## Comparing against this rather than `visible` is what lets a lock land while
+## the door is still retracting from the last one and have it reverse cleanly.
+var _door_shut_state: Array[bool] = [false, false, false, false]
+## The slide currently playing for each side, if any. Killed before a new one
+## starts so a door asked to reverse mid-slide picks up from wherever it
+## actually is rather than fighting the tween already driving it.
+var _door_shut_tweens: Array[Tween] = [null, null, null, null]
 ## Is this the cell the floor plan marked as its way out? Only an exit room has a
 ## car to stand in, and only an exit room can be made boardable.
 var _is_exit: bool = false
@@ -79,7 +115,24 @@ var _boardable: bool = true
 func _ready() -> void:
 	for side in GridDirection.SIDES:
 		door_for(side).player_entered.connect(_on_door_player_entered)
+		_setup_door_shut_material(side)
 	_elevator.entered.connect(_on_elevator_entered)
+
+
+## Give this side's shut sprite its own ShaderMaterial. One per sprite rather
+## than one shared resource, because each carries its own axis/from_end — and
+## once a fight starts, more than one door can be mid-slide with its own
+## reveal value at once.
+func _setup_door_shut_material(side: int) -> void:
+	var sprite := _shut_sprite_for(side)
+	_door_shut_resting[side] = sprite.position
+
+	var material := ShaderMaterial.new()
+	material.shader = DOOR_SHUT_SHADER
+	material.set_shader_parameter("axis", DOOR_SHUT_AXIS[side])
+	material.set_shader_parameter("from_end", DOOR_SHUT_FROM_END[side])
+	material.set_shader_parameter("reveal", 1.0)
+	sprite.material = material
 
 
 ## Put something on the floor at a room-local position.
@@ -234,7 +287,88 @@ func _apply_doors(doors: int) -> void:
 		plug.set_deferred("collision_layer", 0 if is_open else CollisionLayers.WORLD)
 
 		_open_sprite_for(side).visible = is_open
-		_shut_sprite_for(side).visible = has_door and not is_open
+
+		var should_be_shut: bool = has_door and not is_open
+		# Compared against the logical state rather than the sprite's own
+		# `visible` — see _door_shut_state — so a lock landing mid-retreat still
+		# registers as a change and reverses the door instead of being ignored
+		# because the sprite happens to still be visible from the last slide.
+		if should_be_shut != _door_shut_state[side]:
+			_door_shut_state[side] = should_be_shut
+			if should_be_shut:
+				_animate_door_shut(_shut_sprite_for(side), side)
+			else:
+				_animate_door_open(_shut_sprite_for(side), side)
+
+
+## Slide a just-shut door into the resting spot it was authored at, arriving
+## from the direction that side itself faces — that authored position is the
+## end of the slide, never its start. The reveal shader rides along with the
+## same progress, so nothing of the sprite is ever visible ahead of where the
+## slide has actually gotten to: at t=0 it is sitting at its start coordinate
+## and showing nothing, and every part of it only appears once the slide has
+## carried it past that.
+func _animate_door_shut(sprite: Sprite2D, side: int) -> void:
+	var resting := _door_shut_resting[side]
+	var direction := Vector2(GridDirection.offset(side))
+	var start := resting - direction * DOOR_SHUT_RISE_DISTANCE
+
+	_kill_door_tween(side)
+	sprite.visible = true
+	sprite.position = start
+	sprite.material.set_shader_parameter("reveal", 0.0)
+
+	var tween := create_tween()
+	tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tween.tween_method(_step_door_shut.bind(sprite, start, resting), 0.0, 1.0, DOOR_SHUT_TIME)
+	_door_shut_tweens[side] = tween
+
+
+func _step_door_shut(t: float, sprite: Sprite2D, start: Vector2, resting: Vector2) -> void:
+	sprite.position = start.lerp(resting, t)
+	sprite.material.set_shader_parameter("reveal", t)
+
+
+## The reverse of _animate_door_shut: retreats the door back out along the
+## same path it slid in on and un-reveals it the same way in step, so a door
+## leaves exactly how it arrived. Reads the sprite's current position and
+## reveal as the start of the retreat rather than assuming it is at rest,
+## so a lock that lands mid-slide and un-locks again just as quickly reverses
+## smoothly instead of jumping.
+func _animate_door_open(sprite: Sprite2D, side: int) -> void:
+	var resting := _door_shut_resting[side]
+	var direction := Vector2(GridDirection.offset(side))
+	var start := resting - direction * DOOR_SHUT_RISE_DISTANCE
+	var from_position := sprite.position
+	var from_reveal: float = sprite.material.get_shader_parameter("reveal")
+
+	_kill_door_tween(side)
+
+	var tween := create_tween()
+	tween.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	tween.tween_method(
+			_step_door_open.bind(sprite, from_position, start, from_reveal), 0.0, 1.0, DOOR_SHUT_TIME)
+	_door_shut_tweens[side] = tween
+
+	await tween.finished
+	# Only the slide that actually finishes gets to hide the door and reset it
+	# — one killed early by a re-lock must leave the sprite exactly where that
+	# newer slide takes over from.
+	if _door_shut_tweens[side] == tween:
+		sprite.visible = false
+		sprite.position = resting
+		sprite.material.set_shader_parameter("reveal", 1.0)
+
+
+func _step_door_open(t: float, sprite: Sprite2D, from_position: Vector2, start: Vector2, from_reveal: float) -> void:
+	sprite.position = from_position.lerp(start, t)
+	sprite.material.set_shader_parameter("reveal", lerpf(from_reveal, 0.0, t))
+
+
+func _kill_door_tween(side: int) -> void:
+	var tween: Tween = _door_shut_tweens[side]
+	if tween != null and tween.is_valid():
+		tween.kill()
 
 
 func door_for(side: int) -> LevelDoor:

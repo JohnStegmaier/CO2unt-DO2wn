@@ -33,5 +33,9 @@ scale = Vector2(0.265, 0.265)
 [node name="Icon" type="Sprite2D" parent="Visual"]
 scale = Vector2(0.265, 0.265)
 
+[node name="IconAnim" type="AnimatedSprite2D" parent="Visual"]
+visible = false
+scale = Vector2(0.265, 0.265)
+
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_pickup")

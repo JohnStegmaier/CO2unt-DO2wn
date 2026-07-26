@@ -34,6 +34,22 @@ const GAME_OVER_SCENE := "res://src/screens/game_over/game_over.tscn"
 ## long enough to register that the body stopped moving.
 @export var death_hold: float = 0.6
 
+@export_group("Exit Room")
+## Stand-in scene for the floor's exit cell. Empty means the exit is an ordinary
+## room with the wall-mounted elevator in it, exactly as if this had never been
+## added; point it at a room scene and that scene is used for the exit instead.
+##
+## Deliberately an injected scene rather than a preloaded const or a bool: this
+## file names no alternative implementation and imports nothing from one, so the
+## exit room is swapped, added or removed entirely from the inspector. Anything
+## satisfying Room's contract — configure, spawn_position, interior_rect,
+## door_entered, elevator_entered — can be dropped in, and clearing the slot takes
+## it back out with no code change and nothing left behind.
+##
+## Wired in game.tscn. When the feature-flag system lands, this becomes one line
+## here and the slot can stay as the registry of what the flag chooses between.
+@export var exit_room_scene: PackedScene
+
 @export_group("Floor")
 ## Shape of every floor in the run. Tune it here and each generated floor obeys.
 @export var floor_config: FloorConfig
@@ -59,6 +75,9 @@ var _rng := RandomNumberGenerator.new()
 @onready var _death_overlay: DeathOverlay = $Player/Camera2D/DeathOverlay
 @onready var _pause_menu: PauseMenu = $PauseMenu
 @onready var _ride: ElevatorRide = $ElevatorRide
+## The wipe used for room changes that cannot be slid across. Distinct from the
+## ride, which is a whole sequence, and from the death wipe, which never reopens.
+@onready var _fade: ScreenFade = $ScreenFade
 
 var _plan: FloorPlan
 var _current_room: Room
@@ -154,7 +173,9 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 	# The room we are leaving stays in the tree until the slide finishes — both
 	# rooms have to be on screen at once for the view to travel between them.
 	var previous_room := _current_room
+	var previous_kind: int = -1
 	if previous_room != null:
+		previous_kind = _plan.get_room(_current_coord).kind
 		previous_room.door_entered.disconnect(_on_door_entered)
 		previous_room.elevator_entered.disconnect(_on_elevator_entered)
 
@@ -164,7 +185,14 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 	var data := _plan.get_room(coord)
 	data.visited = true
 
-	_current_room = ROOM_SCENE.instantiate()
+	# The exit can be a room of its own — see exit_room_scene. Whatever comes back
+	# is a Room and reports boarding through the same elevator_entered signal an
+	# ordinary exit room does, so every line below this is unchanged and the ride
+	# never learns which kind of elevator called it.
+	var scene: PackedScene = ROOM_SCENE
+	if data.kind == RoomData.Kind.EXIT and exit_room_scene != null:
+		scene = exit_room_scene
+	_current_room = scene.instantiate()
 	# Rooms sit at their true grid position rather than all at the origin, so
 	# world space and map space never disagree — which is also what makes the
 	# slide below a plain camera pan instead of a compositing trick.
@@ -186,7 +214,7 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 	# screen still claiming the player is in the room behind them.
 	_minimap.set_current_room(coord)
 
-	var landing: Vector2 = _current_room.interior_rect().get_center()
+	var landing: Vector2 = _current_room.default_spawn_position()
 	if arrive_side >= 0:
 		landing = _current_room.spawn_position(arrive_side)
 
@@ -194,6 +222,9 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 		# Start of a run — there is nothing to slide from.
 		_player.warp_to(landing)
 		_camera.set_bounds(_current_room.interior_rect())
+	elif _is_cut_transition(data.kind) or _is_cut_transition(previous_kind):
+		await _cut_to(landing, previous_room)
+		previous_room.queue_free()
 	else:
 		await _slide_to(landing, previous_room)
 		previous_room.queue_free()
@@ -205,6 +236,48 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 	# a tween puppet with physics disabled.
 	_populate(data)
 	_transitioning = false
+
+
+## Does moving into or out of a room of this kind have to be a cut?
+##
+## Only the swapped-in exit room, and only while one is actually installed. The
+## slide assumes the two cells share an edge and are drawn the same way round;
+## a replacement exit room is neither, so travelling to it has nothing to show.
+##
+## Keyed on the same fact that chose the scene rather than on the scene's type, so
+## this file still names no alternative implementation — anything dropped into
+## exit_room_scene gets the cut without announcing itself.
+func _is_cut_transition(kind: int) -> bool:
+	return kind == RoomData.Kind.EXIT and exit_room_scene != null
+
+
+## Swap rooms behind a wipe instead of travelling between them.
+##
+## The player is moved rather than tweened, so there is no path across the gap for
+## anything to look wrong on. Everything that would be seen happens while the
+## screen is black; the clock keeps running through it, same as the slide.
+func _cut_to(landing: Vector2, previous_room: Room) -> void:
+	_player.is_warping = true
+	_player.velocity = Vector2.ZERO
+	_camera.set_lead_enabled(false)
+	previous_room.process_mode = Node.PROCESS_MODE_DISABLED
+
+	await _fade.fade_out()
+
+	_player.warp_to(landing)
+	_camera.set_bounds(_current_room.interior_rect())
+	# The camera rides the player, so it has just been teleported too. Physics
+	# interpolation is on project-wide and would otherwise smear the first frame
+	# after the wipe across the whole distance travelled.
+	_camera.reset_physics_interpolation()
+	# One frame under the black, so the new room's bodies are settled and the view
+	# is already where it belongs before anything is visible.
+	await get_tree().physics_frame
+
+	await _fade.fade_in()
+
+	_camera.set_lead_enabled(true)
+	_player.is_warping = false
 
 
 ## Zelda-style room slide. Nothing is paused: the O2 countdown keeps running for

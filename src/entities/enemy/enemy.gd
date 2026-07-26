@@ -11,6 +11,18 @@ extends CharacterBody2D
 ## rectangle with nothing inside it, so a straight seek plus move_and_slide can
 ## never get stuck and nothing can ever stand between us and the player.
 
+## Pickup drop rates — rolled once on death as a single mutually-exclusive
+## pick (see _on_health_died), so at most one drop ever happens, never both.
+## Tune these two chances right here without hunting through the rest of the
+## file. Keep their sum at or under 1.0 — anything past that just erodes the
+## "no drop" chance rather than stacking a second roll.
+@export_group("Drops")
+@export var pickup_scene: PackedScene
+@export_range(0.0, 1.0) var pickup_drop_chance := 0.3
+@export var bomb_pickup_scene: PackedScene
+@export_range(0.0, 1.0) var bomb_pickup_drop_chance := 0.1
+@export_group("")
+
 ## This one is gone. The Game listens so it can tell when a room is cleared.
 signal died
 
@@ -55,13 +67,6 @@ enum Behaviour { CHASER, SKIRMISHER }
 @export var dodge_speed := 180.0
 @export var dodge_time := 0.22
 @export var dodge_cooldown := 1.0
-
-@export_group("Drops")
-@export var pickup_scene: PackedScene
-## Rolled once on death. See oxygen_pickup.gd for what it actually restores.
-@export_range(0.0, 1.0) var pickup_drop_chance := 0.3
-
-@export_group("")
 
 ## Where a shot leaves the body. Structural rather than a feel knob.
 const MUZZLE_OFFSET := 10.0
@@ -246,12 +251,13 @@ func _on_health_died() -> void:
 	set_deferred("collision_layer", 0)
 	set_deferred("collision_mask", 0)
 
-	if pickup_scene != null and randf() < pickup_drop_chance:
-		var pickup: Node2D = pickup_scene.instantiate()
-		# Parented to the run container like bullets, not to this corpse — the
-		# corpse is about to fade and queue_free, and the drop has to outlive it.
-		get_tree().current_scene.add_child(pickup)
-		pickup.global_position = global_position
+	# Single roll carved into [pickup][bomb][nothing], so at most one of the two
+	# ever drops — see the Drops export group at the top of the file to retune.
+	var drop_roll := randf()
+	if pickup_scene != null and drop_roll < pickup_drop_chance:
+		_spawn_drop.call_deferred(pickup_scene, global_position)
+	elif bomb_pickup_scene != null and drop_roll < pickup_drop_chance + bomb_pickup_drop_chance:
+		_spawn_drop.call_deferred(bomb_pickup_scene, global_position)
 
 	var death := create_tween()
 	death.set_parallel(true)
@@ -259,3 +265,15 @@ func _on_health_died() -> void:
 	death.tween_property(_sprite, "modulate:a", 0.0, 0.12)
 	await death.finished
 	queue_free()
+
+
+## Deferred because _on_health_died can run mid physics-query-flush — a bullet's
+## body_entered, per the stack in the error this fixed — and adding a fresh
+## Area2D's collision shape to the tree right then is exactly the state change
+## the physics server rejects. Parented to the run container like bullets, not
+## to this corpse — the corpse is about to fade and queue_free, and the drop
+## has to outlive it.
+func _spawn_drop(scene: PackedScene, spawn_position: Vector2) -> void:
+	var drop: Node2D = scene.instantiate()
+	get_tree().current_scene.add_child(drop)
+	drop.global_position = spawn_position

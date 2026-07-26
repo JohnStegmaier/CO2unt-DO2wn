@@ -109,6 +109,16 @@ const LANDING := Vector2(221, 216)
 @export var deny_sfx: String = "wall_collision_1"
 
 @export_group("Art")
+## Animation the shopkeeper plays when the player engages him, if his
+## SpriteFrames has one.
+##
+## A seam rather than a dependency. The art shipped four-frame left-arm and
+## right-arm animations alongside his idle, but their pivots are not documented
+## and hanging them off him by eye reads as a broken puppet — so they are left
+## for whoever does the greet properly. Name an animation here and it plays;
+## leave it empty, or name one he does not have, and he just keeps idling.
+@export var greet_animation: StringName = &""
+
 ## Backing colour of an empty cubby.
 @export var cubby_color: Color = Color(0.07, 0.08, 0.11, 1.0)
 ## The shelf planks the cubbies sit on.
@@ -124,6 +134,7 @@ const LANDING := Vector2(221, 216)
 @onready var _slots: Node2D = $Depth/Shelves/Slots
 @onready var _frame: SelectionFrame = $Depth/Shelves/SelectionFrame
 @onready var _talk_prompt: Label = $Depth/Shopkeeper/TalkPrompt
+@onready var _keeper: AnimatedSprite2D = $Depth/Shopkeeper/keeper
 
 ## Every plane that slides when the player looks around, gathered from the scene
 ## rather than listed here so adding a plane is a scene edit and not a code one.
@@ -403,6 +414,7 @@ func _release_player() -> void:
 
 func _engage() -> void:
 	_play_sfx(greet_sfx)
+	_play_greet_animation()
 	if _stock == null or _stock.is_empty():
 		# Sold out. He still grunts at you — being told there is nothing left is
 		# better than a button that appears to do nothing.
@@ -643,6 +655,17 @@ func _refresh_price_colors() -> void:
 			var affordable: bool = balance >= offer.price
 			tag.add_theme_color_override(
 				"font_color", price_color if affordable else price_unaffordable_color)
+
+
+## The other half of the [member greet_animation] seam. Guarded on both the name
+## and whether he actually has it, so an empty slot or a stale name costs nothing
+## and he simply keeps idling.
+func _play_greet_animation() -> void:
+	if greet_animation.is_empty() or _keeper.sprite_frames == null:
+		return
+	if not _keeper.sprite_frames.has_animation(greet_animation):
+		return
+	_keeper.play(greet_animation)
 
 
 ## Guarded because audio_manager.gd indexes its dictionary directly and will hard

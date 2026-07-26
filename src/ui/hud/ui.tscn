@@ -14,7 +14,7 @@ position = Vector2(-61, -2)
 scale = Vector2(1.2, 1.2)
 
 [node name="AmmoCounter" parent="CanvasLayer" unique_id=164052633 instance=ExtResource("3_ammo")]
-position = Vector2(597.955, 336.07)
+position = Vector2(598, 336)
 
 [node name="CoinCounter" parent="CanvasLayer" unique_id=1019042429 instance=ExtResource("5_coin")]
 

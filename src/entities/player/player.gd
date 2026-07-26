@@ -5,11 +5,35 @@ class_name Player
 @export var bullet_scene: PackedScene
 @export var muzzle_offset := 20
 @export var muzzle_y_offset := 0
-@export var fire_rate := 0.14
-@export var bullet_damage := 10
 ## How fast our shots travel. Lives here rather than on the bullet because the
 ## enemies fire the same scene and need their own number — see enemy.gd.
 @export var bullet_speed := 400.0
+
+@export_group("Stats")
+## Global multiplier on top of every level's table value below — one knob to
+## buff or nerf every stat at once without touching the tables themselves.
+@export var STAT_SCALE := 1.0
+
+## Damage per POWER_LVL, index 0 is level 1.
+@export var BULLET_DAMAGE_VALUES: Array[int] = [10, 14, 18, 22, 26, 30, 35]
+## Walk speed per SPEED_LVL, index 0 is level 1.
+@export var WALK_SPEED_VALUES: Array[int] = [150, 200, 250, 300, 350, 375, 400]
+## Seconds between shots per FIRERATE_LVL — lower is faster, index 0 is level 1.
+@export var FIRE_RATE_VALUES: Array[float] = [0.14, 0.12, 0.11, 0.10, 0.09, 0.08, 0.07]
+
+const MIN_STAT_LVL := 1
+const MAX_STAT_LVL := 7
+
+var POWER_LVL := 1
+var SPEED_LVL := 1
+var FIRERATE_LVL := 1
+
+## Derived from POWER_LVL/BULLET_DAMAGE_VALUES by set_power_level() — see _ready().
+var bullet_damage: int
+## Derived from FIRERATE_LVL/FIRE_RATE_VALUES by set_firerate_lvl() — see _ready().
+var fire_rate: float
+## Derived from SPEED_LVL/WALK_SPEED_VALUES by set_speed_lvl() — see _ready().
+var WALK_SPEED: float
 
 @export_group("Ammo")
 @export var magazine_size := 6
@@ -17,10 +41,19 @@ class_name Player
 ## is no manual reload input — so this is the only cost of running the mag dry.
 @export var reload_time := 1.2
 
+@export_group("Bombs")
+## How many bombs the player can carry unless something raises the cap.
+@export var max_f_bombs := 3
+## Bombs carried right now. Starts at 1 rather than max_f_bombs — a fresh run
+## begins under capacity, same as Isaac.
+var f_bombs := 1
+
+## Fired whenever the bomb count changes, so the HUD never has to poll for it.
+signal bombs_changed(current: int, max_bombs: int)
+
 @onready var sprite = $AnimatedSprite2D
 @onready var gun: Sprite2D = $BigGunBTransparent
 
-const WALK_SPEED = 150
 const DODGE_SPEED = 200
 const DODGE_DURATION = 0.6
 
@@ -101,6 +134,25 @@ func _ready() -> void:
 	_sprite_default_scale = sprite.scale
 	_sprite_default_position = sprite.position
 	ammo = magazine_size
+
+	set_power_level(POWER_LVL)
+	set_speed_lvl(SPEED_LVL)
+	set_firerate_lvl(FIRERATE_LVL)
+
+
+func set_power_level(lvl: int) -> void:
+	POWER_LVL = clampi(lvl, MIN_STAT_LVL, MAX_STAT_LVL)
+	bullet_damage = roundi(BULLET_DAMAGE_VALUES[POWER_LVL - 1] * STAT_SCALE)
+
+
+func set_speed_lvl(lvl: int) -> void:
+	SPEED_LVL = clampi(lvl, MIN_STAT_LVL, MAX_STAT_LVL)
+	WALK_SPEED = WALK_SPEED_VALUES[SPEED_LVL - 1] * STAT_SCALE
+
+
+func set_firerate_lvl(lvl: int) -> void:
+	FIRERATE_LVL = clampi(lvl, MIN_STAT_LVL, MAX_STAT_LVL)
+	fire_rate = FIRE_RATE_VALUES[FIRERATE_LVL - 1] * STAT_SCALE
 
 
 ## Last device to speak wins. Joypad motion is filtered by deadzone because an

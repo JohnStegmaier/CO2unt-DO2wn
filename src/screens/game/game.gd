@@ -116,6 +116,7 @@ var _loot_rng := RandomNumberGenerator.new()
 @onready var _hud: CanvasLayer = $Ui/CanvasLayer
 @onready var _o2_timer: O2Timer = $Ui/CanvasLayer/O2Timer
 @onready var _ammo_counter: AmmoCounter = $Ui/CanvasLayer/AmmoCounter
+@onready var _coin_counter: CoinCounter = $Ui/CanvasLayer/CoinCounter
 @onready var _minimap: Minimap = $Ui/CanvasLayer/Minimap
 ## Deliberately under the camera rather than beside the HUD: the vignette is
 ## world content so the player can out-rank it on z_index and stay lit inside the
@@ -175,6 +176,9 @@ func _ready() -> void:
 	_player.bombs_changed.connect(_o2_timer.set_bombs)
 	_o2_timer.set_bombs(_player.f_bombs, _player.max_f_bombs)
 
+	_player.coins_changed.connect(_coin_counter.set_coins)
+	_coin_counter.set_coins(_player.coins)
+
 	_player.power_level_changed.connect(_o2_timer.set_power_level)
 	_o2_timer.set_power_level(_player.POWER_LVL)
 	_player.speed_lvl_changed.connect(_o2_timer.set_speed_lvl)
@@ -226,11 +230,11 @@ func _start_music() -> void:
 	await get_tree().create_timer(0.25, false).timeout
 	if _dying or _won:
 		return
-	AudioManager.play_music("60000 light years", 1, 0, 0)
+	AudioManager.play_music("60000 light years", 1, -11, 0)
 
 
 func _on_global_tick() -> void:
-	AudioManager.play_sfx("tick_trim", 1, 0, 0)
+	AudioManager.play_sfx("tick_trim", 1, -5, 0)
 
 
 ## The walls are closing in and the player can hear their own pulse. Fired by the
@@ -794,6 +798,7 @@ func _spawn_loot(source: StringName, at: Vector2) -> void:
 
 	var local: Vector2 = _current_room.to_local(at)
 	var items := LootRoller.roll(tables, _loot_rng)
+	var announced: Array[StringName] = []
 	for item in items:
 		var pickup: ItemPickup = ITEM_PICKUP_SCENE.instantiate()
 		# Before it enters the tree: _ready is what draws it, so an item assigned
@@ -805,6 +810,13 @@ func _spawn_loot(source: StringName, at: Vector2) -> void:
 		# one into a wall.
 		var spot: Vector2 = local if items.size() == 1 else _scattered(local)
 		_current_room.add_entity(pickup, spot)
+
+		# Loot landing is audible; loot being collected is item_pickup.gd's job.
+		# Once per distinct sound, or a table that drops three coins fires the
+		# same sample three times in the same frame and it reads as a stutter.
+		if not item.drop_sound.is_empty() and not announced.has(item.drop_sound):
+			announced.append(item.drop_sound)
+			AudioManager.play_sfx(item.drop_sound)
 
 
 ## A small random nudge off a drop point, kept inside the walkable floor.

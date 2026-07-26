@@ -20,12 +20,18 @@ const ITEM_DIR := "res://src/config/items"
 const ROLLS := 100_000
 const SAMPLE_SEED := 20260726
 
-## The economy PR #49 shipped, which src/config/drops/default.tres is a port of
-## rather than a re-tune. Asserted so the port stays honest as the file is
-## edited — change these when you mean to change the game.
+## What src/config/drops/default.tres is meant to pay. Asserted so the shipped
+## economy cannot drift as the file is edited — change these when you mean to
+## change the game.
+##
+## PR #51's roll was coin 0.6 / oxygen 0.2 / bomb 0.2, summing to 1.0 so every
+## kill dropped something. Coins are thinned to 0.4 and the freed 0.2 becomes a
+## chance of nothing; oxygen and bomb are untouched. That is a deliberate
+## balance change and the only one in this branch — see docs/DROPS.md.
 const DEFAULT_RATES := {
-	"oxygen_small": 0.30,
-	"bomb": 0.30,
+	"coin_small": 0.40,
+	"oxygen_small": 0.20,
+	"bomb": 0.20,
 }
 ## Percentage points of slack on the above. Generous enough that 100k samples
 ## never flake, tight enough to catch a fat-fingered weight.

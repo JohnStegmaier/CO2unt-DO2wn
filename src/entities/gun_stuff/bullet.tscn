@@ -1,7 +1,14 @@
 [gd_scene format=3 uid="uid://ckinnty100svf"]
 
 [ext_resource type="Script" uid="uid://bp7pnwnhiuadt" path="res://src/entities/gun_stuff/bullet.gd" id="1_kid0w"]
-[ext_resource type="Texture2D" uid="uid://c1fliuq7h5mv3" path="res://assets/sprites/items/Energy_Bullet.png" id="2_btnqe"]
+[ext_resource type="Texture2D" uid="uid://baw5ong6eknll" path="res://assets/sprites/weapons/bullets/energy/energybullet1.png" id="2_4bfr7"]
+[ext_resource type="Texture2D" uid="uid://bkkuqqilonqvo" path="res://assets/sprites/weapons/bullets/energy/energybullet2.png" id="3_y044r"]
+[ext_resource type="Texture2D" uid="uid://dbfk36ygau6gq" path="res://assets/sprites/weapons/bullets/energy/energybullet3.png" id="4_b2dln"]
+[ext_resource type="Texture2D" uid="uid://j5dmb8ibl2bi" path="res://assets/sprites/weapons/bullets/energy/energybullet4.png" id="5_o3v3l"]
+[ext_resource type="Texture2D" uid="uid://c5ye81hcerkjb" path="res://assets/sprites/weapons/bullets/energy/energybullet5.png" id="6_4h3x8"]
+[ext_resource type="Texture2D" uid="uid://b7tfo6g3f63dr" path="res://assets/sprites/weapons/bullets/energy/energybullet6.png" id="7_y2fv0"]
+[ext_resource type="Texture2D" uid="uid://b0h1peg03n88e" path="res://assets/sprites/weapons/bullets/energy/energybullet7.png" id="8_8rm43"]
+[ext_resource type="Texture2D" uid="uid://b0cidtped41yw" path="res://assets/sprites/weapons/bullets/energy/energybullet8.png" id="9_ba08a"]
 
 [sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_glow"]
 blend_mode = 1
@@ -15,6 +22,39 @@ fill = 1
 fill_from = Vector2(0.5, 0.5)
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_nckmm"]
+radius = 8.0
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_u6ckt"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_4bfr7")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_y044r")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_b2dln")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_o3v3l")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_4h3x8")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_y2fv0")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_8rm43")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_ba08a")
+}],
+"loop": 1,
+"name": &"default",
+"speed": 32.0
+}]
 
 [node name="Bullet" type="Area2D" unique_id=1315338816]
 collision_layer = 8
@@ -25,14 +65,17 @@ script = ExtResource("1_kid0w")
 modulate = Color(1, 1, 1, 0.6392157)
 z_index = -1
 material = SubResource("CanvasItemMaterial_glow")
-scale = Vector2(0.16, 0.16)
+scale = Vector2(0.115, 0.115)
 texture = SubResource("GradientTexture2D_glow")
 region_rect = Rect2(0, 0, 64, 64)
-
-[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1173223551]
-texture = ExtResource("2_btnqe")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=254706080]
 shape = SubResource("CircleShape2D_nckmm")
 
 [node name="VisibleOnScreenNotifier2D" type="VisibleOnScreenNotifier2D" parent="." unique_id=2107087643]
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=1817044368]
+texture_filter = 1
+sprite_frames = SubResource("SpriteFrames_u6ckt")
+frame = 5
+frame_progress = 0.4992811

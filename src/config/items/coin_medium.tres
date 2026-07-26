@@ -1,9 +1,9 @@
-[gd_resource type="Resource" script_class="ItemDef" format=3]
+[gd_resource type="Resource" script_class="ItemDef" format=3 uid="uid://datc8u77gfg07"]
 
-[ext_resource type="Script" path="res://src/systems/loot/item_effect.gd" id="1_ag812"]
-[ext_resource type="Script" path="res://src/systems/loot/effects/grant_coins.gd" id="2_3akg7"]
-[ext_resource type="Texture2D" path="res://assets/sprites/environment/coin.png" id="3_kppic"]
-[ext_resource type="Script" path="res://src/systems/loot/item_def.gd" id="4_i07t3"]
+[ext_resource type="Script" uid="uid://emnui7uyddjn" path="res://src/systems/loot/item_effect.gd" id="1_ag812"]
+[ext_resource type="Script" uid="uid://de516cuorh3t3" path="res://src/systems/loot/effects/grant_coins.gd" id="2_3akg7"]
+[ext_resource type="Texture2D" uid="uid://ba2kiutrlno8t" path="res://assets/sprites/environment/coin.png" id="3_kppic"]
+[ext_resource type="Script" uid="uid://dmxi7afktl2qr" path="res://src/systems/loot/item_def.gd" id="4_i07t3"]
 
 [sub_resource type="Resource" id="Resource_fs4uh"]
 script = ExtResource("2_3akg7")
@@ -14,6 +14,6 @@ script = ExtResource("4_i07t3")
 id = &"coin_medium"
 display_name = "Payslip"
 icon = ExtResource("3_kppic")
-icon_scale = 0.4
+icon_scale = 0.22
 pickup_sound = &"money_drop_1"
 effects = Array[ExtResource("1_ag812")]([SubResource("Resource_fs4uh")])

@@ -1,29 +1,35 @@
-[gd_resource type="Resource" script_class="DropConfig" format=3]
+[gd_resource type="Resource" script_class="DropConfig" format=3 uid="uid://i37qbrqrrp7"]
 
-[ext_resource type="Script" path="res://src/systems/loot/drop_rule.gd" id="1_pb46o"]
-[ext_resource type="Script" path="res://src/systems/loot/drop_table.gd" id="2_oq7eo"]
-[ext_resource type="Script" path="res://src/systems/loot/drop_entry.gd" id="3_43nf4"]
-[ext_resource type="Resource" path="res://src/config/items/oxygen_small.tres" id="4_dc0vh"]
-[ext_resource type="Resource" path="res://src/config/items/bomb.tres" id="5_xthlv"]
-[ext_resource type="Script" path="res://src/systems/loot/drop_config.gd" id="6_u5wx8"]
+[ext_resource type="Script" uid="uid://dgex3p6imuqy2" path="res://src/systems/loot/drop_rule.gd" id="1_pb46o"]
+[ext_resource type="Script" uid="uid://d0utqrjxx4u40" path="res://src/systems/loot/drop_table.gd" id="2_oq7eo"]
+[ext_resource type="Script" uid="uid://bx3taswkt61fn" path="res://src/systems/loot/drop_entry.gd" id="3_43nf4"]
+[ext_resource type="Resource" uid="uid://q0srdeqdujvj" path="res://src/config/items/oxygen_small.tres" id="4_dc0vh"]
+[ext_resource type="Resource" uid="uid://b3qpqun0o2hhc" path="res://src/config/items/bomb.tres" id="5_xthlv"]
+[ext_resource type="Resource" uid="uid://dkv3c5q56efqj" path="res://src/config/items/coin_small.tres" id="6_coin"]
+[ext_resource type="Script" uid="uid://5pcfos34pkks" path="res://src/systems/loot/drop_config.gd" id="6_u5wx8"]
+
+[sub_resource type="Resource" id="Resource_coin"]
+script = ExtResource("3_43nf4")
+item = ExtResource("6_coin")
+weight = 0.4
 
 [sub_resource type="Resource" id="Resource_1fs3a"]
 script = ExtResource("3_43nf4")
 item = ExtResource("4_dc0vh")
-weight = 0.3
+weight = 0.2
 
 [sub_resource type="Resource" id="Resource_gpm7c"]
 script = ExtResource("3_43nf4")
 item = ExtResource("5_xthlv")
-weight = 0.3
+weight = 0.2
 
 [sub_resource type="Resource" id="Resource_3hph2"]
 script = ExtResource("3_43nf4")
-weight = 0.4
+weight = 0.2
 
 [sub_resource type="Resource" id="Resource_26s0q"]
 script = ExtResource("2_oq7eo")
-entries = Array[ExtResource("3_43nf4")]([SubResource("Resource_1fs3a"), SubResource("Resource_gpm7c"), SubResource("Resource_3hph2")])
+entries = Array[ExtResource("3_43nf4")]([SubResource("Resource_coin"), SubResource("Resource_1fs3a"), SubResource("Resource_gpm7c"), SubResource("Resource_3hph2")])
 
 [sub_resource type="Resource" id="Resource_lpvnb"]
 script = ExtResource("1_pb46o")

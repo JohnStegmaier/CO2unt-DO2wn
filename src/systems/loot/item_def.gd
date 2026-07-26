@@ -38,7 +38,12 @@ extends Resource
 ## it. Data rather than a call in item_pickup.gd so that "what noise does a coin
 ## make" is tuned in the same inspector as everything else about the coin, and
 ## an item that should be silent is one that left this empty.
+##
+## [member pickup_sound] is the player collecting it; [member drop_sound] is it
+## hitting the floor. Two separate moments, so two separate fields — a coin
+## announces itself on landing and again when you take it.
 @export var pickup_sound: StringName
+@export var drop_sound: StringName
 
 ## Applied in order on pickup. More than one is normal — see [ItemEffect].
 @export var effects: Array[ItemEffect] = []

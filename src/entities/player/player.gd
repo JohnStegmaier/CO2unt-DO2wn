@@ -46,7 +46,10 @@ signal firerate_lvl_changed(lvl: int)
 ## is no manual reload input — so this is the only cost of running the mag dry.
 @export var reload_time := 1.2
 
-## Money carried. Held here rather than in a wallet of its own because every
+## Money carried. Uncapped — unlike ammo and bombs there is no magazine or carry
+## limit here.
+##
+## Held on the player rather than in a wallet of its own because every
 ## [ItemEffect] is apply(player) — putting the balance anywhere else would force
 ## one effect to reach for the run container and break the uniform signature that
 ## lets effects compose. The player also already survives room changes, which is
@@ -54,11 +57,12 @@ signal firerate_lvl_changed(lvl: int)
 ##
 ## Starts at zero. A run that should begin with money says so at run start rather
 ## than here, so the shipped number stays the honest one.
-var coins: int = 0
+var coins := 0
 
-## Fired whenever the balance changes, so nothing has to poll for it. A refused
-## purchase changes nothing and so says nothing — see [method spend_coins].
-signal coins_changed(coins: int)
+## Fired whenever the coin count changes, so the HUD never has to poll for it.
+## A refused purchase changes nothing and so says nothing — see
+## [method spend_coins].
+signal coins_changed(current: int)
 
 
 func add_coins(amount: int) -> void:
@@ -93,6 +97,15 @@ var f_bombs := 1
 ## Fired whenever the bomb count changes, so the HUD never has to poll for it.
 signal bombs_changed(current: int, max_bombs: int)
 
+## One coin, the way the pickup this replaced granted them. Kept as a one-line
+## alias of [method add_coins] so anything written against it still works.
+##
+## The money_jingle_1 that used to play here now lives on the coin's
+## ItemDef.pickup_sound, where which noise an item makes is a tuning decision in
+## the same inspector as the rest of it rather than a line of code.
+func gain_coin() -> void:
+	add_coins(1)
+
 
 ## Emergency pulse: spends one bomb and wipes every projectile on screen, same
 ## group-wide sweep game.gd uses on a room change or death — so this clears the
@@ -103,6 +116,10 @@ func use_bomb() -> void:
 	f_bombs -= 1
 	bombs_changed.emit(f_bombs, max_f_bombs)
 	get_tree().call_group("projectiles", "queue_free")
+	AudioManager.play_sfx("bomb_air_burst", 2.0,-2)
+	AudioManager.play_sfx("pulse_02")
+	AudioManager.play_sfx("explosion_01",1,3)
+	
 	_spawn_pulse()
 
 
@@ -135,7 +152,7 @@ func _spawn_pulse() -> void:
 
 @onready var sprite = $AnimatedSprite2D
 @onready var gun: Sprite2D = $BigGunBTransparent
-@onready var _reload_indicator: Label = $ReloadIndicator
+@onready var _reload_indicator: Node2D = $ReloadIndicator
 
 const DODGE_SPEED = 200
 const DODGE_DURATION = 0.6
@@ -392,6 +409,7 @@ func take_damage(amount: int, type: int = Damage.Type.BLUNT) -> void:
 	_invulnerable_until_msec = Time.get_ticks_msec() + int(invulnerable_time * 1000.0)
 	damaged.emit(amount, type)
 	_flash_hit()
+	AudioManager.play_sfx("damage_taken_0%d" % [1 if randf() < 0.5 else 2], randf_range(1.3,1.4))
 
 
 ## Called by RestoreOxygen on contact. Duck-typed the same way bullet.gd calls
@@ -471,7 +489,8 @@ func shoot() -> void:
 			CollisionLayers.WORLD | CollisionLayers.ENEMY, bullet_damage, Damage.Type.BLUNT,
 			bullet_speed)
 	get_tree().current_scene.add_child(bullet)
-	AudioManager.play_sfx("laser_gun_01", randf_range(0.9, 1.1))
+	var rng = RandomNumberGenerator.new()
+	AudioManager.play_sfx("laser_gun_01", rng.randf_range(0.6, 1.5), -6)
 	bullet.global_position = gun.global_position + spawn_offset
 	bullet.reset_physics_interpolation()
 
@@ -536,6 +555,7 @@ func dodge(direction: Vector2) -> void:
 	is_dodging = true
 	dodge_direction = direction
 	dodge_timer = 0.0
+	AudioManager.play_sfx("player_grunt_01", randf_range(1.3,1.8))
 
 	if direction == Vector2.DOWN:
 		last_direction = "down"

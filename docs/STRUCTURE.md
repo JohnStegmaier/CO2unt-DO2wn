@@ -33,6 +33,8 @@ python3 tools/check_layout.py
 │   │                   profiles/ holds the debug-only .cfg overrides picked by
 │   │                   the editor toolbar dropdown. Lives with the autoload
 │   │                   that consumes it rather than in a new root directory.
+│   │                   items/ and drops/ hold the .tres item catalogue and drop
+│   │                   tables — see docs/DROPS.md. Shipped data, not debug-only.
 │   ├── entities/       player, enemies, pickups — one folder each
 │   ├── screens/        full-screen scenes you navigate BETWEEN — main menu,
 │   │                   credits, game over. Reached by a scene swap.
@@ -42,6 +44,8 @@ python3 tools/check_layout.py
 │   ├── systems/        shared logic not attached to one node — game-rule
 │   │                   coordinators (scoring) AND pure helpers (math, easing).
 │   │                   Split a dedicated lib/ out once libraries proliferate.
+│   │                   loot/ is the first such split: enough related types to
+│   │                   be a subject of its own rather than nine loose files.
 │   └── ui/             UI components instanced INTO screens/levels (HUD,
 │                       pause overlay, widgets) — not whole screens themselves
 ├── addons/             Godot plugins. Third-party ones are never hand-edited;

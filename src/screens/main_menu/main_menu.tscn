@@ -65,7 +65,9 @@ scale = Vector2(0.3861112, 0.38611114)
 texture = ExtResource("3_xvotp")
 centered = false
 
-[node name="PlayButton" type="Control" parent="."]
+[node name="PlayButton" type="Control" parent="." unique_id=1919078317]
+layout_mode = 3
+anchors_preset = 0
 offset_left = 479.0
 offset_top = 198.0
 offset_right = 567.0

@@ -34,7 +34,8 @@ python3 tools/check_layout.py
 │   │                   the editor toolbar dropdown. Lives with the autoload
 │   │                   that consumes it rather than in a new root directory.
 │   │                   items/ and drops/ hold the .tres item catalogue and drop
-│   │                   tables — see docs/DROPS.md. Shipped data, not debug-only.
+│   │                   tables — see docs/DROPS.md. enemies/ holds the bestiary —
+│   │                   see docs/ENEMIES.md. Shipped data, not debug-only.
 │   ├── entities/       player, enemies, pickups — one folder each
 │   ├── screens/        full-screen scenes you navigate BETWEEN — main menu,
 │   │                   credits, game over. Reached by a scene swap.

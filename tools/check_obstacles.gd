@@ -25,10 +25,18 @@ const SEEDS := 60
 ## from the origin, so obstacle seeding has to survive a negative coord.
 const COORD_SPAN := 7
 
-## The widest agent that has to fit anywhere the player can reach: an enemy scaled
-## by game.gd's boss_size_scale. Kept here as a literal rather than read from the
-## scene, so this checker needs no autoloads and no node tree.
-const BOSS_RADIUS := 4.0 * 1.7
+## The widest agent that has to fit anywhere the player can reach.
+##
+## Read off [EnemyPlacement] rather than written as a literal here. It was
+## `4.0 * 1.7` — the one enemy scene's collider times game.gd's boss_size_scale —
+## back when there was one enemy to measure. Enemies now come from a bestiary of
+## [EnemyDef]s with bodies of their own, so the figure is a budget they spend
+## rather than a fact about a scene, and a copy of it here would go stale the
+## first time somebody widened a def. tools/check_enemies.gd asserts the whole
+## catalogue fits inside it; this file is where that width is actually flooded
+## for. Naming EnemyPlacement costs nothing — it is pure static maths under
+## systems/ and names no autoload, which is the property this checker depends on.
+const BOSS_RADIUS := EnemyPlacement.MAX_AGENT_RADIUS
 
 ## Flood-fill resolution. Well under the 13.6px gap a boss needs, so a passage
 ## cannot fall between samples.

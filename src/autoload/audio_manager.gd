@@ -31,7 +31,9 @@ var sounds = {
 	"shotgun_pickup": preload("res://assets/audio/sfx/shotgun_pickup.mp3"),
 	"elevator_ding": preload("res://assets/audio/sfx/Elevator_dingdong.mp3"),
 	"elevator_whir": preload("res://assets/audio/sfx/Elevator_whir.mp3"),
-	"elevator_rattle": preload("res://assets/audio/sfx/Elevator_rattle.mp3")
+	"elevator_rattle": preload("res://assets/audio/sfx/Elevator_rattle.mp3"),
+	"enemy_take_damage": preload("res://assets/audio/sfx/enemy_take_damage.mp3"),
+	"enemy_death": preload("res://assets/audio/sfx/enemy_death.mp3")
 }
 
 ## Endgame sounds the artists have not delivered yet. They are loaded at runtime

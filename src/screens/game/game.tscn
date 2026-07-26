@@ -14,6 +14,7 @@
 [ext_resource type="Script" path="res://src/systems/drop_table_shop_stock_provider.gd" id="12_shop_stock"]
 [ext_resource type="Resource" path="res://src/config/drops/default.tres" id="10_drop_config"]
 [ext_resource type="Resource" path="res://src/config/obstacles/default.tres" id="11_obstacle_set"]
+[ext_resource type="Resource" path="res://src/config/enemies/default.tres" id="14_enemy_set"]
 [ext_resource type="PackedScene" path="res://src/ui/mouse_cursor/mouse_cursor.tscn" id="13_cursor"]
 
 [sub_resource type="Resource" id="Resource_shop_stock"]
@@ -42,6 +43,7 @@ special_min_depth = 2
 script = ExtResource("1_game")
 exit_room_scene = ExtResource("8_exit_room")
 shop_config = SubResource("Resource_shop_config")
+enemy_set = ExtResource("14_enemy_set")
 drop_config = ExtResource("10_drop_config")
 obstacle_set = ExtResource("11_obstacle_set")
 floor_config = SubResource("Resource_floor_config")

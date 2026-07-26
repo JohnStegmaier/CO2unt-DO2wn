@@ -40,6 +40,19 @@ var enemies_remaining: int = -1
 ## wrong crate. See the note on determinism in obstacle_placement.gd.
 var obstacles_destroyed: int = 0
 
+## Has the chest in this cell already been emptied? Only ever true of a TREASURE
+## cell.
+##
+## Here for the same reason obstacles_destroyed is: the room is freed on the way
+## out and rebuilt on the way back in, so a chest that remembered its own state
+## would forget it at the doorway and pay out again on every visit. The cell
+## outlives the room, so the cell remembers.
+##
+## A plain bool rather than a mask or a cache because there is one chest in a
+## treasure room and one thing worth knowing about it. Shops needed a whole
+## registry only because their stock is a list that must not come back.
+var treasure_opened: bool = false
+
 
 ## kind is a Kind, and side arguments are a GridDirection.Side, but both are
 ## typed int here — see the note in grid_direction.gd on enums across scripts.

@@ -15,6 +15,7 @@
 [ext_resource type="Resource" path="res://src/config/drops/default.tres" id="10_drop_config"]
 [ext_resource type="Resource" path="res://src/config/obstacles/default.tres" id="11_obstacle_set"]
 [ext_resource type="PackedScene" path="res://src/ui/mouse_cursor/mouse_cursor.tscn" id="13_cursor"]
+[ext_resource type="PackedScene" path="res://src/levels/treasure_room/treasure_room.tscn" id="14_treasure_room"]
 
 [sub_resource type="Resource" id="Resource_shop_stock"]
 script = ExtResource("12_shop_stock")
@@ -41,6 +42,7 @@ special_min_depth = 2
 [node name="Game" type="Node2D"]
 script = ExtResource("1_game")
 exit_room_scene = ExtResource("8_exit_room")
+treasure_room_scene = ExtResource("14_treasure_room")
 shop_config = SubResource("Resource_shop_config")
 drop_config = ExtResource("10_drop_config")
 obstacle_set = ExtResource("11_obstacle_set")

@@ -98,6 +98,18 @@ const LOOT_CLEARANCE := 6.0
 ## here and the slot can stay as the registry of what the flag chooses between.
 @export var exit_room_scene: PackedScene
 
+@export_group("Treasure Room")
+## Stand-in scene for the floor's treasure cell — a room with a chest in it. Empty
+## means the treasure cell is an ordinary room wearing its placeholder tint and
+## holding nothing, exactly as if this had never been added.
+##
+## A bare PackedScene rather than a config Resource, unlike the shop below: there is
+## one knob here, and what the chest holds is already a row of the drop config
+## rather than a setting of its own. Same escape hatch as exit_room_scene otherwise
+## — this file names no treasure room implementation, and clearing the slot takes
+## the feature back out with no code change.
+@export var treasure_room_scene: PackedScene
+
 @export_group("Shop")
 ## Everything about shops, in one slot — the room scene, where its stock comes
 ## from, what the player starts with and what plays in there. Bundled into a
@@ -327,6 +339,8 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 		previous_kind = _plan.get_room(_current_coord).kind
 		previous_room.door_entered.disconnect(_on_door_entered)
 		previous_room.elevator_entered.disconnect(_on_elevator_entered)
+		if previous_room.has_signal(&"treasure_opened"):
+			previous_room.treasure_opened.disconnect(_on_treasure_opened)
 
 	# Bullets belong to the room they were fired in, not to the run.
 	get_tree().call_group("projectiles", "queue_free")
@@ -343,6 +357,8 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 		scene = exit_room_scene
 	elif _shop_room_available() and data.kind == RoomData.Kind.SHOP:
 		scene = shop_config.room_scene
+	elif data.kind == RoomData.Kind.TREASURE and treasure_room_scene != null:
+		scene = treasure_room_scene
 	_current_room = scene.instantiate()
 	# Rooms sit at their true grid position rather than all at the origin, so
 	# world space and map space never disagree — which is also what makes the
@@ -369,6 +385,12 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 	_scatter_obstacles(data)
 	_current_room.door_entered.connect(_on_door_entered)
 	_current_room.elevator_entered.connect(_on_elevator_entered)
+	# Asked of the room rather than keyed on its kind, for the same reason the scene
+	# choice above is keyed on the slot being filled: this file names no treasure
+	# room implementation and imports nothing from one. Anything that reports a
+	# chest the same way gets paid out the same way.
+	if _current_room.has_signal(&"treasure_opened"):
+		_current_room.treasure_opened.connect(_on_treasure_opened)
 	# Before the transition, not after: the beat grid has to stop before the fade
 	# starts or the clock ticks on into a shop the player has already committed
 	# to. See _apply_clock_hold.
@@ -998,6 +1020,24 @@ func _loot_source_for(behaviour: int, is_boss: bool) -> StringName:
 	if behaviour == Enemy.Behaviour.SKIRMISHER:
 		return &"skirmisher"
 	return &"grunt"
+
+
+## Pay out a treasure room's chest, once ever.
+##
+## The flag is written here rather than by the room for the same reason the room
+## does not grant its own loot: a room is furniture for one visit, and this is the
+## only thing on the floor that outlives it. Written before the deferred call and
+## not inside it, so nothing can slip between the two and open the chest twice.
+##
+## The chest reports where its contents go rather than this deciding — it is the
+## only thing here that knows how big it is, and a drop at its own centre would land
+## somewhere the player cannot reach. See Chest.LOOT_OFFSET.
+func _on_treasure_opened(at: Vector2) -> void:
+	_plan.get_room(_current_coord).treasure_opened = true
+	# Deferred to match the enemy drop path. This one arrives from _process rather
+	# than from inside a physics flush, so it is insurance rather than a fix — but it
+	# is the same insurance, and a pickup is a collision shape either way.
+	_spawn_loot.call_deferred(&"chest", at)
 
 
 ## Roll this source's drop tables and put whatever comes out on the floor.

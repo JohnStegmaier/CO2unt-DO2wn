@@ -1,0 +1,11 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="PackedScene" uid="uid://cjnf0aq7acwnh" path="res://src/levels/room/room.tscn" id="1_room"]
+[ext_resource type="Script" path="res://src/levels/treasure_room/treasure_room.gd" id="2_treasure"]
+[ext_resource type="PackedScene" path="res://src/entities/chest/chest.tscn" id="3_chest"]
+
+[node name="TreasureRoom" instance=ExtResource("1_room")]
+script = ExtResource("2_treasure")
+
+[node name="Chest" parent="Obstacles" index="0" instance=ExtResource("3_chest")]
+position = Vector2(221, 143)

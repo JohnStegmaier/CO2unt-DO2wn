@@ -44,6 +44,23 @@ func aim(_ctx: SteeringContext) -> Vector2:
 	return Vector2.ZERO
 
 
+## How committed we are to an attack this behaviour is running itself: 0 for not
+## winding up, rising to 1 on the frame it lands. What [AttackTell] draws.
+##
+## Presentation only. Nothing here changes what the attack does or when — it
+## reports a wind-up that already exists rather than creating one, which is why a
+## behaviour that returns a number it does not act on is a bug in this method and
+## not a balance change.
+##
+## Separate from the wind-up before a SHOT, which [Enemy] owns because [Enemy]
+## owns the fire cooldown — see [method Enemy._maybe_shoot]. This is for the
+## attacks a behaviour invented for itself, and today that is exactly one: the
+## charger's lunge, which has had a wind-up phase and no way to show it since it
+## was written.
+func windup(_ctx: SteeringContext) -> float:
+	return 0.0
+
+
 ## Whether this archetype ever pulls a trigger, independent of where it is
 ## standing. Only for tools/check_enemies.gd, which uses it to catch a def
 ## carrying a gun it can never fire and a shooter with an empty bullet_scene —

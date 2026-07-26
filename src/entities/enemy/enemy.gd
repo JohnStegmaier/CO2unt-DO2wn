@@ -83,6 +83,15 @@ var _boss_contact_damage: int = -1
 var _boss_bullet_damage: int = -1
 
 var _fire_cooldown := 0.0
+## Seconds left of the wind-up before a shot we have already committed to. The
+## window that did not exist before [AttackTell] needed something to draw — see
+## [method _maybe_shoot].
+var _windup := 0.0
+## Where the behaviour wanted to shoot this frame, kept rather than asked for
+## twice. [method EnemyBehaviour.aim] is not free: it runs
+## [method SteeringContext.can_see_target] over every prop in the room, and the
+## tell needs the same answer [method _maybe_shoot] just got.
+var _aim := Vector2.ZERO
 var _break_cooldown := 0.0
 var _stuck_frames: int = 0
 var _unstick_frames: int = 0
@@ -102,6 +111,11 @@ var _fire_suppressed := 0.0
 @onready var _health: Health = $Health
 @onready var _sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var _collider: CollisionShape2D = $CollisionShape2D
+## Under the sprite rather than the body, so it inherits both
+## [member EnemyDef.sprite_scale] and the boss multiplier [method make_boss]
+## applies to the same node. A ring sized in absolute pixels would be right on
+## exactly one enemy.
+@onready var _tell: AttackTell = $AnimatedSprite2D/AttackTell
 
 
 ## Become one particular kind of bad guy.
@@ -130,6 +144,11 @@ func configure(def: EnemyDef) -> void:
 	sprite.speed_scale = def.frame_rate
 
 	$Shadow.position = def.shadow_offset
+
+	# Reached through the tree rather than through _tell, for the same reason the
+	# collider, the sprite and the shadow above are: this runs BEFORE the node
+	# enters it, and the @onready has not resolved yet.
+	$AnimatedSprite2D/AttackTell.color = def.telegraph_color
 
 	$Health.max_hp = def.max_hp
 	_ctx.radius = def.body_radius
@@ -257,6 +276,9 @@ func _physics_process(delta: float) -> void:
 
 	_draw_facing()
 	_maybe_shoot(delta)
+	# After the shot, not before it, so the ring comes off on the same frame the
+	# bullet appears rather than lingering a frame behind it.
+	_show_attack_tell()
 
 
 func _tick_timers(delta: float) -> void:
@@ -389,15 +411,72 @@ func _draw_facing() -> void:
 ## The behaviour says whether it would fire; the def says how often. Splitting it
 ## that way is what lets a turret's sweep decide WHEN without also owning the
 ## weapon's rate of fire.
+##
+## The wind-up sits between the two and belongs to neither, which is why it is
+## held here as a second clock rather than folded into the cooldown. A shot can
+## only ever leave at the END of a full one, and that is the property worth having
+## — a tell that is sometimes skipped is worse than no tell at all, because the
+## player has by then learned to wait for it. The guard that has been out of range
+## for ten seconds, with a cooldown long since gone negative, now winds up when it
+## re-acquires you instead of firing on the frame it sees you.
+##
+## [member EnemyDef.spawn_grace] is untouched: the roll in front of the first shot
+## still staggers a roomful, and the wind-up lands after it rather than instead.
 func _maybe_shoot(delta: float) -> void:
 	_fire_cooldown -= delta
-	if _fire_cooldown > 0.0 or _fire_suppressed > 0.0:
+
+	_aim = _behaviour.aim(_ctx)
+	# A shot the behaviour has stopped wanting takes its tell back with it — you
+	# stepped out of range, a barrel closed the line, the pulse bomb jammed the
+	# trigger. A ring that closes onto nothing is worse than none, because it
+	# teaches the player that rings do not mean anything.
+	if _aim.is_zero_approx() or _fire_suppressed > 0.0:
+		_windup = 0.0
 		return
-	var aim: Vector2 = _behaviour.aim(_ctx)
-	if aim.is_zero_approx():
+
+	if _windup > 0.0:
+		_windup = maxf(0.0, _windup - delta)
+		if _windup <= 0.0:
+			_fire()
 		return
-	_fire_cooldown = _def.fire_interval
-	_shoot(aim.normalized())
+
+	if _fire_cooldown > 0.0:
+		return
+
+	_windup = _def.telegraph_seconds
+	if _windup <= 0.0:
+		_fire()
+
+
+## Spending the wind-up out of the interval rather than after it is what keeps a
+## telegraph a warning instead of a nerf: the cooldown restarts short by exactly
+## the tell that is about to be paid in front of the next shot, so one shot to the
+## next is still [member EnemyDef.fire_interval] to the frame. Adding it on top
+## would have quietly cut every shooter's rate of fire by the length of its own
+## tell, which is a balance change wearing a readability change's clothes.
+func _fire() -> void:
+	_fire_cooldown = maxf(0.0, _def.fire_interval - _def.telegraph_seconds)
+	_shoot(_aim.normalized())
+
+
+## Which wind-up is running, and where it points.
+##
+## Two of them, because two different things know an attack is coming and they are
+## not the same thing: this node owns the clock in front of a SHOT, because it
+## owns the fire cooldown, and a behaviour owns the clock in front of anything it
+## invented for itself — see [method EnemyBehaviour.windup]. Collapsing them into
+## one would mean either the behaviour setting its own rate of fire or a charger
+## pretending to have a gun.
+##
+## The shot wins where both could answer. Nothing overrides both today, and if
+## something ever does, the shot is the one with a bullet behind it.
+func _show_attack_tell() -> void:
+	if _windup > 0.0 and _def.telegraph_seconds > 0.0:
+		_tell.set_charge(1.0 - _windup / _def.telegraph_seconds, _aim)
+		return
+	# facing() rather than aim(): a charger has no aim vector at all, and mid
+	# wind-up its facing is already the player — see [method ChargeBehaviour.facing].
+	_tell.set_charge(_behaviour.windup(_ctx), _behaviour.facing(_ctx))
 
 
 func _shoot(aim: Vector2) -> void:

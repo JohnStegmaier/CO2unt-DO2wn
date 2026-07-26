@@ -74,15 +74,42 @@ func facing(ctx: SteeringContext) -> Vector2:
 
 
 func aim(ctx: SteeringContext) -> Vector2:
-	if ctx.phase != Phase.AIM:
-		return Vector2.ZERO
-	if ctx.distance_to_target() > fire_range:
-		return Vector2.ZERO
-	if respects_cover and not ctx.can_see_target():
+	if ctx.phase != Phase.AIM or not _may_fire(ctx):
 		return Vector2.ZERO
 	# Down the barrel, not at the player. Everything else in this file exists to
 	# make that sentence true.
 	return ctx.heading
+
+
+## The swing itself is the wind-up, and the tell is per BEARING rather than per
+## shot — the only archetype where those differ.
+##
+## A stop fires a burst, not a shot: [member aim_time] divided by
+## [member EnemyDef.fire_interval] is three of them, and that window is fixed. A
+## per-shot tell paid out of the interval — what [member EnemyDef
+## .telegraph_seconds] does for a skirmisher — shifts the burst late enough that
+## the last shot no longer fits inside the stop, which costs this archetype a
+## third of its fire for a warning it did not need: it never tracks you, so the
+## bearing it is swinging onto IS the shot, half a second before the shot.
+##
+## So the ring closes across the turn and lands as the barrel settles, which is
+## also the frame the first shot leaves, because the cooldown from the previous
+## stop has already run out by then. The rest of the burst is untelegraphed on
+## purpose. Down the same line, at the same rate, from a thing that has not moved.
+func windup(ctx: SteeringContext) -> float:
+	if ctx.phase != Phase.TURN or turn_time <= 0.0 or not _may_fire(ctx):
+		return 0.0
+	return clampf(1.0 - ctx.phase_remaining / turn_time, 0.0, 1.0)
+
+
+## Shared by the shot and the tell so the two cannot disagree. A ring that closes
+## on a player standing out of range, or behind the cover this turret respects,
+## promises a shot that never comes — and one bluff is enough to teach the player
+## that rings do not mean anything.
+func _may_fire(ctx: SteeringContext) -> bool:
+	if ctx.distance_to_target() > fire_range:
+		return false
+	return not respects_cover or ctx.can_see_target()
 
 
 func fires() -> bool:

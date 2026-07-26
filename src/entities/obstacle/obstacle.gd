@@ -27,6 +27,7 @@ extends StaticBody2D
 signal destroyed(index: int, loot_source: StringName, at: Vector2)
 
 @onready var _sprite: Sprite2D = $Sprite2D
+@onready var _shadow: Sprite2D = $Shadow
 @onready var _collider: CollisionShape2D = $CollisionShape2D
 @onready var _health: Health = $Health
 
@@ -51,6 +52,8 @@ func _ready() -> void:
 	_sprite.texture = def.texture
 	_sprite.offset = def.offset
 	_sprite.scale = Vector2(def.sprite_scale, def.sprite_scale)
+
+	_shadow.position = def.shadow_offset
 
 	# The shape is a sub-resource of obstacle.tscn and therefore shared by every
 	# prop instanced from it. Resizing the original would resize the whole room —
@@ -93,4 +96,5 @@ func _on_health_died() -> void:
 	tween.set_parallel()
 	tween.tween_property(_sprite, "modulate:a", 0.0, 0.18)
 	tween.tween_property(_sprite, "scale", _sprite.scale * 1.25, 0.18)
+	tween.tween_property(_shadow, "modulate:a", 0.0, 0.18)
 	tween.chain().tween_callback(queue_free)

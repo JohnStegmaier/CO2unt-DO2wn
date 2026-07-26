@@ -75,12 +75,39 @@ extends Resource
 ## so this is usually a shrink rather than a blow-up.
 @export_range(0.25, 3.0, 0.05) var sprite_scale: float = 1.0
 
+## Where the ground shadow sits, in the same sibling-of-the-sprite space as
+## [member sprite_offset]. Can't be derived from sprite_offset/sprite_scale
+## alone — a crawling licker's art fills the top of its frame with a lot of
+## dead canvas below it, while a guard's fills the frame edge to edge, so the
+## same "half the frame height" math lands the shadow under a guard's feet and
+## a full body-length below a licker's. Tuned per def against the actual
+## drawn pixels instead.
+@export var shadow_offset: Vector2 = Vector2(0, 8)
+
 ## Applied as AnimatedSprite2D.speed_scale, so per-animation speeds authored in
 ## the SpriteFrames stay relative to each other. That matters for the guard,
 ## whose side-on walk is four frames and whose front-on is eight — the .tres
 ## halves the side-on speed so both gaits have the same period, and an absolute
 ## FPS here would undo it.
 @export_range(0.1, 10.0, 0.1) var frame_rate: float = 1.0
+
+## What colour this one's wind-up ring is drawn in — see [AttackTell].
+##
+## Here in Appearance rather than beside [member telegraph_seconds] in Shot,
+## because it is not a property of the attack: it belongs to whichever clock is
+## driving the tell, and the charger's is not a gun at all. What decides it is the
+## body it has to be legible ON, which is why it sits next to the frames.
+##
+## Per-def rather than one constant for the bestiary because the enemies are not
+## one palette. The licker is deep red, and the default red on it is a tell that
+## is technically present and practically invisible. Alpha is ignored — the
+## wind-up ramps it.
+##
+## The default is written out rather than read from [constant AttackTell
+## .DEFAULT_COLOR], because that is a Node2D in entities/ and naming it from here
+## would make every headless load of this file drag a node script in behind it.
+## Same copy-and-say-so trade tools/check_enemies.gd makes with Room.FLOOR.
+@export var telegraph_color: Color = Color(1.0, 0.27, 0.18)
 
 @export_group("Body")
 ## Radius of the solid core, which is deliberately NOT half the sprite — a
@@ -137,6 +164,21 @@ extends Resource
 ## is one heavy shot or a burst.
 @export_range(0.05, 8.0, 0.05) var fire_interval: float = 1.6
 
+## Seconds of visible wind-up before a shot leaves the barrel — see [AttackTell]
+## for what that looks like and [method Enemy._maybe_shoot] for what holds it.
+##
+## Spent OUT OF [member fire_interval] rather than on top of it: the cooldown
+## restarts short by exactly the tell that is about to be paid, so a telegraph is
+## a warning and not a nerf, and one shot to the next is still fire_interval to
+## the frame. Zero is the per-enemy off switch, the same way an empty
+## [member bullet_scene] is the "no gun" one.
+##
+## Longer than [member fire_interval] and the fold-in clamps at zero, which does
+## not break — the enemy simply fires every telegraph_seconds instead — but it
+## means the def no longer says what its own rate is. tools/check_enemies.gd
+## refuses it for that reason.
+@export_range(0.0, 2.0, 0.05) var telegraph_seconds: float = 0.0
+
 ## Radians. They are bad guys, not marksmen.
 @export_range(0.0, 1.0, 0.01) var aim_spread: float = 0.2
 
@@ -170,8 +212,9 @@ func widest_radius(boss_size_scale: float) -> float:
 
 
 func describe() -> String:
-	var gun := "unarmed" if bullet_scene == null else "%d dmg @ %.2fs" % [
-			bullet_damage, fire_interval]
+	var tell := "" if telegraph_seconds <= 0.0 else " tell %.2fs" % telegraph_seconds
+	var gun := "unarmed" if bullet_scene == null else "%d dmg @ %.2fs%s" % [
+			bullet_damage, fire_interval, tell]
 	var where := ", wall" if is_fixture() else ""
 	return "%s (r%.1f, %d hp, %s, %s, weight %.1f%s)" % [
 			id, body_radius, max_hp, gun,

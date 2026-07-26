@@ -43,6 +43,26 @@ func _ready() -> void:
 
 
 func play_music(song_name, pitch = 1.0, volume = 0.0, start_time = 0.0):
+	# Some tracks are wired up before their asset exists, same as play_sfx below.
+	# Silence beats a crash — and the lookup below reads the dictionary before
+	# either loop, so an unknown name has to be turned away here.
+	if not music.has(song_name):
+		return null
+
+	# Already playing? Leave it alone rather than starting a second copy on the
+	# other player.
+	#
+	# Game._start_music is connected to GlobalTimer.tick and re-fires every
+	# second for the whole run, relying on this call being a no-op once the track
+	# is going. It was not: the first tick claimed MusicPlayer, and the next one
+	# found MusicPlayer2 free and layered a second copy a second out of phase.
+	# That is the exact failure the comment above _start_music says it exists to
+	# avoid, so the fix belongs here rather than in another guard up there.
+	var stream: AudioStream = music[song_name]
+	for music_player in [$MusicPlayer, $MusicPlayer2]:
+		if music_player.playing and music_player.stream == stream:
+			return
+
 	for music_player in [$MusicPlayer, $MusicPlayer2]:
 		if !music_player.playing:
 			_cancel_fade(music_player)

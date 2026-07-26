@@ -104,6 +104,7 @@ var _rng := RandomNumberGenerator.new()
 @onready var _hud: CanvasLayer = $Ui/CanvasLayer
 @onready var _o2_timer: O2Timer = $Ui/CanvasLayer/O2Timer
 @onready var _ammo_counter: AmmoCounter = $Ui/CanvasLayer/AmmoCounter
+@onready var _coin_counter: CoinCounter = $Ui/CanvasLayer/CoinCounter
 @onready var _minimap: Minimap = $Ui/CanvasLayer/Minimap
 ## Deliberately under the camera rather than beside the HUD: the vignette is
 ## world content so the player can out-rank it on z_index and stay lit inside the
@@ -169,6 +170,9 @@ func _ready() -> void:
 	_player.bombs_changed.connect(_o2_timer.set_bombs)
 	_o2_timer.set_bombs(_player.f_bombs, _player.max_f_bombs)
 
+	_player.coins_changed.connect(_coin_counter.set_coins)
+	_coin_counter.set_coins(_player.coins)
+
 	_player.power_level_changed.connect(_o2_timer.set_power_level)
 	_o2_timer.set_power_level(_player.POWER_LVL)
 	_player.speed_lvl_changed.connect(_o2_timer.set_speed_lvl)
@@ -221,11 +225,11 @@ func _start_music() -> void:
 	await get_tree().create_timer(0.25, false).timeout
 	if _dying or _won:
 		return
-	AudioManager.play_music("60000 light years", 1, 0, 0)
+	AudioManager.play_music("60000 light years", 1, -11, 0)
 
 
 func _on_global_tick() -> void:
-	AudioManager.play_sfx("tick_trim", 1, 0, 0)
+	AudioManager.play_sfx("tick_trim", 1, -5, 0)
 
 
 ## The walls are closing in and the player can hear their own pulse. Fired by the

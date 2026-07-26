@@ -56,6 +56,21 @@ var f_bombs := 1
 ## Fired whenever the bomb count changes, so the HUD never has to poll for it.
 signal bombs_changed(current: int, max_bombs: int)
 
+@export_group("Coins")
+## Uncapped — unlike ammo and bombs there is no magazine or carry limit here.
+var coins := 0
+
+## Fired whenever the coin count changes, so the HUD never has to poll for it.
+signal coins_changed(current: int)
+
+
+## Called by money_pickup.gd on contact. Duck-typed the same way heal() and
+## gain_bomb() are — the pickup does not need to know it is a Player.
+func gain_coin() -> void:
+	coins += 1
+	coins_changed.emit(coins)
+	AudioManager.play_sfx("money_jingle_1")
+
 
 ## Emergency pulse: spends one bomb and wipes every projectile on screen, same
 ## group-wide sweep game.gd uses on a room change or death — so this clears the
@@ -66,6 +81,10 @@ func use_bomb() -> void:
 	f_bombs -= 1
 	bombs_changed.emit(f_bombs, max_f_bombs)
 	get_tree().call_group("projectiles", "queue_free")
+	AudioManager.play_sfx("bomb_air_burst", 2.0,-2)
+	AudioManager.play_sfx("pulse_02")
+	AudioManager.play_sfx("explosion_01",1,3)
+	
 	_spawn_pulse()
 
 
@@ -98,7 +117,7 @@ func _spawn_pulse() -> void:
 
 @onready var sprite = $AnimatedSprite2D
 @onready var gun: Sprite2D = $BigGunBTransparent
-@onready var _reload_indicator: Label = $ReloadIndicator
+@onready var _reload_indicator: Node2D = $ReloadIndicator
 
 const DODGE_SPEED = 200
 const DODGE_DURATION = 0.6
@@ -355,6 +374,7 @@ func take_damage(amount: int, type: int = Damage.Type.BLUNT) -> void:
 	_invulnerable_until_msec = Time.get_ticks_msec() + int(invulnerable_time * 1000.0)
 	damaged.emit(amount, type)
 	_flash_hit()
+	AudioManager.play_sfx("damage_taken_0%d" % [1 if randf() < 0.5 else 2], randf_range(1.3,1.4))
 
 
 ## Called by oxygen_pickup.gd on contact. Duck-typed the same way bullet.gd
@@ -434,7 +454,8 @@ func shoot() -> void:
 			CollisionLayers.WORLD | CollisionLayers.ENEMY, bullet_damage, Damage.Type.BLUNT,
 			bullet_speed)
 	get_tree().current_scene.add_child(bullet)
-	AudioManager.play_sfx("laser_gun_01", randf_range(0.9, 1.1))
+	var rng = RandomNumberGenerator.new()
+	AudioManager.play_sfx("laser_gun_01", rng.randf_range(0.6, 1.5), -6)
 	bullet.global_position = gun.global_position + spawn_offset
 	bullet.reset_physics_interpolation()
 
@@ -499,6 +520,7 @@ func dodge(direction: Vector2) -> void:
 	is_dodging = true
 	dodge_direction = direction
 	dodge_timer = 0.0
+	AudioManager.play_sfx("player_grunt_01", randf_range(1.3,1.8))
 
 	if direction == Vector2.DOWN:
 		last_direction = "down"

@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://bdiv4styvv2vm" path="res://src/entities/player/player.gd" id="1_lkv7d"]
 [ext_resource type="Script" uid="uid://ccalvfh5rit5y" path="res://src/entities/player/player_camera.gd" id="1_pcam0"]
+[ext_resource type="Script" path="res://src/entities/player/reload_indicator.gd" id="1_reload"]
 [ext_resource type="Texture2D" uid="uid://dvbkwi18togod" path="res://assets/sprites/characters/player/Dodge_Forward/player_roll1.png" id="2_p2qdy"]
 [ext_resource type="PackedScene" uid="uid://ckinnty100svf" path="res://src/entities/gun_stuff/bullet.tscn" id="2_t8d2k"]
 [ext_resource type="Texture2D" uid="uid://goqhekktgk42" path="res://assets/sprites/characters/player/Dodge_Forward/player_roll2.png" id="3_lqdhu"]
@@ -262,12 +263,9 @@ position = Vector2(0, -6)
 sprite_frames = SubResource("SpriteFrames_nn08x")
 animation = &"walk_down"
 
-[node name="ReloadIndicator" type="Label" parent="." unique_id=2136498205]
-position = Vector2(-28, -28)
-modulate = Color(1.0, 0.451, 0.0, 1)
-theme_override_font_sizes/font_size = 10
-text = "RELOADING"
-horizontal_alignment = 1
+[node name="ReloadIndicator" type="Node2D" parent="." unique_id=2136498205]
+position = Vector2(0, -28)
+script = ExtResource("1_reload")
 visible = false
 
 [node name="BigGunBTransparent" type="Sprite2D" parent="." unique_id=1371732958]

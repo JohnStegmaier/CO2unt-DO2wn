@@ -485,7 +485,7 @@ horizontal_alignment = 1
 
 [node name="Needle" type="Sprite2D" parent="." unique_id=684507258]
 texture_filter = 1
-position = Vector2(138.75, 32.25)
+position = Vector2(140, 36)
 scale = Vector2(1.6027501, 1.5000005)
 texture = ExtResource("3_rocwj")
 offset = Vector2(-5.515, 0)

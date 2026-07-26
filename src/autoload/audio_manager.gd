@@ -10,8 +10,18 @@ var music = {
 var sounds = {
 	"clock_tick": preload("res://assets/audio/sfx/clock_tick_01.mp3"),
 	"tick_trim": preload("res://assets/audio/sfx/tick_trim.mp3"),
-	"laser_gun_01": preload("res://assets/audio/sfx/laser_gun_01.mp3")
-	
+	"laser_gun_01": preload("res://assets/audio/sfx/laser_gun_01.mp3"),
+	"bomb_air_burst": preload("res://assets/audio/sfx/bomb_air_burst.mp3"),
+	"warp": preload("res://assets/audio/sfx/Enemy_warp_in.mp3"),
+	"pulse_01": preload("res://assets/audio/sfx/edr_pulse.mp3"),
+	"pulse_02": preload("res://assets/audio/sfx/pulse_02.mp3"),
+	"explosion_01": preload("res://assets/audio/sfx/explosion_01.mp3"),
+	"player_grunt_01": preload("res://assets/audio/sfx/roll_2.mp3"),
+	"damage_taken_01": preload("res://assets/audio/sfx/damage_taken_1.mp3"),
+	"damage_taken_02": preload("res://assets/audio/sfx/damage_taken_2.mp3"),
+	"money_jingle_1": preload("res://assets/audio/sfx/money_jingle_1.mp3"),
+	"money_drop_2": preload("res://assets/audio/sfx/money_drop_2.mp3"),
+	"wall_collision_1": preload("res://assets/audio/sfx/wall_collision_1.mp3")
 }
 
 ## Endgame sounds the artists have not delivered yet. They are loaded at runtime
@@ -49,10 +59,6 @@ func _ready() -> void:
 		sounds["shopkeeper_greet"] = load(SHOPKEEPER_GREET_PATH)
 	if ResourceLoader.exists(SHOP_MUSIC_PATH):
 		music["shop_calm"] = load(SHOP_MUSIC_PATH)
-	# The purchase and refusal sounds shipped in PR #48 and are registered by
-	# name here so the shop is not the only place that knows the filenames.
-	_register_sfx("money_jingle_1", "res://assets/audio/sfx/money_jingle_1.mp3")
-	_register_sfx("wall_collision_1", "res://assets/audio/sfx/wall_collision_1.mp3")
 	if ResourceLoader.exists(HEARTBEAT_PATH):
 		var stream: AudioStream = load(HEARTBEAT_PATH)
 		# Forced here rather than trusted to the .import flag, because a heartbeat
@@ -127,27 +133,28 @@ func _cancel_fade(player):
 		_fade_tweens[player].kill()
 	_fade_tweens.erase(player)
 
-## Register a sound only if its file is actually there, and never clobber an
-## entry someone else already made. Additive on purpose: the audio branch is
-## filling these dictionaries wholesale, and this must not fight it.
-func _register_sfx(sound_name: String, path: String) -> void:
-	if sounds.has(sound_name) or not ResourceLoader.exists(path):
-		return
-	sounds[sound_name] = load(path)
-
-
 func play_sfx(sound_name, pitch = 1.0, volume = 0.0, start_time = 0.0):
 	# Some sounds are wired up before their asset exists. Silence beats a crash.
 	if not sounds.has(sound_name):
 		return null
-	for player in [$SFX1, $SFX2, $SFX3, $SFX4, $SFX5, $SFX6, $SFX7, $SFX8, $SFX9, $SFX10]:
+	var players := [$SFX1, $SFX2, $SFX3, $SFX4, $SFX5, $SFX6, $SFX7, $SFX8, $SFX9, $SFX10]
+	var chosen: AudioStreamPlayer = null
+	for player in players:
 		if !player.playing:
-			player.stream = sounds[sound_name]
-			player.pitch_scale = pitch
-			player.volume_db = volume
-			player.play(start_time)
-			return player
-	return null
+			chosen = player
+			break
+	# Busy combat can overlap more than 10 sounds at once — every slot taken used
+	# to mean the new sound just never played, silently thinning out the mix
+	# instead of actually changing volume. Stealing the first slot instead means
+	# play_sfx always plays something, at the cost of cutting off whatever that
+	# slot was playing.
+	if chosen == null:
+		chosen = players[0]
+	chosen.stream = sounds[sound_name]
+	chosen.pitch_scale = pitch
+	chosen.volume_db = volume
+	chosen.play(start_time)
+	return chosen
 
 
 ## The player's own pulse, rising as the air runs out. It gets a dedicated player

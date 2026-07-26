@@ -19,6 +19,13 @@ extends Room
 ## coord * STRIDE and reporting the side the player left through. It knows
 ## nothing about the clock, the music or the item catalogue — it is handed its
 ## shelves through [method configure_shop] and reports a sale upward.
+##
+## Inheriting Room means the scene MUST keep its Tint ColorRect and its Elevator
+## child even though this room uses neither: Room._ready and Room.configure reach
+## for both unconditionally. That is a permanent requirement, not a temporary
+## accommodation — the follow-up that was going to retire KIND_TINTS was dropped
+## with the branch that owned it. Delete either node and this room faults on
+## contact.
 
 ## Somebody bought something. Reported rather than applied: what an item DOES is
 ## the catalogue's business and who it happens to is Game's, and a room that
@@ -116,7 +123,6 @@ const LANDING := Vector2(221, 216)
 @onready var _planks: Node2D = $Depth/Shelves/Planks
 @onready var _slots: Node2D = $Depth/Shelves/Slots
 @onready var _frame: SelectionFrame = $Depth/Shelves/SelectionFrame
-@onready var _coin_label: Label = $Depth/Shelves/CoinReadout/Label
 @onready var _talk_prompt: Label = $Depth/Shopkeeper/TalkPrompt
 
 ## Every plane that slides when the player looks around, gathered from the scene
@@ -508,8 +514,11 @@ func _spend(amount: int) -> bool:
 	return bool(_purse.spend_coins(amount))
 
 
+## The balance itself is drawn by the HUD's CoinCounter, which is always on
+## screen and wired to the player's coins_changed. This room deliberately does
+## not draw it a second time — it only re-reads it, to decide which price tags
+## the player can afford.
 func _refresh_coins() -> void:
-	_coin_label.text = str(_balance())
 	_refresh_price_colors()
 
 

@@ -5,7 +5,6 @@
 [ext_resource type="PackedScene" path="res://src/ui/selection_frame/selection_frame.tscn" id="3_frame"]
 [ext_resource type="PackedScene" path="res://src/components/elevator/elevator.tscn" id="4_elevator"]
 [ext_resource type="Texture2D" path="res://assets/sprites/environment/Shop_matt.png" id="5_mat"]
-[ext_resource type="Texture2D" path="res://assets/sprites/environment/coin.png" id="6_coin"]
 [ext_resource type="Script" path="res://src/systems/shop_grid.gd" id="7_grid"]
 
 [sub_resource type="Resource" id="Resource_grid"]
@@ -89,24 +88,6 @@ depth_factor = 0.15
 [node name="Slots" type="Node2D" parent="Depth/Shelves"]
 
 [node name="SelectionFrame" parent="Depth/Shelves" instance=ExtResource("3_frame")]
-
-[node name="CoinReadout" type="Node2D" parent="Depth/Shelves"]
-position = Vector2(396, 26)
-
-[node name="coin" type="Sprite2D" parent="Depth/Shelves/CoinReadout"]
-texture_filter = 1
-texture = ExtResource("6_coin")
-
-[node name="Label" type="Label" parent="Depth/Shelves/CoinReadout"]
-offset_left = 7.0
-offset_top = -7.0
-offset_right = 39.0
-offset_bottom = 7.0
-theme_override_colors/font_color = Color(1, 0.87, 0.45, 1)
-theme_override_font_sizes/font_size = 10
-text = "0"
-vertical_alignment = 1
-mouse_filter = 2
 
 [node name="Shopkeeper" type="Node2D" parent="Depth"]
 script = ExtResource("2_layer")

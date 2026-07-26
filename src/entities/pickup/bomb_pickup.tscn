@@ -29,7 +29,8 @@ texture = SubResource("GradientTexture2D_shadow")
 
 [node name="Visual" type="Node2D" parent="." unique_id=1466050101]
 
-[node name="Orb" type="Sprite2D" parent="Visual" unique_id=2740018224]
+[node name="Orb" type="Sprite2D" parent="Visual" unique_id=-1554949072]
+modulate = Color(0.40185246, 0.5778397, 0.13858154, 0.5137255)
 scale = Vector2(0.265, 0.265)
 texture = ExtResource("3_orb")
 

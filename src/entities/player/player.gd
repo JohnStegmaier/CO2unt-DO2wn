@@ -603,11 +603,19 @@ func warp_to(target: Vector2) -> void:
 ## Where a shot leaves the gun. The muzzle sits along the aim and, for art whose
 ## barrel is off the centre line, across it — mirrored with the sprite so the
 ## offset stays on the barrel when the gun is drawn facing left.
+##
+## Clamped against the world before it is handed over, because the muzzle reaches
+## 20px out while the player's own body is only 3 across: standing at a wall and
+## firing into it puts the raw muzzle inside the wall, or past it. The gun hangs
+## inside the player, so it is always somewhere she could legally stand and is
+## therefore a safe place to measure from.
 func _muzzle_position(direction: Vector2) -> Vector2:
 	var perpendicular := direction.orthogonal()
 	var flip_sign := -1.0 if direction.x < 0 else 1.0
-	return gun.global_position + direction * muzzle_offset \
+	var muzzle := gun.global_position + direction * muzzle_offset \
 			+ perpendicular * muzzle_y_offset * flip_sign
+	return Projectile.clear_muzzle(
+			get_world_2d().direct_space_state, gun.global_position, muzzle)
 
 
 ## Maps current movement input to one of the eight dodge directions we have

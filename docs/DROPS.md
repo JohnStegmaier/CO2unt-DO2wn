@@ -40,12 +40,18 @@ and tune while the game is running. It holds no RNG and makes no decisions —
 
 ### Sources
 
-A `DropRule` is keyed on a **source**, not on "enemy": `&"grunt"`,
-`&"skirmisher"`, `&"boss"`, `&"shop"`, `&"crate"`, `&"barrel"`, and later
-`&"chest"`. An enemy carries only its `loot_source`; `game.gd` sets it
-alongside the behaviour and the boss promotion, in `_loot_source_for`. A prop
-carries its own the same way — `Obstacle` reuses its `ObstacleDef.id`, since
-that was already a unique name for the row and nothing else indexed by it.
+A `DropRule` is keyed on a **source**, not on "enemy": `&"booger"`, `&"guard"`,
+`&"licker"`, `&"turret"`, `&"boss"`, `&"shop"`, `&"crate"`, `&"barrel"`, and
+later `&"chest"`. An enemy carries only its `loot_source`, and its `EnemyDef`
+says what that is — see docs/ENEMIES.md. `game.gd` overrides it in exactly one
+case, `&"boss"` for the one it just promoted, which is what lets a single boss
+row serve every archetype instead of needing one per enemy. A prop carries its
+own the same way — `Obstacle` reuses its `ObstacleDef.id`, since that was
+already a unique name for the row and nothing else indexed by it.
+
+The rows were `&"grunt"` and `&"skirmisher"` when an enemy's drop row was named
+after the behaviour `game.gd` had just handed it. With four archetypes carrying
+their own defs, they are named after the enemy.
 
 That is what lets the treasure room and the shop use this same table when they
 land, instead of needing a loot system each. A source with no rule drops nothing,
@@ -207,10 +213,19 @@ updating `DEFAULT_RATES` in the checker is how you say you meant it.
   default does not: a guaranteed table beside a chance table, a source that
   differs from the others, and a floor-specific override.
 
+## Weapons
+
+A weapon is an item like any other here — `WeaponDef` extends `ItemDef` and
+equips itself on pickup — so it is a row in a `DropTable` and needs nothing else
+from this system. Crates, barrels, chests and the shop all offer them today; the
+enemy tables deliberately do not, because they are rate-locked by
+`check_drops.gd`. See **docs/WEAPONS.md**.
+
 ## The three candidate economies
 
-Kept here as the roadmap. All three assume chests, a shop and six weapons, none
-of which exist yet — each becomes a `.tres` when its items do.
+Kept here as the roadmap. All three assume chests and a shop. Four of the six
+weapons now exist — pistol, shotgun, timmy gun and chakram, under
+`src/config/weapons/` — and the rest become a `.tres` each when their art does.
 
 Common to all three:
 

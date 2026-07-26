@@ -86,6 +86,10 @@ offset_bottom = 405.0
 mouse_filter = 2
 color = Color(0.29, 0.34, 0.38, 1)
 
+[node name="car_wall" type="ColorRect" parent="Screen"]
+mouse_filter = 2
+color = Color(0.411765, 0.415686, 0.415686, 1)
+
 [node name="Plate" type="Sprite2D" parent="Screen"]
 texture_filter = 1
 position = Vector2(170, 30)
@@ -93,13 +97,21 @@ scale = Vector2(3, 3)
 centered = false
 texture = ExtResource("2_plate")
 
-[node name="car_well" type="ColorRect" parent="Screen"]
+[node name="beyond_wall" type="ColorRect" parent="Screen"]
 offset_left = 212.0
 offset_top = 63.0
 offset_right = 434.0
-offset_bottom = 294.0
+offset_bottom = 273.0
 mouse_filter = 2
-color = Color(0.05, 0.06, 0.08, 1)
+color = Color(0.09, 0.106, 0.129, 1)
+
+[node name="beyond_light" type="ColorRect" parent="Screen"]
+offset_left = 258.0
+offset_top = 63.0
+offset_right = 388.0
+offset_bottom = 273.0
+mouse_filter = 2
+color = Color(0.149, 0.173, 0.208, 1)
 
 [node name="car_floor" type="ColorRect" parent="Screen"]
 offset_left = 212.0
@@ -107,23 +119,7 @@ offset_top = 273.0
 offset_right = 434.0
 offset_bottom = 294.0
 mouse_filter = 2
-color = Color(0.15, 0.17, 0.2, 1)
-
-[node name="rider_body" type="ColorRect" parent="Screen"]
-offset_left = 314.0
-offset_top = 256.0
-offset_right = 332.0
-offset_bottom = 294.0
-mouse_filter = 2
-color = Color(0.85, 0.66, 0.42, 1)
-
-[node name="rider_head" type="ColorRect" parent="Screen"]
-offset_left = 316.0
-offset_top = 240.0
-offset_right = 330.0
-offset_bottom = 256.0
-mouse_filter = 2
-color = Color(0.55, 0.78, 0.86, 1)
+color = Color(0.18, 0.192, 0.216, 1)
 
 [node name="leaf_left" type="Sprite2D" parent="Screen"]
 texture_filter = 1
@@ -142,6 +138,13 @@ centered = false
 texture = ExtResource("2_plate")
 region_enabled = true
 region_rect = Rect2(50, 11, 38, 77)
+
+[node name="car_deck" type="ColorRect" parent="Screen"]
+mouse_filter = 2
+color = Color(0.169, 0.184, 0.216, 1)
+
+[node name="Rider" type="AnimatedSprite2D" parent="Screen"]
+texture_filter = 1
 
 [node name="label" type="Label" parent="Screen"]
 offset_left = 170.0

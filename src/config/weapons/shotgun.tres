@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="WeaponDef" format=3]
+
+[ext_resource type="Script" path="res://src/systems/weapons/weapon_def.gd" id="1_def"]
+[ext_resource type="Texture2D" uid="uid://cjdt6dhufrlc8" path="res://assets/sprites/weapons/shotgun.png" id="2_shotgun"]
+[ext_resource type="Texture2D" uid="uid://b2vwww17ku866" path="res://assets/sprites/items/Drop_orb.png" id="3_orb"]
+[ext_resource type="PackedScene" uid="uid://ckinnty100svf" path="res://src/entities/gun_stuff/bullet.tscn" id="4_bullet"]
+
+[resource]
+script = ExtResource("1_def")
+id = &"shotgun"
+display_name = "Shotgun"
+icon = ExtResource("2_shotgun")
+icon_scale = 1.2
+backdrop = ExtResource("3_orb")
+backdrop_scale = 0.265
+pickup_sound = &"shotgun_pickup"
+equip_seconds = 20.0
+held_texture = ExtResource("2_shotgun")
+held_scale = 1.0
+held_offset = Vector2(7, 0)
+hud_icon_scale = 1.4
+fire_mode = 0
+fire_interval = 0.55
+magazine_size = 2
+reload_time = 1.2
+scales_with_player_stats = false
+projectile_scene = ExtResource("4_bullet")
+projectiles_per_shot = 5
+spread_degrees = 18.0
+spread_mode = 0
+damage = 10
+damage_type = 0
+projectile_speed = 400.0
+fire_sound = &"shotgun_blast"
+fire_pitch_min = 0.6
+fire_pitch_max = 1.5
+fire_volume_db = -6.0

@@ -48,7 +48,12 @@ entries = Array[ExtResource("3_8a7h0")]([SubResource("Resource_l0xix"), SubResou
 
 [sub_resource type="Resource" id="Resource_nsn3f"]
 script = ExtResource("1_mtt58")
-source = &"grunt"
+source = &"booger"
+tables = Array[ExtResource("2_roexb")]([SubResource("Resource_30t2n"), SubResource("Resource_xjryh")])
+
+[sub_resource type="Resource" id="Resource_licker_rule"]
+script = ExtResource("1_mtt58")
+source = &"licker"
 tables = Array[ExtResource("2_roexb")]([SubResource("Resource_30t2n"), SubResource("Resource_xjryh")])
 
 [sub_resource type="Resource" id="Resource_tb83u"]
@@ -76,14 +81,19 @@ entries = Array[ExtResource("3_8a7h0")]([SubResource("Resource_tb83u"), SubResou
 
 [sub_resource type="Resource" id="Resource_sqao3"]
 script = ExtResource("1_mtt58")
-source = &"grunt"
+source = &"booger"
 floors = Array[int]([3, 4, 5])
 tables = Array[ExtResource("2_roexb")]([SubResource("Resource_30t2n"), SubResource("Resource_4e1n7")])
 
 [sub_resource type="Resource" id="Resource_m6adg"]
 script = ExtResource("1_mtt58")
-source = &"skirmisher"
+source = &"guard"
 tables = Array[ExtResource("2_roexb")]([SubResource("Resource_30t2n"), SubResource("Resource_xjryh")])
+
+[sub_resource type="Resource" id="Resource_turret_rule"]
+script = ExtResource("1_mtt58")
+source = &"turret"
+tables = Array[ExtResource("2_roexb")]([SubResource("Resource_30t2n"), SubResource("Resource_4e1n7")])
 
 [sub_resource type="Resource" id="Resource_mt3p7"]
 script = ExtResource("3_8a7h0")
@@ -116,4 +126,4 @@ tables = Array[ExtResource("2_roexb")]([SubResource("Resource_vhyy2"), SubResour
 
 [resource]
 script = ExtResource("13_wf8gh")
-rules = Array[ExtResource("1_mtt58")]([SubResource("Resource_nsn3f"), SubResource("Resource_sqao3"), SubResource("Resource_m6adg"), SubResource("Resource_ymj2c")])
+rules = Array[ExtResource("1_mtt58")]([SubResource("Resource_nsn3f"), SubResource("Resource_sqao3"), SubResource("Resource_licker_rule"), SubResource("Resource_m6adg"), SubResource("Resource_turret_rule"), SubResource("Resource_ymj2c")])

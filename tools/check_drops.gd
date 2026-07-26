@@ -38,9 +38,16 @@ const DEFAULT_RATES := {
 const RATE_TOLERANCE := 0.01
 
 ## Sources DEFAULT_RATES actually describes. A source with its own, deliberately
-## different economy — a crate's shotgun chance, say — is not held to the enemy
-## rates above, or every new source would fail this check the day it is added.
-const DEFAULT_RATE_SOURCES: Array[StringName] = [&"grunt", &"skirmisher", &"boss"]
+## different economy — a crate's shotgun chance, or a turret's double roll for
+## being four times the hit points — is not held to the enemy rates above, or
+## every new source would fail this check the day it is added.
+##
+## Was grunt/skirmisher/boss, back when an enemy's drop row was named after the
+## behaviour game.gd had just given it. Rows are named after the enemy now that
+## there are four of them and an [EnemyDef] carries its own — see docs/ENEMIES.md.
+## The tables behind these three are the same objects they always were, which is
+## why the rates below did not move.
+const DEFAULT_RATE_SOURCES: Array[StringName] = [&"booger", &"guard", &"licker", &"boss"]
 
 
 func _initialize() -> void:

@@ -1,0 +1,44 @@
+[gd_resource type="Resource" script_class="EnemyDef" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/systems/enemies/enemy_def.gd" id="1_def"]
+[ext_resource type="Script" path="res://src/systems/enemies/charge_behaviour.gd" id="2_charge"]
+[ext_resource type="SpriteFrames" path="res://src/config/enemies/frames/licker_frames.tres" id="3_frames"]
+
+[sub_resource type="Resource" id="Resource_licker_charge"]
+script = ExtResource("2_charge")
+stalk_speed = 45.0
+acceleration = 5.0
+trigger_range = 130.0
+telegraph_time = 0.45
+lunge_speed = 320.0
+lunge_time = 0.42
+recover_time = 0.7
+look_ahead = 44.0
+avoidance = 0.9
+
+[resource]
+script = ExtResource("1_def")
+id = &"licker"
+behaviour = SubResource("Resource_licker_charge")
+weight = 1.5
+loot_source = &"licker"
+boss_eligible = true
+frames = ExtResource("3_frames")
+facing = 1
+facing_offset_degrees = 0.0
+sprite_offset = Vector2(0, -6)
+sprite_scale = 0.75
+frame_rate = 1.0
+body_radius = 4.0
+body_height = 12.0
+max_hp = 22
+contact_damage = 10
+break_damage = 20
+bullet_damage = 8
+bullet_damage_type = 0
+bullet_speed = 180.0
+fire_interval = 1.6
+aim_spread = 0.2
+muzzle_offset = 10.0
+spawn_grace = 0.8
+placement = 0

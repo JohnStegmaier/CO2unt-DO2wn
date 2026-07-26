@@ -80,6 +80,15 @@ jobs:
       - name: Import project resources
         run: godot --headless --import
 
+      # Once, not four times: the bestiary is platform-independent, and this is
+      # the first job in the matrix that has both Godot and the imported project.
+      # It gates the build because the invariant it protects is a run-ending one —
+      # a wall fixture spawned inside a prop is unkillable, so the room never
+      # unlocks, and on floor 1 that is a run that cannot be finished.
+      - name: Verify enemy bestiary
+        if: matrix.name == 'Linux'
+        run: godot --headless --script tools/check_enemies.gd
+
       - name: Export ${{ matrix.name }}
         run: |
           mkdir -p "${{ matrix.dir }}"

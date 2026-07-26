@@ -247,6 +247,15 @@ func _start_music() -> void:
 	await get_tree().create_timer(0.25, false).timeout
 	if _dying or _won:
 		return
+	# And not while a shop has the clock stopped. This runs a quarter-second after
+	# the tick that armed it, which is long enough for the freeze to land in
+	# between — and the freeze suspends whatever was already playing rather than
+	# stopping it, so on the rare pass where the run's track happened not to be
+	# playing at all (the first seconds of a floor, or just after air came back)
+	# there is nothing for play_music to recognise and it starts the run's music
+	# inside the shop.
+	if _clock_hold != null and _clock_hold.is_held():
+		return
 	AudioManager.play_music("60000 light years", 1, -11, 0)
 
 
@@ -330,6 +339,10 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 	_current_room.set_boardable(_exit_available())
 	_current_room.door_entered.connect(_on_door_entered)
 	_current_room.elevator_entered.connect(_on_elevator_entered)
+	# Before the transition, not after: the beat grid has to stop before the fade
+	# starts or the clock ticks on into a shop the player has already committed
+	# to. See _apply_clock_hold.
+	_apply_clock_hold(data)
 	_current_coord = coord
 	# Before the slide, not after: visited and _current_coord are both already
 	# set, and a map that waited for the camera to land would be the one thing on
@@ -397,6 +410,13 @@ func _cut_to(landing: Vector2, previous_room: Room) -> void:
 	await _fade.fade_out()
 
 	_player.warp_to(landing)
+	# Under the black, because the room being left may have been drawing the
+	# player differently — the belt-scroll rooms scale her up to three times life
+	# size and hide the gun. Restoring on the way out of the zone instead would
+	# happen in plain sight (see ShopRoom._on_shop_exited), and leaving it to the
+	# old room's _exit_tree would carry that size a frame or two into the next
+	# room. Idempotent and a no-op on a corpse, so every cut can just do it.
+	_player.reset_presentation()
 	_camera.set_bounds(_current_room.interior_rect())
 	# The camera rides the player, so it has just been teleported too. Physics
 	# interpolation is on project-wide and would otherwise smear the first frame
@@ -829,11 +849,35 @@ func _shop_room_available() -> bool:
 ## leaked hold — a run whose clock never restarts — unreachable rather than
 ## merely unlikely: there is no path out of a shop that does not come through
 ## here, and arriving anywhere that is not a shop puts the clock back.
+## Stop or restart the run's clock, derived from the room being entered.
+##
+## Split out of [method _apply_shop_services] and called BEFORE the transition,
+## because a cut into a shop is the better part of a second of fade and the beat
+## grid was still running for all of it — you could hear the clock tick once or
+## twice after the countdown had visibly stopped.
+##
+## The reason it used to sit after the transition was to let in-flight HUD tweens
+## land before their node stopped processing. That does not hold up: ScreenFade
+## is CanvasLayer 10 and the HUD is on the default layer, so the wipe covers the
+## gauge too and a tween frozen underneath it cannot be seen.
+##
+## The corollary is that the clock is frozen for the fade INTO a shop and
+## restarts as you fade out of one, so a visit costs no air at either end. That
+## is the right reading: the safe room starts at the door.
+func _apply_clock_hold(data: RoomData) -> void:
+	if _clock_hold == null:
+		return
+	_clock_hold.set_held(data.kind == RoomData.Kind.SHOP and _shop_room_available())
+
+
+## Wire up the room the player just walked into, if it is a shop.
+##
+## Stays AFTER the transition, unlike the clock hold above: _cut_to finishes with
+## set_lead_enabled(true), so suppressing the camera's aim-lead any earlier would
+## simply be undone on arrival.
 func _apply_shop_services(data: RoomData, coord: Vector2i) -> void:
 	var is_shop: bool = data.kind == RoomData.Kind.SHOP and _shop_room_available()
-
 	if not is_shop:
-		_release_clock_hold()
 		return
 
 	# The camera's own aim-lead is suppressed for the visit, or it wobbles
@@ -847,9 +891,6 @@ func _apply_shop_services(data: RoomData, coord: Vector2i) -> void:
 			_player)
 		if not _current_room.offer_purchased.is_connected(_on_offer_purchased):
 			_current_room.offer_purchased.connect(_on_offer_purchased)
-
-	if _clock_hold != null:
-		_clock_hold.set_held(true)
 
 
 func _release_clock_hold() -> void:

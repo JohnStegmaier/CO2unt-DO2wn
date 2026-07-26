@@ -100,6 +100,10 @@ const LANDING := Vector2(221, 216)
 ## Fraction of a half-screen the mouse may sit from centre before it counts as
 ## looking. See [LookInput].
 @export_range(0.0, 0.9) var look_deadzone: float = 0.12
+## How far the cursor must travel, in room pixels, before it is treated as having
+## moved and allowed to take the selection off the keyboard. Small — this exists
+## to ignore jitter and a pointer sitting still, not to make the mouse sluggish.
+@export var mouse_move_threshold: float = 1.0
 
 @export_group("Audio")
 ## Named SFX from AudioManager. Empty plays nothing, and an unknown name plays
@@ -163,6 +167,10 @@ var _stock: ShopStock
 ## Whoever is paying. Duck-typed on coins/spend_coins so this room does not name
 ## the Player class for the one thing the Player does not own yet.
 var _purse: Object
+
+## Where the cursor was last seen, in the shelf's local space. Compared rather
+## than the screen position so the check survives the parallax easing home.
+var _last_mouse_local: Vector2 = Vector2.INF
 
 var _engaged: bool = false
 ## Which cubby the frame is on. -1 when nothing is selected.
@@ -368,9 +376,25 @@ func _on_shop_entered(body: Node2D) -> void:
 		player.gun.visible = false
 
 
+## The player left the shop floor — or the shop was pulled out from under them.
+##
+## Those two arrive as the same signal and must not be treated the same way.
+## Game._cut_to sets is_warping and then clears the departing room's
+## process_mode, which takes ShopZone out of the physics space and makes it
+## report every body inside as having left — all of it BEFORE the fade, with the
+## screen still fully visible. Restoring the player there snaps them from the
+## 3x the shop draws them at back to their authored top-down size, and they play
+## the whole wipe out at a fraction of their size.
+##
+## is_warping is set on the line above the one that disables the room, so it is a
+## reliable way to tell a teardown from a player who walked out. The restore
+## still happens — Game does it under the black, and _exit_tree is the backstop.
 func _on_shop_exited(body: Node2D) -> void:
-	if body is Player:
-		_release_player()
+	if not (body is Player):
+		return
+	if _player != null and is_instance_valid(_player) and _player.is_warping:
+		return
+	_release_player()
 
 
 ## Half the height of a frame of the player's art, negated. Read off the sprite
@@ -430,6 +454,11 @@ func _engage() -> void:
 	# the flag ElevatorRoom._board already uses for exactly this.
 	_player.is_warping = true
 
+	# Seeded so the first browsing frame reads as "the cursor has not moved".
+	# Without this the pointer's resting place would count as a move and steal
+	# the selection away from the first item before the player has touched
+	# anything.
+	_last_mouse_local = _shelves.get_local_mouse_position()
 	_select(_stock.first_populated())
 
 
@@ -452,7 +481,20 @@ func _process_browsing() -> void:
 		_disengage()
 		return
 
+	# Hover before the buttons, so a click lands on whatever the cursor is
+	# actually over rather than on last frame's selection.
+	var hovered: int = _update_hover()
+
 	if Input.is_action_just_pressed("interact"):
+		_buy()
+		return
+
+	# shoot is the left mouse button, and it is dead while engaged — is_warping
+	# returns player.gd out of _physics_process before it is read. So a mouse user
+	# buys the way they would expect to, and a pad user never notices.
+	if Input.is_action_just_pressed("shoot"):
+		if hovered >= 0:
+			_select(hovered)
 		_buy()
 		return
 
@@ -470,6 +512,38 @@ func _process_browsing() -> void:
 	# move the selection diagonally for a single input.
 	if dx != 0 or dy != 0:
 		_select(_stock.next_populated(_selected, dx, dy, grid))
+
+
+## Move the selection to whatever the cursor is over, and report what that is.
+##
+## Only when the cursor has actually MOVED. A pointer left sitting over a cubby
+## would otherwise re-select it every frame and silently undo every D-pad press,
+## which is the usual way this feature ends up fighting the player. Pressing a
+## direction does not clear the stored position, so the mouse simply stays quiet
+## until it is next picked up.
+##
+## Returns the hovered cubby whether or not the selection moved, so a click knows
+## what it is clicking even on a frame the pointer was still.
+func _update_hover() -> int:
+	if grid == null or _stock == null:
+		return -1
+
+	# The cubbies are children of this layer, so its local space already accounts
+	# for the room's place on the floor grid, the camera, and whatever is left of
+	# the look offset while it eases back to centre.
+	var local: Vector2 = _shelves.get_local_mouse_position()
+	var moved: bool = local.distance_to(_last_mouse_local) > mouse_move_threshold
+	_last_mouse_local = local
+
+	var hovered: int = grid.cell_at(local)
+	if hovered < 0 or not _stock.has_offer_at(hovered):
+		# Empty cubbies and the planks between them leave the selection alone —
+		# sweeping across a picked-over shelf should not drop the highlight into
+		# a hole.
+		return -1
+	if moved and hovered != _selected:
+		_select(hovered)
+	return hovered
 
 
 func _select(index: int) -> void:

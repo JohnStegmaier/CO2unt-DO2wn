@@ -1,7 +1,7 @@
-[gd_resource type="Resource" script_class="EnemyDef" load_steps=6 format=3]
+[gd_resource type="Resource" script_class="EnemyDef" format=3 uid="uid://bfkc67qn6eeqf"]
 
-[ext_resource type="Script" path="res://src/systems/enemies/enemy_def.gd" id="1_def"]
-[ext_resource type="Script" path="res://src/systems/enemies/skirmish_behaviour.gd" id="2_skirmish"]
+[ext_resource type="Script" uid="uid://gisrbdxyydjw" path="res://src/systems/enemies/enemy_def.gd" id="1_def"]
+[ext_resource type="Script" uid="uid://dvukgom07t36k" path="res://src/systems/enemies/skirmish_behaviour.gd" id="2_skirmish"]
 [ext_resource type="SpriteFrames" path="res://src/config/enemies/frames/guard_frames.tres" id="3_frames"]
 [ext_resource type="PackedScene" uid="uid://ckinnty100svf" path="res://src/entities/gun_stuff/bullet.tscn" id="4_bullet"]
 
@@ -33,7 +33,7 @@ frames = ExtResource("3_frames")
 facing = 2
 facing_offset_degrees = 0.0
 sprite_offset = Vector2(0, -5)
-sprite_scale = 0.9
+sprite_scale = 1.25
 shadow_offset = Vector2(0, 7)
 frame_rate = 1.0
 body_radius = 4.0

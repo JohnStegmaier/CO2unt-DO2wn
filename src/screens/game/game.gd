@@ -76,6 +76,16 @@ const VICTORY_SCENE := "res://src/screens/victory/victory.tscn"
 ## here and the slot can stay as the registry of what the flag chooses between.
 @export var exit_room_scene: PackedScene
 
+@export_group("Shop")
+## Everything about shops, in one slot — the room scene, where its stock comes
+## from, what the player starts with and what plays in there. Bundled into a
+## single Resource rather than four exports because game.tscn is edited by more
+## than one branch at a time and scene files do not merge.
+##
+## Leave it empty, or leave its room_scene empty, and shops fall back to ordinary
+## rooms with their placeholder tint — same escape hatch as exit_room_scene.
+@export var shop_config: ShopConfig
+
 @export_group("Floor")
 ## Shape of every floor in the run. Tune it here and each generated floor obeys.
 @export var floor_config: FloorConfig
@@ -127,6 +137,12 @@ var _boss_cleared: bool = false
 ## terminal states cannot be confused for one another — a won run must not take
 ## any of the paths that check _dying to decide the player is suffocating.
 var _won: bool = false
+## Every shop's shelves, for the length of the run — see [ShopRegistry]. Held
+## here rather than in the rooms because rooms are freed when the player leaves.
+var _shop_registry := ShopRegistry.new()
+## The clock/music freeze a shop puts the run into. Built in _ready once the HUD
+## exists, because it needs the countdown to freeze.
+var _clock_hold: ClockHold
 
 
 func _ready() -> void:
@@ -188,6 +204,8 @@ func _ready() -> void:
 		# another scene without it should still generate rather than crash.
 		floor_config = FloorConfig.new()
 	floor_config.apply_overrides()
+
+	_setup_shops()
 
 	_begin_floor(0)
 
@@ -263,6 +281,8 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 	var scene: PackedScene = ROOM_SCENE
 	if data.kind == RoomData.Kind.EXIT and exit_room_scene != null:
 		scene = exit_room_scene
+	elif _shop_room_available() and data.kind == RoomData.Kind.SHOP:
+		scene = shop_config.room_scene
 	_current_room = scene.instantiate()
 	# Rooms sit at their true grid position rather than all at the origin, so
 	# world space and map space never disagree — which is also what makes the
@@ -306,6 +326,11 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 		previous_room.queue_free()
 
 	await get_tree().physics_frame
+	# After the transition rather than before it, so the music swap and the
+	# clock stopping both happen behind the wipe instead of in front of it — and
+	# so there is most of a second between the last tick and the freeze for any
+	# in-flight HUD tween to land. See _apply_shop_services.
+	_apply_shop_services(data, coord)
 	# After the physics frame, so six collision-shaped bodies cannot be added
 	# mid-flush — the same hazard that forces _enter_room itself to be deferred.
 	# After the slide, so enemies never get a free shot at a player who is still
@@ -324,7 +349,12 @@ func _enter_room(coord: Vector2i, arrive_side: int = -1) -> void:
 ## this file still names no alternative implementation — anything dropped into
 ## exit_room_scene gets the cut without announcing itself.
 func _is_cut_transition(kind: int) -> bool:
-	return kind == RoomData.Kind.EXIT and exit_room_scene != null
+	if kind == RoomData.Kind.EXIT and exit_room_scene != null:
+		return true
+	# The shop is drawn side-on for the same reason and travels the same way: a
+	# slide assumes the two cells share an edge and are drawn the same way round,
+	# and a belt-scroll room is neither.
+	return kind == RoomData.Kind.SHOP and _shop_room_available()
 
 
 ## Swap rooms behind a wipe instead of travelling between them.
@@ -526,6 +556,11 @@ func _on_player_died() -> void:
 		return
 	_dying = true
 
+	# Released before anything else: dying inside a shop must not leave the run's
+	# music frozen and the countdown out of processing behind the game over
+	# screen. Idempotent, so it costs nothing on the ordinary path.
+	_release_clock_hold()
+
 	# A paused death sequence is a soft lock with no way out.
 	_pause_menu.set_pause_allowed(false)
 
@@ -567,6 +602,11 @@ func _win() -> void:
 	if _won or _dying:
 		return
 	_won = true
+
+	# Same reason as in _on_player_died: the ending must not run over a frozen
+	# clock. Nothing in a normal run wins from inside a shop, but the cost of
+	# saying so is one idempotent call.
+	_release_clock_hold()
 
 	# The clock stops. Everywhere else in this file the countdown running through
 	# a cutscene is the point; here it is the one thing that could still kill a
@@ -707,3 +747,92 @@ func _begin_floor(floor_number: int) -> void:
 	# Awaited, so a caller riding the elevator can hold the overlay up until the
 	# spawn room is built and stocked rather than opening onto an empty screen.
 	await _enter_room(_plan.spawn_coord)
+
+
+# -- Shops -------------------------------------------------------------------
+#
+# Everything the run has to do about shops, gathered here rather than scattered
+# through _enter_room. One call from up there and the bodies live down here, so
+# the composition root stays readable while three branches are adding to it.
+
+
+## Build the clock hold and hand the player their starting coins.
+##
+## Belt and braces on the config, the same way floor_config is handled: the scene
+## supplies one, but a Game dropped into another scene without it should still
+## run — with shops simply switched off.
+func _setup_shops() -> void:
+	if shop_config == null:
+		shop_config = ShopConfig.new()
+	shop_config.apply_overrides()
+
+	_clock_hold = ClockHold.new(_o2_timer, shop_config.music)
+	_grant_starting_coins()
+
+
+## Coins live on the Player and are shipped by another branch. Duck-typed so this
+## runs before that lands and needs no edit after it: until add_coins exists, the
+## player simply starts with nothing and every shop refuses them.
+func _grant_starting_coins() -> void:
+	if shop_config.starting_coins <= 0:
+		return
+	if not _player.has_method("add_coins"):
+		return
+	_player.add_coins(shop_config.starting_coins)
+
+
+## Is there a shop room to swap in at all?
+func _shop_room_available() -> bool:
+	return shop_config != null and shop_config.room_scene != null
+
+
+## Take or release everything a shop changes about the run, derived from the room
+## the player just walked into.
+##
+## Derived state rather than a pair of events, and re-asserted on EVERY room
+## change rather than only on the ones that involve a shop. That is what makes a
+## leaked hold — a run whose clock never restarts — unreachable rather than
+## merely unlikely: there is no path out of a shop that does not come through
+## here, and arriving anywhere that is not a shop puts the clock back.
+func _apply_shop_services(data: RoomData, coord: Vector2i) -> void:
+	var is_shop: bool = data.kind == RoomData.Kind.SHOP and _shop_room_available()
+
+	if not is_shop:
+		_release_clock_hold()
+		return
+
+	# The camera's own aim-lead is suppressed for the visit, or it wobbles
+	# underneath the room's parallax and the two fight over the same few pixels.
+	_camera.set_lead_enabled(false)
+
+	if _current_room.has_method("configure_shop"):
+		var capacity: int = _current_room.grid.capacity() if _current_room.grid != null else 0
+		_current_room.configure_shop(
+			_shop_registry.stock_for(shop_config.stock_provider, _floor_number, coord, capacity),
+			_player)
+		if not _current_room.offer_purchased.is_connected(_on_offer_purchased):
+			_current_room.offer_purchased.connect(_on_offer_purchased)
+
+	if _clock_hold != null:
+		_clock_hold.set_held(true)
+
+
+func _release_clock_hold() -> void:
+	if _clock_hold != null:
+		_clock_hold.set_held(false)
+
+
+## Somebody bought something.
+##
+## The room reports the sale and this decides what it means, which keeps the shop
+## from being the one node that knows both what is on a shelf and what a player
+## is made of. Applying the effects is the item catalogue's contract — see
+## ItemEffect on the drops branch — and is duck-typed until it lands.
+func _on_offer_purchased(offer: ShopOffer) -> void:
+	if offer == null or offer.item == null:
+		return
+	if not ("effects" in offer.item):
+		return
+	for effect in offer.item.effects:
+		if effect != null and effect.has_method("apply"):
+			effect.apply(_player)

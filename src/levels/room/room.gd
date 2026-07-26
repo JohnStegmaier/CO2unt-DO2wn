@@ -30,7 +30,7 @@ const FLOOR := Rect2(49, 49, 343, 187)
 const KIND_TINTS: Array[Color] = [
 	Color(0, 0, 0, 0),                        # NORMAL
 	Color(0, 0, 0, 0),                        # SPAWN
-	Color(0.55, 0.06, 0.09, 0.3),             # BOSS
+	Color(0.85, 0.12, 0.14, 0.1),             # BOSS
 	Color(0.85, 0.66, 0.16, 0.24),            # SHOP
 	Color(0.16, 0.42, 0.82, 0.26),            # TREASURE
 	Color(0.16, 0.72, 0.36, 0.24),            # EXIT

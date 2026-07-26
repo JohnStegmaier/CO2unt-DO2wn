@@ -75,8 +75,9 @@ cubby of the left bank lands on the first of the right with no special case.
 Planks are drawn one per bank so neither runs behind him.
 
 The shipped shape is 3 × 8 with a 96px gap — four cubbies each side. Two things
-constrain it: the HUD covers roughly the top 40 room units, so `origin.y` has to
-clear that or the top row is clipped; and the shelf has to end above the counter
+constrain it: the HUD covers roughly the top 31 room units (`HUD_BOTTOM` in
+`tools/check_prompts.gd`), so `origin.y` has to clear that or the top row is
+clipped; and the shelf has to end above the counter
 at y 165.
 
 ## Drawing an item
@@ -158,8 +159,12 @@ different descent index to see that floor's shelf without playing to it.
 ## Appendix: the vinaigrette
 
 `vinaigrette.tres` currently does something boring — it raises your speed by one
-level, same as `speed_up`. It is on the shelf under false pretences, and this is
-the note explaining why, so that nobody later "fixes" it by deleting it.
+level, and since `speed_up` stopped dropping (reload took its slots when the HUD
+swapped rows) it is the only thing that does. The shelf rework moved it into
+the chest pool, with one exception: the Floor 3 shelf still stocks it at 10
+coins — a floor-specific `&"shop"` rule, so every run walks past it exactly
+once. It is in the game under false pretences either way, and this is the note
+explaining why, so that nobody later "fixes" it by deleting it.
 
 **It is a typo that became canon.** It comes from mispronouncing *vignette* while
 describing the death sequence — the dark closing in as you suffocate, which is

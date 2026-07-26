@@ -7,12 +7,12 @@
 
 [sub_resource type="Resource" id="Resource_31y42"]
 script = ExtResource("3_26tn5")
-stat = 3
+stat = 1
 
 [resource]
 script = ExtResource("5_otc5i")
 id = &"speed_up"
-display_name = "Reload Upgrade"
+display_name = "Speed Upgrade"
 icon = ExtResource("4_oop14")
 icon_scale = 0.75
 pickup_sound = &"money_jingle_1"

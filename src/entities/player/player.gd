@@ -344,7 +344,9 @@ func set_speed_lvl(lvl: int) -> void:
 
 func set_firerate_lvl(lvl: int) -> void:
 	FIRERATE_LVL = clampi(lvl, MIN_STAT_LVL, MAX_STAT_LVL)
-	fire_rate = FIRE_RATE_VALUES[FIRERATE_LVL - 1] * STAT_SCALE
+	# Divided, not multiplied: fire_rate is seconds BETWEEN shots, so the one
+	# buff knob has to shorten it while it lengthens everything else.
+	fire_rate = FIRE_RATE_VALUES[FIRERATE_LVL - 1] / STAT_SCALE
 	_loadout.player_fire_interval = fire_rate
 	_loadout.player_firerate_mult = _mult_from_base(fire_rate, FIRE_RATE_VALUES)
 	firerate_lvl_changed.emit(FIRERATE_LVL)
@@ -354,6 +356,7 @@ func set_reload_speed_lvl(lvl: int) -> void:
 	RELOAD_SPEED_LVL = clampi(lvl, MIN_STAT_LVL, MAX_STAT_LVL)
 	RELOAD_SPEED = RELOAD_SPEED_VALUES[RELOAD_SPEED_LVL - 1] * STAT_SCALE
 	_loadout.player_reload_speed = RELOAD_SPEED
+	_loadout.player_reload_mult = _mult_from_base(RELOAD_SPEED, RELOAD_SPEED_VALUES)
 	reload_speed_lvl_changed.emit(RELOAD_SPEED_LVL)
 
 

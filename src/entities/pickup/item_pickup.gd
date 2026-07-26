@@ -103,9 +103,16 @@ func _on_body_entered(body: Node2D) -> void:
 ## own seconds rather than item.describe() — "+15s air" is fine in a tooltip but
 ## busier than the sprite it is hovering over needs.
 ##
+## Stat raises get their describe() line ("+1 power") for the opposite reason:
+## a level is invisible at the moment it lands — the pip row is a screen corner
+## away and the shots-to-kill often do not move — so without a word here the
+## pickup reads as a coin that did nothing.
+##
 ## Parented to the current scene rather than to this: this frees itself the
 ## instant grant_to returns, and a popup made a child of it would go with it.
 func _spawn_oxygen_text() -> void:
 	for effect in item.effects:
 		if effect is RestoreOxygen:
 			FloatingText.spawn(get_tree().current_scene, global_position, "+%ds" % int(effect.seconds))
+		elif effect is RaiseStatLevel:
+			FloatingText.spawn(get_tree().current_scene, global_position, effect.describe())

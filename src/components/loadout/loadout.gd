@@ -60,12 +60,14 @@ var player_damage := 10
 var player_fire_interval := 0.14
 var player_reload_speed := 1.0
 
-## The same two stats as a factor of where they started, so a weapon that keeps
-## its own numbers can still be scaled by them — 1.0 at POWER/FIRERATE level 1,
-## and for the fire rate a factor BELOW one, since a shorter interval is faster.
-## Written from above alongside the pair above. See WeaponDef.damage_against.
+## The same stats as a factor of where they started, so a weapon that keeps
+## its own numbers can still be scaled by them — 1.0 at POWER/FIRERATE/RELOAD
+## level 1, and for the fire rate a factor BELOW one, since a shorter interval
+## is faster. Written from above alongside the trio above. See
+## WeaponDef.damage_against.
 var player_power_mult := 1.0
 var player_firerate_mult := 1.0
+var player_reload_mult := 1.0
 
 ## Fired whenever the magazine count changes, so the HUD never has to poll.
 signal ammo_changed(current: int, magazine_size: int)
@@ -234,7 +236,7 @@ func start_reload() -> void:
 	if weapon == null or is_reloading:
 		return
 	is_reloading = true
-	_reload_remaining = weapon.reload_time_against(player_reload_speed)
+	_reload_remaining = weapon.reload_time_against(player_reload_speed, player_reload_mult)
 	_cooldown = 0.0
 	reloading_changed.emit(true)
 

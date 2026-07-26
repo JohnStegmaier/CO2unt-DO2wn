@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Script" path="res://src/systems/loot/item_effect.gd" id="1_je8yf"]
+[ext_resource type="Script" path="res://src/systems/loot/effects/restore_oxygen.gd" id="2_hkg5t"]
+[ext_resource type="Texture2D" path="res://assets/sprites/items/Drop_orb_o2.png" id="3_u4qjy"]
+[ext_resource type="Script" path="res://src/systems/loot/item_def.gd" id="4_i3tpr"]
+
+[sub_resource type="Resource" id="Resource_us57b"]
+script = ExtResource("2_hkg5t")
+seconds = 30.0
+
+[resource]
+script = ExtResource("4_i3tpr")
+id = &"oxygen_big"
+display_name = "Oxygen Tank"
+icon = ExtResource("3_u4qjy")
+icon_scale = 0.36
+effects = Array[ExtResource("1_je8yf")]([SubResource("Resource_us57b")])

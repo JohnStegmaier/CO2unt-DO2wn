@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Script" path="res://src/systems/loot/item_effect.gd" id="1_lp2j7"]
+[ext_resource type="Script" path="res://src/systems/loot/effects/grant_coins.gd" id="2_ltjds"]
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/coin.png" id="3_iaov8"]
+[ext_resource type="Script" path="res://src/systems/loot/item_def.gd" id="4_fh0hi"]
+
+[sub_resource type="Resource" id="Resource_80fpe"]
+script = ExtResource("2_ltjds")
+amount = 25
+
+[resource]
+script = ExtResource("4_fh0hi")
+id = &"coin_big"
+display_name = "Severance"
+icon = ExtResource("3_iaov8")
+icon_scale = 0.4
+pickup_sound = &"money_jingle_1"
+effects = Array[ExtResource("1_lp2j7")]([SubResource("Resource_80fpe")])

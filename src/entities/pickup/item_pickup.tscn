@@ -1,0 +1,37 @@
+[gd_scene format=3 uid="uid://bk8n2vqxwt5ya"]
+
+[ext_resource type="Script" path="res://src/entities/pickup/item_pickup.gd" id="1_pickup"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_pickup"]
+radius = 8.0
+
+[sub_resource type="Gradient" id="Gradient_shadow"]
+colors = PackedColorArray(0, 0, 0, 0.45, 0, 0, 0, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_shadow"]
+gradient = SubResource("Gradient_shadow")
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[node name="ItemPickup" type="Area2D"]
+collision_layer = 64
+collision_mask = 2
+script = ExtResource("1_pickup")
+
+[node name="Shadow" type="Sprite2D" parent="."]
+z_index = -1
+position = Vector2(0, 7)
+scale = Vector2(0.35, 0.12)
+texture = SubResource("GradientTexture2D_shadow")
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Backdrop" type="Sprite2D" parent="Visual"]
+scale = Vector2(0.265, 0.265)
+
+[node name="Icon" type="Sprite2D" parent="Visual"]
+scale = Vector2(0.265, 0.265)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_pickup")

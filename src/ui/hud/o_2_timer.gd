@@ -94,6 +94,9 @@ var _air_critical := false
 @onready var bottom_border: ColorRect = $Bottom_Border
 @onready var lights_odd: Array[Sprite2D] = [$UIMain/Light1, $UIMain/Light3, $UIMain/Light5]
 @onready var lights_even: Array[Sprite2D] = [$UIMain/Light2, $UIMain/Light4, $UIMain/Light6]
+@onready var bomb_containers: Array[Sprite2D] = [
+	$UIMain/bomb_container1, $UIMain/bomb_container2, $UIMain/bomb_container3
+]
 
 var setup_done = false
 
@@ -113,6 +116,10 @@ const HIGH_TIME := Color(0.588, 1.003, 0.676, 1.0)
 
 const LIGHT_ON_COLOR := Color(1, 0.5254902, 0.3647059, 1)
 const LIGHT_OFF_COLOR := Color(1, 0.5254902, 0.3647059, 0.25)
+
+## Matches the self_modulate already authored onto bomb_container2/3 in the scene.
+const BOMB_FULL_ALPHA := 1.0
+const BOMB_EMPTY_ALPHA := 80.0 / 255.0
 
 var _lights_alternate := false
 
@@ -311,6 +318,13 @@ func _set_air_critical(critical: bool) -> void:
 	air_critical_changed.emit(critical)
 	
 	
+## Lights up one bomb_container per bomb carried, left to right; the rest sit
+## dimmed at the alpha already authored onto them in the scene.
+func set_bombs(current: int, _max_bombs: int = 0) -> void:
+	for i in bomb_containers.size():
+		bomb_containers[i].self_modulate.a = BOMB_FULL_ALPHA if i < current else BOMB_EMPTY_ALPHA
+
+
 func update_label() -> void:
 	update_label_color()
 	var new_text: String

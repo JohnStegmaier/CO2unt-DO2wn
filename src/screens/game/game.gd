@@ -110,6 +110,9 @@ func _ready() -> void:
 	_player.ammo_changed.connect(_ammo_counter.set_ammo)
 	_ammo_counter.set_ammo(_player.ammo, _player.magazine_size)
 
+	_player.bombs_changed.connect(_o2_timer.set_bombs)
+	_o2_timer.set_bombs(_player.f_bombs, _player.max_f_bombs)
+
 	# Profile overrides, all of them landing before anything reads the values.
 	# Defaults stay on the exports above, so a profile that names none of these
 	# keys runs the shipped numbers — see docs/TUNING_PROFILES.md.

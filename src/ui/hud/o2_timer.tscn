@@ -51,6 +51,7 @@
 [ext_resource type="Texture2D" uid="uid://1holo7c2yl6g" path="res://assets/sprites/ui/ekg/ekg50.png" id="54_icjbt"]
 [ext_resource type="Texture2D" uid="uid://csiimhoepyeta" path="res://assets/sprites/ui/ekg/ekg51.png" id="55_gwntt"]
 [ext_resource type="Texture2D" uid="uid://crtrmspeslme0" path="res://assets/sprites/ui/ekg/ekg52.png" id="56_qqn7m"]
+[ext_resource type="Texture2D" uid="uid://btcar3vlujyln" path="res://assets/sprites/items/bomb.png" id="57_h310o"]
 [ext_resource type="Texture2D" uid="uid://ddryglnagkumt" path="res://assets/sprites/ui/ekg/ekg53.png" id="57_rglyf"]
 [ext_resource type="Texture2D" uid="uid://3l4viaqom8ky" path="res://assets/sprites/ui/ekg/ekg54.png" id="58_vfoai"]
 [ext_resource type="Texture2D" uid="uid://m03ada87umwv" path="res://assets/sprites/ui/ekg/ekg55.png" id="59_rf6in"]
@@ -398,6 +399,26 @@ position = Vector2(-184.5, -37.499996)
 scale = Vector2(1.0000001, 1.0000001)
 sprite_frames = SubResource("SpriteFrames_u6ckt")
 frame_progress = 0.27892622
+
+[node name="bomb_container1" type="Sprite2D" parent="UIMain" unique_id=1219394818]
+position = Vector2(-214.62637, 104.37364)
+rotation = 0.36897877
+scale = Vector2(0.46, 0.46)
+texture = ExtResource("57_h310o")
+
+[node name="bomb_container2" type="Sprite2D" parent="UIMain" unique_id=1807951666]
+self_modulate = Color(1, 1, 1, 0.3137255)
+position = Vector2(-182.62637, 104.37363)
+rotation = 0.36897877
+scale = Vector2(0.46, 0.46)
+texture = ExtResource("57_h310o")
+
+[node name="bomb_container3" type="Sprite2D" parent="UIMain" unique_id=2086904186]
+self_modulate = Color(1, 1, 1, 0.3137255)
+position = Vector2(-150.62637, 104.37363)
+rotation = 0.36897877
+scale = Vector2(0.46, 0.46)
+texture = ExtResource("57_h310o")
 
 [node name="Label" type="Label" parent="." unique_id=5773688]
 modulate = Color(0.7058824, 0.13333334, 0.13333334, 1)

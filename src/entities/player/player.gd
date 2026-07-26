@@ -46,6 +46,43 @@ signal firerate_lvl_changed(lvl: int)
 ## is no manual reload input — so this is the only cost of running the mag dry.
 @export var reload_time := 1.2
 
+## Money carried. Held here rather than in a wallet of its own because every
+## [ItemEffect] is apply(player) — putting the balance anywhere else would force
+## one effect to reach for the run container and break the uniform signature that
+## lets effects compose. The player also already survives room changes, which is
+## the only other thing a separate owner would have bought.
+##
+## Starts at zero. A run that should begin with money says so at run start rather
+## than here, so the shipped number stays the honest one.
+var coins: int = 0
+
+## Fired whenever the balance changes, so nothing has to poll for it. A refused
+## purchase changes nothing and so says nothing — see [method spend_coins].
+signal coins_changed(coins: int)
+
+
+func add_coins(amount: int) -> void:
+	if amount == 0:
+		return
+	coins = maxi(0, coins + amount)
+	coins_changed.emit(coins)
+
+
+## Take payment. False means the balance was short and nothing was taken, which
+## is the whole reason this returns anything: a caller must not be able to hand
+## over the goods and then discover it was not paid.
+##
+## Deliberately silent on a refusal rather than pushing an error — being unable
+## to afford something is an ordinary thing for a player to do, and the shop is
+## what says so out loud.
+func spend_coins(amount: int) -> bool:
+	if amount < 0 or coins < amount:
+		return false
+	coins -= amount
+	coins_changed.emit(coins)
+	return true
+
+
 @export_group("Bombs")
 ## How many bombs the player can carry unless something raises the cap.
 @export var max_f_bombs := 3

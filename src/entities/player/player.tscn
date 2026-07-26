@@ -232,6 +232,14 @@ position = Vector2(0, -6)
 sprite_frames = SubResource("SpriteFrames_nn08x")
 animation = &"walk_down"
 
+[node name="ReloadIndicator" type="Label" parent="." unique_id=2136498205]
+position = Vector2(-28, -28)
+modulate = Color(1.0, 0.451, 0.0, 1)
+theme_override_font_sizes/font_size = 10
+text = "RELOADING"
+horizontal_alignment = 1
+visible = false
+
 [node name="BigGunBTransparent" type="Sprite2D" parent="." unique_id=1371732958]
 modulate = Color(1.8764027, 1.111197, 1.5168338, 1)
 position = Vector2(0, 5)

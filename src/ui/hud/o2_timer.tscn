@@ -217,9 +217,17 @@ animations = [{
 "duration": 1.0,
 "texture": ExtResource("62_1mqcn")
 }],
+"loop": 0,
+"name": &"beat",
+"speed": 90.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("11_kykvi")
+}],
 "loop": 1,
-"name": &"default",
-"speed": 51.0
+"name": &"flatline",
+"speed": 5.0
 }]
 
 [node name="O2Timer" type="Node2D" unique_id=1199483244]
@@ -397,7 +405,7 @@ texture = ExtResource("4_awvvu")
 position = Vector2(-184.5, -37.499996)
 scale = Vector2(1.0000001, 1.0000001)
 sprite_frames = SubResource("SpriteFrames_u6ckt")
-frame_progress = 0.27892622
+animation = &"beat"
 
 [node name="Label" type="Label" parent="." unique_id=5773688]
 modulate = Color(0.7058824, 0.13333334, 0.13333334, 1)

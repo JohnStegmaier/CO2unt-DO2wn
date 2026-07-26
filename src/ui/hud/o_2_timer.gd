@@ -28,8 +28,7 @@ signal suffocation_changed(progress: float)
 signal suffocated
 
 @export var total_time: float = 90 # starting time in seconds
-#var time_left = total_time
-var time_left = total_time
+var time_left
 
 ## How fast air is spent, as a multiplier on real time. Piercing damage tears the
 ## suit and raises it; it eases back toward normal so a tear is a crisis rather
@@ -117,12 +116,18 @@ const FLICK_DURATION := 0.10  # seconds for the flick out, same again for return
 
 func _ready() -> void:
 	print("ready!")
+	
 	# Before anything reads it: _setup() and refill() both copy total_time into
 	# time_left, and they are the only things that start the clock. Overriding
 	# here rather than editing the number above is the whole point of issue #26 —
 	# a test value in a profile cannot be committed into the game by accident.
 	total_time = GameConfig.get_value("oxygen", "total_time", total_time)
-	GlobalTimer.tick.connect(_setup)
+	time_left = total_time
+	# GlobalTimer's Timer has no wait_time override, so it defaults to Godot's
+	# 1.0 — this is what makes the digital readout tick over once a second
+	# instead of drifting with delta and drain_rate like the needle does.
+	GlobalTimer.tick.connect(update_label)
+	GlobalTimer.tick.connect(play_heartbeat)
 	needle.rotation_degrees = degrees
 
 	top_border_end_pos = top_border.position
@@ -134,26 +139,7 @@ func _ready() -> void:
 	bottom_border.position = bottom_border_start_pos
 
 #anything called in here will run begin on the first tick sound of the level
-func _setup() -> void:
-	if setup_done:
-		return
-	else:
-		print("setting up again!")
-		GlobalTimer.tick.connect(flick_needle)
-		#delay for timer sync
-		#await get_tree().create_timer(0.3).timeout
-		time_left = total_time
-		update_label()
-		setup_done = true
-		heartbeat.play()
-	# process_always false: this wait rides the same GlobalTimer beat grid the
-	# music does, and both have to stop dead when the tree pauses or the clock
-	# and the track come back out of phase with each other.
-	await get_tree().create_timer(0.3, false).timeout
-	time_left = total_time
-	update_label()
-	setup_done = true
-	
+		
 ## Reset the countdown for a new level. This is the ONE place O2 policy lives —
 ## if levels should get progressively less time, or time should carry over
 ## instead of resetting, change it here and nowhere else.
@@ -186,10 +172,21 @@ func refill() -> void:
 ## GlobalTimer tick plus 0.3s before assigning time_left, and anything spent
 ## before that would be silently overwritten.
 func apply_damage(amount: int, type: int) -> void:
+	_flash_heartbeat()
 	if type == Damage.Type.PIERCING:
 		add_drain(amount * drain_per_piercing_point)
 	else:
 		spend_seconds(amount * seconds_per_blunt_point)
+
+
+## A hit reads on the readout too, not just as lost time — a couple of quick red
+## flickers rather than one smooth flash, to read as distinct from the needle
+## and label's own easing.
+func _flash_heartbeat() -> void:
+	var flash := create_tween()
+	for i in 3:
+		flash.tween_property(heartbeat, "modulate", Color(10.178, 0.0, 0.0, 1.0), 0.05)
+		flash.tween_property(heartbeat, "modulate", Color.WHITE, 0.05)
 
 
 func spend_seconds(seconds: float) -> void:
@@ -203,13 +200,16 @@ func add_drain(amount: float) -> void:
 
 
 func _process(delta: float) -> void:
-	if not setup_done:
-		return
 	if time_left > 0:
 		time_left -= delta * drain_rate
 		time_left = max(time_left, 0)
-		update_label()
 		update_needle()
+
+	# Below 10 seconds the readout switches to a hundredths-place countdown —
+	# smooth enough to need every frame, not just the once-a-second tick the
+	# lights and heartbeat are locked to.
+	if time_left < 10:
+		_update_label_text()
 
 	# A torn suit seals itself slowly, so piercing hits stack into a spike that
 	# then subsides rather than a permanent sentence.
@@ -297,7 +297,16 @@ func _set_air_critical(critical: bool) -> void:
 	
 	
 func update_label() -> void:
+	await get_tree().create_timer(0.2).timeout
+	_alternate_lights()
 	update_label_color()
+	_update_label_text()
+
+
+## Split out of update_label() so _process() can refresh just the text every
+## frame under 10 seconds, without also re-triggering the lights and heartbeat
+## that are meant to stay locked to the once-a-second GlobalTimer tick.
+func _update_label_text() -> void:
 	var new_text: String
 	if time_left < 10:
 		var seconds: float = time_left
@@ -306,10 +315,14 @@ func update_label() -> void:
 		var minutes := int(time_left) / 60
 		var seconds := int(time_left) % 60
 		new_text = "%d:%02d" % [minutes, seconds]
+	label.text = new_text
 
-	if new_text != label.text:
-		label.text = new_text
-		_alternate_lights()
+func play_heartbeat():
+	if time_left > 0:
+		await get_tree().create_timer(0.1).timeout
+		heartbeat.play("beat")
+	else:
+		heartbeat.play("flatline")
 
 ## Flips which trio of warning lights is lit, in step with the label ticking
 ## over. Keeps the two groups (1/3/5 and 2/4/6) in lockstep opposition rather

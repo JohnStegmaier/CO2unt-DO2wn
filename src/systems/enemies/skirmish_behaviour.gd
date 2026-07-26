@@ -38,7 +38,7 @@ enum Phase { HOLD, COVER }
 ## How long the jump holds before steering resumes. Steering is suspended
 ## outright for this, the same shape as the player's own is_dodging early return.
 @export_range(0.05, 1.0, 0.01) var dodge_time: float = 0.22
-@export_range(0.0, 5.0, 0.05) var dodge_cooldown: float = 1.0
+@export_range(0.0, 5.0, 0.05) var dodge_cooldown: float = 2.0
 
 @export_group("Cover")
 ## How far it will walk to get behind something. Zero switches cover-seeking off
